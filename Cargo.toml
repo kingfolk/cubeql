@@ -1,0 +1,24 @@
+[package]
+name = "cubeql"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "A minimal Arrow-native retrieval engine powered by CubeCL"
+
+[features]
+default = ["cpu"]
+cpu = ["cubecl/cpu"]
+cuda = ["cubecl/cuda"]
+hip = ["cubecl/hip"]
+metal = ["cubecl/metal-native"]
+wgpu = ["cubecl/wgpu"]
+
+[dependencies]
+arrow-array = "60.0.0"
+arrow-schema = "60.0.0"
+cubecl = { path = "../cubecl/crates/cubecl", default-features = false, features = ["std", "stdlib"] }
+half = "2.7.1"
+thiserror = "2.0.17"
+
+[dev-dependencies]
+approx = "0.5.1"
