@@ -1,8 +1,8 @@
 //! A deliberately small Arrow-native retrieval engine.
 //!
-//! The first implementation performs an exact inner-product scan with CubeCL. It accepts a
+//! The engine performs exact vector scans and top-k selection with CubeCL. It accepts a
 //! `FixedSizeList<Float32>` or `FixedSizeList<Float16>` Arrow column, optionally filters rows with
-//! a floating-point column, and performs the final top-k selection on the CPU.
+//! a floating-point column. Only the selected row identifiers and scores return to the host.
 
 use arrow_array::{
     Array, FixedSizeListArray, Float16Array, Float32Array, RecordBatch,
@@ -15,6 +15,37 @@ use half::f16;
 use thiserror::Error;
 
 const UNITS_PER_CUBE: u32 = 64;
+const INVALID_ROW: u32 = u32::MAX;
+
+/// Metric evaluated over the stored vectors (FP16 inputs accumulate in FP32).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Metric {
+    /// Larger dot products rank first.
+    #[default]
+    InnerProduct,
+    /// Larger cosine similarities rank first. A zero vector has similarity zero.
+    Cosine,
+    /// Smaller squared Euclidean distances rank first; returned scores are nonnegative distances.
+    SquaredL2,
+}
+
+impl Metric {
+    fn code(self) -> u32 {
+        match self {
+            Self::InnerProduct => 0,
+            Self::Cosine => 1,
+            Self::SquaredL2 => 2,
+        }
+    }
+}
+
+/// Options applied once when constructing an index.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct IndexOptions {
+    /// L2-normalize each vector before upload, preserving its original scalar type.
+    /// Zero vectors remain zero. The original Arrow batch is left unchanged.
+    pub normalize: bool,
+}
 
 /// A lower bound applied to one floating-point Arrow column before scoring a row.
 #[derive(Clone, Debug, PartialEq)]
@@ -71,7 +102,7 @@ impl IndexQueryOptions<'_> {
 pub struct SearchHit {
     /// Zero-based row index in the input batch.
     pub row: usize,
-    /// Inner product between the row vector and query vector.
+    /// Metric value: descending inner product/cosine, or ascending squared L2 distance.
     pub score: f32,
 }
 
@@ -92,7 +123,11 @@ pub enum QueryError {
     NullVector,
     #[error("nulls are not supported in the filter column yet")]
     NullFilter,
-    #[error("failed to read scores from the compute device: {0}")]
+    #[error("vector values and query values must be finite")]
+    NonFiniteVector,
+    #[error("the index must contain fewer than u32::MAX rows")]
+    TooManyRows,
+    #[error("failed to read query results from the compute device: {0}")]
     ReadScores(String),
 }
 
@@ -103,7 +138,7 @@ enum VectorBuffer {
 
 /// An Arrow vector column uploaded once and retained on a CubeCL device.
 ///
-/// `VectorIndex` owns a cheap clone of the input [`RecordBatch`] so callers can inspect row
+/// `VectorIndex` owns the input [`RecordBatch`] so callers can inspect row
 /// metadata through [`VectorIndex::batch`]. The vector values themselves are uploaded during
 /// construction and their device handle is reused by every query.
 pub struct VectorIndex {
@@ -113,6 +148,7 @@ pub struct VectorIndex {
     dimension: usize,
     vectors: VectorBuffer,
     no_filter_handle: Option<Handle>,
+    options: IndexOptions,
 }
 
 impl VectorIndex {
@@ -125,16 +161,35 @@ impl VectorIndex {
         batch: RecordBatch,
         vector_column: impl Into<String>,
     ) -> Result<Self, QueryError> {
+        Self::new_with_options(device, batch, vector_column, IndexOptions::default())
+    }
+
+    /// Construct an index with optional normalization of its resident vectors.
+    ///
+    /// Normalization uses FP64 norms on the host, then rounds back to the column's scalar type.
+    /// Queries are not automatically normalized: cosine handles arbitrary query magnitudes, while
+    /// inner product and squared L2 always evaluate the query supplied by the caller.
+    pub fn new_with_options(
+        device: &Device,
+        batch: RecordBatch,
+        vector_column: impl Into<String>,
+        options: IndexOptions,
+    ) -> Result<Self, QueryError> {
         let vector_column = vector_column.into();
         let vectors = vector_array(&batch, &vector_column)?;
         let dimension = vector_dimension(vectors)?;
+        if batch.num_rows() >= INVALID_ROW as usize {
+            return Err(QueryError::TooManyRows);
+        }
         let client = device.client();
 
         let vectors = match vectors.value_type() {
             DataType::Float32 => {
                 let values = vectors.values().as_primitive::<Float32Type>();
+                let normalized = prepare_values(values.values(), dimension, options, |v| v, |v| v)?;
+                let values_slice = normalized.as_deref().unwrap_or(values.values());
                 let handle = (!values.is_empty())
-                    .then(|| client.create_from_slice(f32::as_bytes(values.values())));
+                    .then(|| client.create_from_slice(f32::as_bytes(values_slice)));
                 VectorBuffer::Float32 {
                     handle,
                     len: values.len(),
@@ -142,8 +197,16 @@ impl VectorIndex {
             }
             DataType::Float16 => {
                 let values = vectors.values().as_primitive::<Float16Type>();
+                let normalized = prepare_values(
+                    values.values(),
+                    dimension,
+                    options,
+                    f16::to_f32,
+                    f16::from_f32,
+                )?;
+                let values_slice = normalized.as_deref().unwrap_or(values.values());
                 let handle = (!values.is_empty())
-                    .then(|| client.create_from_slice(f16::as_bytes(values.values())));
+                    .then(|| client.create_from_slice(f16::as_bytes(values_slice)));
                 VectorBuffer::Float16 {
                     handle,
                     len: values.len(),
@@ -161,23 +224,40 @@ impl VectorIndex {
             dimension,
             vectors,
             no_filter_handle,
+            options,
         })
     }
 
     /// Query the resident vectors using exact inner product.
     ///
-    /// Only per-query inputs and outputs are transferred: the FP32 query vector, optional filter
-    /// values, and the score buffer. The vector column remains resident on the device.
+    /// The vector column remains resident. Only the FP32 query, optional filter values, and the
+    /// final top-k results cross the device boundary.
     pub fn query(
         &self,
         query_vector: &[f32],
         options: IndexQueryOptions<'_>,
+    ) -> Result<Vec<SearchHit>, QueryError> {
+        self.query_with_metric(query_vector, options, Metric::InnerProduct)
+    }
+
+    /// Query using a selected metric and device-side exact top-k.
+    ///
+    /// Ties are ordered by ascending row ID. NaN scores caused by FP32 arithmetic overflow are
+    /// excluded; infinite scores remain eligible. No full score array is read back to the host.
+    pub fn query_with_metric(
+        &self,
+        query_vector: &[f32],
+        options: IndexQueryOptions<'_>,
+        metric: Metric,
     ) -> Result<Vec<SearchHit>, QueryError> {
         if query_vector.len() != self.dimension {
             return Err(QueryError::DimensionMismatch {
                 query: query_vector.len(),
                 vectors: self.dimension,
             });
+        }
+        if query_vector.iter().any(|v| !v.is_finite()) {
+            return Err(QueryError::NonFiniteVector);
         }
         if options.top_k == 0 || self.batch.num_rows() == 0 {
             return Ok(Vec::new());
@@ -200,16 +280,14 @@ impl VectorIndex {
                 0.0,
             ),
         };
-        let initial_scores = vec![f32::NEG_INFINITY; self.batch.num_rows()];
-        let scores_handle = self
-            .client
-            .create_from_slice(f32::as_bytes(&initial_scores));
+        let scores_handle = self.client.empty(self.len() * size_of::<f32>());
+        let rows_handle = self.client.empty(self.len() * size_of::<u32>());
         let cube_dim = CubeDim::new_1d(UNITS_PER_CUBE);
         let cube_count =
             calculate_cube_count_elemwise(&self.client, self.batch.num_rows(), cube_dim);
         match &self.vectors {
             VectorBuffer::Float32 { handle, len } => unsafe {
-                exact_inner_product::launch_unchecked::<f32>(
+                exact_score::launch_unchecked::<f32>(
                     &self.client,
                     cube_count,
                     cube_dim,
@@ -223,14 +301,16 @@ impl VectorIndex {
                     BufferArg::from_raw_parts(query_handle, query_vector.len()),
                     BufferArg::from_raw_parts(filter_handle, filter_len),
                     BufferArg::from_raw_parts(scores_handle.clone(), self.batch.num_rows()),
+                    BufferArg::from_raw_parts(rows_handle.clone(), self.len()),
                     self.batch.num_rows(),
                     self.dimension,
                     use_filter,
                     filter_min,
+                    metric.code(),
                 );
             },
             VectorBuffer::Float16 { handle, len } => unsafe {
-                exact_inner_product::launch_unchecked::<f16>(
+                exact_score::launch_unchecked::<f16>(
                     &self.client,
                     cube_count,
                     cube_dim,
@@ -244,30 +324,80 @@ impl VectorIndex {
                     BufferArg::from_raw_parts(query_handle, query_vector.len()),
                     BufferArg::from_raw_parts(filter_handle, filter_len),
                     BufferArg::from_raw_parts(scores_handle.clone(), self.batch.num_rows()),
+                    BufferArg::from_raw_parts(rows_handle.clone(), self.len()),
                     self.batch.num_rows(),
                     self.dimension,
                     use_filter,
                     filter_min,
+                    metric.code(),
                 );
             },
         }
 
-        let score_bytes = self
-            .client
-            .read_one(scores_handle)
-            .map_err(|error| QueryError::ReadScores(error.to_string()))?;
-        let scores = f32::from_bytes(&score_bytes);
-        let mut hits = scores
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|(_, score)| *score != f32::NEG_INFINITY)
-            .map(|(row, score)| SearchHit { row, score })
-            .collect::<Vec<_>>();
+        self.select_top_k(scores_handle, rows_handle, options.top_k, metric)
+    }
 
-        hits.sort_unstable_by(compare_hits);
-        hits.truncate(options.top_k.min(hits.len()));
-        Ok(hits)
+    fn select_top_k(
+        &self,
+        mut scores: Handle,
+        mut rows: Handle,
+        top_k: usize,
+        metric: Metric,
+    ) -> Result<Vec<SearchHit>, QueryError> {
+        let k = top_k.min(self.len());
+        // At least two k-sized lists fit in a tile, ensuring progress even when k > 128.
+        let tile_size = 256.max(k.saturating_mul(2)).min(self.len());
+        let mut count = self.len();
+        loop {
+            let groups = count.div_ceil(tile_size);
+            let output_len = groups * k;
+            let output_scores = self.client.empty(output_len * size_of::<f32>());
+            let output_rows = self.client.empty(output_len * size_of::<u32>());
+            let cube_dim = CubeDim::new_1d(UNITS_PER_CUBE);
+            // SAFETY: each unit owns one tile and its k output slots; all arrays have the
+            // declared lengths. The next stage is queued after the preceding kernel.
+            unsafe {
+                tiled_top_k::launch_unchecked(
+                    &self.client,
+                    calculate_cube_count_elemwise(&self.client, groups, cube_dim),
+                    cube_dim,
+                    BufferArg::from_raw_parts(scores, count),
+                    BufferArg::from_raw_parts(rows, count),
+                    BufferArg::from_raw_parts(output_scores.clone(), output_len),
+                    BufferArg::from_raw_parts(output_rows.clone(), output_len),
+                    count,
+                    groups,
+                    tile_size,
+                    k,
+                    metric == Metric::SquaredL2,
+                );
+            }
+            if groups == 1 {
+                let buffers = self
+                    .client
+                    .read(vec![output_scores, output_rows])
+                    .map_err(|error| QueryError::ReadScores(error.to_string()))?;
+                let scores = f32::from_bytes(&buffers[0]);
+                let rows = u32::from_bytes(&buffers[1]);
+                return Ok(rows
+                    .iter()
+                    .zip(scores)
+                    .filter(|(row, _)| **row != INVALID_ROW)
+                    .map(|(&row, &score)| SearchHit {
+                        row: row as usize,
+                        score,
+                    })
+                    .collect());
+            }
+            scores = output_scores;
+            rows = output_rows;
+            count = output_len;
+        }
+    }
+
+    /// Options used to prepare the resident vectors.
+    pub fn options(&self) -> IndexOptions {
+        self.options
     }
 
     /// The Arrow rows and metadata associated with this index.
@@ -347,6 +477,38 @@ fn vector_dimension(vectors: &FixedSizeListArray) -> Result<usize, QueryError> {
     Ok(dimension)
 }
 
+fn prepare_values<T: Copy>(
+    values: &[T],
+    dimension: usize,
+    options: IndexOptions,
+    to_f32: impl Fn(T) -> f32,
+    from_f32: impl Fn(f32) -> T,
+) -> Result<Option<Vec<T>>, QueryError> {
+    if values.iter().any(|&v| !to_f32(v).is_finite()) {
+        return Err(QueryError::NonFiniteVector);
+    }
+    if !options.normalize {
+        return Ok(None);
+    }
+    let mut normalized = Vec::with_capacity(values.len());
+    for row in values.chunks_exact(dimension) {
+        let norm = row
+            .iter()
+            .map(|&v| f64::from(to_f32(v)).powi(2))
+            .sum::<f64>()
+            .sqrt();
+        normalized.extend(row.iter().map(|&v| {
+            let value = f64::from(to_f32(v));
+            from_f32(if norm == 0.0 {
+                0.0
+            } else {
+                (value / norm) as f32
+            })
+        }));
+    }
+    Ok(Some(normalized))
+}
+
 fn read_filter(batch: &RecordBatch, filter: &FloatFilter<'_>) -> Result<Vec<f32>, QueryError> {
     let values = batch
         .column_by_name(filter.column)
@@ -375,33 +537,129 @@ fn read_filter(batch: &RecordBatch, filter: &FloatFilter<'_>) -> Result<Vec<f32>
 }
 
 #[cube(launch_unchecked)]
-fn exact_inner_product<F: Float>(
+fn exact_score<F: Float>(
     vectors: &[F],
     query: &[f32],
     filter_values: &[f32],
     scores: &mut [f32],
+    rows: &mut [u32],
     row_count: usize,
     dimension: usize,
     use_filter: u32,
     filter_min: f32,
+    #[comptime] metric: u32,
 ) {
     let row = ABSOLUTE_POS;
     if row < row_count {
+        rows[row] = u32::MAX;
+        scores[row] = 0.0;
         let passes_filter = use_filter == 0 || filter_values[row] >= filter_min;
         if passes_filter {
+            // Scale cosine operands before squaring to avoid overflowing norms for large
+            // finite values or underflowing norms for tiny vectors.
+            let mut vector_scale = 0.0f32;
+            let mut query_scale = 0.0f32;
+            if metric == 1 {
+                for column in 0..dimension {
+                    vector_scale = f32::max(
+                        vector_scale,
+                        f32::abs(f32::cast_from(vectors[row * dimension + column])),
+                    );
+                    query_scale = f32::max(query_scale, f32::abs(query[column]));
+                }
+            }
             let mut score = 0.0f32;
+            let mut vector_norm = 0.0f32;
+            let mut query_norm = 0.0f32;
             for column in 0..dimension {
-                let value = f32::cast_from(vectors[row * dimension + column]);
-                score += value * query[column];
+                let mut value = f32::cast_from(vectors[row * dimension + column]);
+                let mut query_value = query[column];
+                if metric == 1 {
+                    if vector_scale > 0.0 {
+                        value /= vector_scale;
+                    }
+                    if query_scale > 0.0 {
+                        query_value /= query_scale;
+                    }
+                    vector_norm += value * value;
+                    query_norm += query_value * query_value;
+                }
+                if metric == 2 {
+                    let difference = value - query_value;
+                    score += difference * difference;
+                } else {
+                    score += value * query_value;
+                }
+            }
+            if metric == 1 {
+                if vector_norm > 0.0 && query_norm > 0.0 {
+                    score /= f32::sqrt(vector_norm) * f32::sqrt(query_norm);
+                    score = score.clamp(-1.0, 1.0);
+                } else {
+                    score = 0.0;
+                }
             }
             scores[row] = score;
+            if !score.is_nan() {
+                rows[row] = u32::cast_from(row);
+            }
         }
     }
 }
 
-// Keep deterministic ordering logic explicit and close to the public result type.
-fn compare_hits(lhs: &SearchHit, rhs: &SearchHit) -> std::cmp::Ordering {
-    rhs.score
-        .total_cmp(&lhs.score)
-        .then_with(|| lhs.row.cmp(&rhs.row))
+/// One unit scans a tile k times, selecting the next best (score, row) pair on each pass.
+/// Retaining k winners per tile is exact: a discarded row already has k better rows in its tile.
+/// Merge stages repeat the operation until only k globally ranked results remain.
+#[cube(launch_unchecked)]
+fn tiled_top_k(
+    scores: &[f32],
+    rows: &[u32],
+    output_scores: &mut [f32],
+    output_rows: &mut [u32],
+    count: usize,
+    groups: usize,
+    tile_size: usize,
+    k: usize,
+    #[comptime] ascending: bool,
+) {
+    let group = ABSOLUTE_POS;
+    if group < groups {
+        let start = group * tile_size;
+        let end = start + usize::min(tile_size, count - start);
+        let mut previous_score = 0.0f32;
+        let mut previous_row = 4_294_967_295u32;
+        let mut exhausted = false;
+        for rank in 0..k {
+            let mut best_score = 0.0f32;
+            let mut best_row = 4_294_967_295u32;
+            for position in start..end {
+                let row = rows[position];
+                let score = scores[position];
+                let mut after_previous = score < previous_score;
+                let mut better = score > best_score;
+                if ascending {
+                    after_previous = score > previous_score;
+                    better = score < best_score;
+                }
+                // Only consider candidates strictly after the previously emitted result.
+                // Ties use ascending original row IDs, so equal scores require a larger row ID.
+                // This avoids selecting an earlier winner again without modifying the inputs.
+                after_previous = after_previous || (score == previous_score && row > previous_row);
+                // Among eligible candidates, keep the best for this rank: a better score or,
+                // on a tie, a smaller row ID. An invalid best_row accepts the first candidate,
+                // even if its score is worse than the initial best_score of zero.
+                better = best_row == u32::MAX || better || (score == best_score && row < best_row);
+                // Rank zero has no previous result, so it skips the after_previous boundary.
+                if !exhausted && row != u32::MAX && (rank == 0 || after_previous) && better {
+                    best_score = score;
+                    best_row = row;
+                }
+            }
+            output_scores[group * k + rank] = best_score;
+            output_rows[group * k + rank] = best_row;
+            previous_score = best_score;
+            previous_row = best_row;
+            exhausted = best_row == u32::MAX;
+        }
+    }
 }
