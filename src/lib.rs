@@ -641,8 +641,15 @@ fn tiled_top_k(
                     after_previous = score > previous_score;
                     better = score < best_score;
                 }
+                // Only consider candidates strictly after the previously emitted result.
+                // Ties use ascending original row IDs, so equal scores require a larger row ID.
+                // This avoids selecting an earlier winner again without modifying the inputs.
                 after_previous = after_previous || (score == previous_score && row > previous_row);
+                // Among eligible candidates, keep the best for this rank: a better score or,
+                // on a tie, a smaller row ID. An invalid best_row accepts the first candidate,
+                // even if its score is worse than the initial best_score of zero.
                 better = best_row == u32::MAX || better || (score == best_score && row < best_row);
+                // Rank zero has no previous result, so it skips the after_previous boundary.
                 if !exhausted && row != u32::MAX && (rank == 0 || after_previous) && better {
                     best_score = score;
                     best_row = row;

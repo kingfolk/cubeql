@@ -120,8 +120,39 @@ At the largest sampled size, Metal was approximately 1.4x faster than this CPU r
 The sampled crossover lies between 4096 and 65536 rows; this does not establish an exact
 threshold or predict behavior for other dimensions, k values, metrics, or hardware.
 
-The CubeCL CPU runtime was slower than the direct Rust baseline in the initial run: about
-0.71 ms, 1.12 ms, and 6.45 ms at the respective sizes. Device-side selection reduces the result
-payload but adds kernel and allocation overhead. Reducing that overhead, using parallel
-reductions within each tile, and choosing a CPU path for small workloads remain optimization
-opportunities.
+### CubeCL CPU Versus Native Metal
+
+A follow-up run compared the CubeCL CPU and native Metal backends directly, executing them
+sequentially with the same benchmark, data, and selection algorithm. This comparison does not
+use the direct Rust CPU baseline. The workload remains FP32, 128 dimensions, inner product,
+and top-10 on the same Apple M1, with 10 Criterion samples per case.
+
+| Rows | CubeCL CPU | CubeCL native Metal |
+| ---: | ---: | ---: |
+| 128 | 472 us | 586 us |
+| 4096 | 1.27 ms | 1.48 ms |
+| 65536 | 6.31 ms | 2.45 ms |
+
+Metal was approximately 2.57x faster than CubeCL CPU at 65536 rows in this run. CPU had lower
+point estimates at the smaller sizes, although timing noise was substantial: at 4096 rows,
+Criterion's estimated intervals were 1.06–1.60 ms for CPU and 1.40–1.63 ms for Metal, so the
+small-input differences should not be treated as a firm performance guarantee.
+
+These are full warm-query timings: query upload, inner-product scoring, device-side top-k,
+and final result retrieval. They exclude index construction and embedding upload. They do not
+isolate the top-k kernel, so the 2.57x ratio describes the full query rather than selection alone.
+
+Reproduce the backend comparison with:
+
+```bash
+cargo bench --no-default-features --features cpu \
+  --bench metrics_top_k -- cubecl_device_top_k
+
+cargo bench --no-default-features --features metal \
+  --bench metrics_top_k -- cubecl_device_top_k
+```
+
+Device-side selection reduces the result payload but adds kernel and allocation overhead.
+Reducing that overhead, using parallel reductions within each tile, and choosing a direct CPU
+path for small workloads remain optimization opportunities. A separate selection-only benchmark
+is needed to attribute time specifically to top-k.
