@@ -22,3 +22,8 @@ thiserror = "2.0.17"
 
 [dev-dependencies]
 approx = "0.5.1"
+criterion = "0.8.1"
+
+[[bench]]
+name = "resident_index"
+harness = false
