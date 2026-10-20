@@ -10,7 +10,7 @@ use arrow_array::{
     types::{Float16Type, Float32Type},
 };
 use arrow_schema::DataType;
-use cubecl::{Device, calculate_cube_count_elemwise, prelude::*};
+use cubecl::{Device, calculate_cube_count_elemwise, client::Client, prelude::*, server::Handle};
 use half::f16;
 use thiserror::Error;
 
@@ -47,6 +47,25 @@ impl<'a> QueryOptions<'a> {
     }
 }
 
+/// Options for querying an existing [`VectorIndex`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct IndexQueryOptions<'a> {
+    /// Maximum number of hits returned.
+    pub top_k: usize,
+    /// Optional floating-point predicate over the index's Arrow metadata.
+    pub filter: Option<FloatFilter<'a>>,
+}
+
+impl IndexQueryOptions<'_> {
+    /// Create options without a filter.
+    pub fn new(top_k: usize) -> Self {
+        Self {
+            top_k,
+            filter: None,
+        }
+    }
+}
+
 /// One matching row from the input [`RecordBatch`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct SearchHit {
@@ -77,6 +96,206 @@ pub enum QueryError {
     ReadScores(String),
 }
 
+enum VectorBuffer {
+    Float32 { handle: Option<Handle>, len: usize },
+    Float16 { handle: Option<Handle>, len: usize },
+}
+
+/// An Arrow vector column uploaded once and retained on a CubeCL device.
+///
+/// `VectorIndex` owns a cheap clone of the input [`RecordBatch`] so callers can inspect row
+/// metadata through [`VectorIndex::batch`]. The vector values themselves are uploaded during
+/// construction and their device handle is reused by every query.
+pub struct VectorIndex {
+    client: Client,
+    batch: RecordBatch,
+    vector_column: String,
+    dimension: usize,
+    vectors: VectorBuffer,
+    no_filter_handle: Option<Handle>,
+}
+
+impl VectorIndex {
+    /// Validate and upload one Arrow vector column to `device`.
+    ///
+    /// The vector column must be a non-null `FixedSizeList<Float32>` or
+    /// `FixedSizeList<Float16>`. Empty batches are valid and do not allocate a vector buffer.
+    pub fn new(
+        device: &Device,
+        batch: RecordBatch,
+        vector_column: impl Into<String>,
+    ) -> Result<Self, QueryError> {
+        let vector_column = vector_column.into();
+        let vectors = vector_array(&batch, &vector_column)?;
+        let dimension = vector_dimension(vectors)?;
+        let client = device.client();
+
+        let vectors = match vectors.value_type() {
+            DataType::Float32 => {
+                let values = vectors.values().as_primitive::<Float32Type>();
+                let handle = (!values.is_empty())
+                    .then(|| client.create_from_slice(f32::as_bytes(values.values())));
+                VectorBuffer::Float32 {
+                    handle,
+                    len: values.len(),
+                }
+            }
+            DataType::Float16 => {
+                let values = vectors.values().as_primitive::<Float16Type>();
+                let handle = (!values.is_empty())
+                    .then(|| client.create_from_slice(f16::as_bytes(values.values())));
+                VectorBuffer::Float16 {
+                    handle,
+                    len: values.len(),
+                }
+            }
+            other => return Err(QueryError::UnsupportedVectorType(other)),
+        };
+        let no_filter_handle = (batch.num_rows() != 0)
+            .then(|| client.create_from_slice(f32::as_bytes(&vec![0.0f32; batch.num_rows()])));
+
+        Ok(Self {
+            client,
+            batch,
+            vector_column,
+            dimension,
+            vectors,
+            no_filter_handle,
+        })
+    }
+
+    /// Query the resident vectors using exact inner product.
+    ///
+    /// Only per-query inputs and outputs are transferred: the FP32 query vector, optional filter
+    /// values, and the score buffer. The vector column remains resident on the device.
+    pub fn query(
+        &self,
+        query_vector: &[f32],
+        options: IndexQueryOptions<'_>,
+    ) -> Result<Vec<SearchHit>, QueryError> {
+        if query_vector.len() != self.dimension {
+            return Err(QueryError::DimensionMismatch {
+                query: query_vector.len(),
+                vectors: self.dimension,
+            });
+        }
+        if options.top_k == 0 || self.batch.num_rows() == 0 {
+            return Ok(Vec::new());
+        }
+
+        let query_handle = self.client.create_from_slice(f32::as_bytes(query_vector));
+        let (filter_handle, filter_len, use_filter, filter_min) = match options.filter.as_ref() {
+            Some(filter) => {
+                let values = read_filter(&self.batch, filter)?;
+                let handle = self.client.create_from_slice(f32::as_bytes(&values));
+                (handle, values.len(), 1, filter.min)
+            }
+            None => (
+                self.no_filter_handle
+                    .as_ref()
+                    .expect("non-empty index has a no-filter buffer")
+                    .clone(),
+                self.batch.num_rows(),
+                0,
+                0.0,
+            ),
+        };
+        let initial_scores = vec![f32::NEG_INFINITY; self.batch.num_rows()];
+        let scores_handle = self
+            .client
+            .create_from_slice(f32::as_bytes(&initial_scores));
+        let cube_dim = CubeDim::new_1d(UNITS_PER_CUBE);
+        let cube_count =
+            calculate_cube_count_elemwise(&self.client, self.batch.num_rows(), cube_dim);
+        match &self.vectors {
+            VectorBuffer::Float32 { handle, len } => unsafe {
+                exact_inner_product::launch_unchecked::<f32>(
+                    &self.client,
+                    cube_count,
+                    cube_dim,
+                    BufferArg::from_raw_parts(
+                        handle
+                            .as_ref()
+                            .expect("non-empty index has a vector buffer")
+                            .clone(),
+                        *len,
+                    ),
+                    BufferArg::from_raw_parts(query_handle, query_vector.len()),
+                    BufferArg::from_raw_parts(filter_handle, filter_len),
+                    BufferArg::from_raw_parts(scores_handle.clone(), self.batch.num_rows()),
+                    self.batch.num_rows(),
+                    self.dimension,
+                    use_filter,
+                    filter_min,
+                );
+            },
+            VectorBuffer::Float16 { handle, len } => unsafe {
+                exact_inner_product::launch_unchecked::<f16>(
+                    &self.client,
+                    cube_count,
+                    cube_dim,
+                    BufferArg::from_raw_parts(
+                        handle
+                            .as_ref()
+                            .expect("non-empty index has a vector buffer")
+                            .clone(),
+                        *len,
+                    ),
+                    BufferArg::from_raw_parts(query_handle, query_vector.len()),
+                    BufferArg::from_raw_parts(filter_handle, filter_len),
+                    BufferArg::from_raw_parts(scores_handle.clone(), self.batch.num_rows()),
+                    self.batch.num_rows(),
+                    self.dimension,
+                    use_filter,
+                    filter_min,
+                );
+            },
+        }
+
+        let score_bytes = self
+            .client
+            .read_one(scores_handle)
+            .map_err(|error| QueryError::ReadScores(error.to_string()))?;
+        let scores = f32::from_bytes(&score_bytes);
+        let mut hits = scores
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|(_, score)| *score != f32::NEG_INFINITY)
+            .map(|(row, score)| SearchHit { row, score })
+            .collect::<Vec<_>>();
+
+        hits.sort_unstable_by(compare_hits);
+        hits.truncate(options.top_k.min(hits.len()));
+        Ok(hits)
+    }
+
+    /// The Arrow rows and metadata associated with this index.
+    pub fn batch(&self) -> &RecordBatch {
+        &self.batch
+    }
+
+    /// Name of the resident vector column.
+    pub fn vector_column(&self) -> &str {
+        &self.vector_column
+    }
+
+    /// Number of scalar values in each indexed vector.
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Number of indexed rows.
+    pub fn len(&self) -> usize {
+        self.batch.num_rows()
+    }
+
+    /// Whether the index contains no rows.
+    pub fn is_empty(&self) -> bool {
+        self.batch.num_rows() == 0
+    }
+}
+
 /// Execute an exact inner-product scan over an Arrow record batch.
 ///
 /// The vector column must be a non-null `FixedSizeList<Float32>` or `FixedSizeList<Float16>`.
@@ -88,13 +307,26 @@ pub fn query(
     query_vector: &[f32],
     options: QueryOptions<'_>,
 ) -> Result<Vec<SearchHit>, QueryError> {
-    if options.top_k == 0 || batch.num_rows() == 0 {
+    if options.top_k == 0 {
         return Ok(Vec::new());
     }
 
+    VectorIndex::new(device, batch.clone(), options.vector_column)?.query(
+        query_vector,
+        IndexQueryOptions {
+            top_k: options.top_k,
+            filter: options.filter,
+        },
+    )
+}
+
+fn vector_array<'a>(
+    batch: &'a RecordBatch,
+    vector_column: &str,
+) -> Result<&'a FixedSizeListArray, QueryError> {
     let vectors = batch
-        .column_by_name(options.vector_column)
-        .ok_or_else(|| QueryError::MissingColumn(options.vector_column.to_string()))?;
+        .column_by_name(vector_column)
+        .ok_or_else(|| QueryError::MissingColumn(vector_column.to_string()))?;
     let vectors = vectors
         .as_any()
         .downcast_ref::<FixedSizeListArray>()
@@ -104,94 +336,18 @@ pub fn query(
         return Err(QueryError::NullVector);
     }
 
+    Ok(vectors)
+}
+
+fn vector_dimension(vectors: &FixedSizeListArray) -> Result<usize, QueryError> {
     let dimension = usize::try_from(vectors.value_length()).expect("Arrow dimensions are positive");
     if dimension == 0 {
         return Err(QueryError::EmptyVector);
     }
-    if query_vector.len() != dimension {
-        return Err(QueryError::DimensionMismatch {
-            query: query_vector.len(),
-            vectors: dimension,
-        });
-    }
-
-    let filter_values = read_filter(batch, options.filter.as_ref())?;
-    let client = device.client();
-    let query_handle = client.create_from_slice(f32::as_bytes(query_vector));
-    let filter_handle = client.create_from_slice(f32::as_bytes(&filter_values));
-    let initial_scores = vec![f32::NEG_INFINITY; batch.num_rows()];
-    let scores_handle = client.create_from_slice(f32::as_bytes(&initial_scores));
-    let cube_dim = CubeDim::new_1d(UNITS_PER_CUBE);
-    let cube_count = calculate_cube_count_elemwise(&client, batch.num_rows(), cube_dim);
-    let use_filter = u32::from(options.filter.is_some());
-    let filter_min = options.filter.as_ref().map_or(0.0, |filter| filter.min);
-
-    match vectors.value_type() {
-        DataType::Float32 => {
-            let values = vectors.values().as_primitive::<Float32Type>();
-            let vectors_handle = client.create_from_slice(f32::as_bytes(values.values()));
-            unsafe {
-                exact_inner_product::launch_unchecked::<f32>(
-                    &client,
-                    cube_count,
-                    cube_dim,
-                    BufferArg::from_raw_parts(vectors_handle, values.len()),
-                    BufferArg::from_raw_parts(query_handle, query_vector.len()),
-                    BufferArg::from_raw_parts(filter_handle, filter_values.len()),
-                    BufferArg::from_raw_parts(scores_handle.clone(), batch.num_rows()),
-                    batch.num_rows(),
-                    dimension,
-                    use_filter,
-                    filter_min,
-                );
-            }
-        }
-        DataType::Float16 => {
-            let values = vectors.values().as_primitive::<Float16Type>();
-            let vectors_handle = client.create_from_slice(f16::as_bytes(values.values()));
-            unsafe {
-                exact_inner_product::launch_unchecked::<f16>(
-                    &client,
-                    cube_count,
-                    cube_dim,
-                    BufferArg::from_raw_parts(vectors_handle, values.len()),
-                    BufferArg::from_raw_parts(query_handle, query_vector.len()),
-                    BufferArg::from_raw_parts(filter_handle, filter_values.len()),
-                    BufferArg::from_raw_parts(scores_handle.clone(), batch.num_rows()),
-                    batch.num_rows(),
-                    dimension,
-                    use_filter,
-                    filter_min,
-                );
-            }
-        }
-        other => return Err(QueryError::UnsupportedVectorType(other)),
-    }
-
-    let score_bytes = client
-        .read_one(scores_handle)
-        .map_err(|error| QueryError::ReadScores(error.to_string()))?;
-    let scores = f32::from_bytes(&score_bytes);
-    let mut hits = scores
-        .iter()
-        .copied()
-        .enumerate()
-        .filter(|(_, score)| *score != f32::NEG_INFINITY)
-        .map(|(row, score)| SearchHit { row, score })
-        .collect::<Vec<_>>();
-
-    hits.sort_unstable_by(compare_hits);
-    hits.truncate(options.top_k.min(hits.len()));
-    Ok(hits)
+    Ok(dimension)
 }
 
-fn read_filter(
-    batch: &RecordBatch,
-    filter: Option<&FloatFilter<'_>>,
-) -> Result<Vec<f32>, QueryError> {
-    let Some(filter) = filter else {
-        return Ok(vec![0.0; batch.num_rows()]);
-    };
+fn read_filter(batch: &RecordBatch, filter: &FloatFilter<'_>) -> Result<Vec<f32>, QueryError> {
     let values = batch
         .column_by_name(filter.column)
         .ok_or_else(|| QueryError::MissingColumn(filter.column.to_string()))?;
