@@ -1,8 +1,8 @@
 //! A deliberately small Arrow-native retrieval engine.
 //!
 //! The engine performs exact vector scans and top-k selection with CubeCL. It accepts a
-//! `FixedSizeList<Float32>` or `FixedSizeList<Float16>` Arrow column, optionally filters rows with
-//! a floating-point column. Only the selected row identifiers and scores return to the host.
+//! `FixedSizeList<Float32>` or `FixedSizeList<Float16>` Arrow column and Arrow metadata predicates.
+//! Indexes can be saved as Arrow IPC. Only selected row identifiers and scores return to the host.
 
 use arrow_array::{
     Array, FixedSizeListArray, Float16Array, Float32Array, RecordBatch,
@@ -13,6 +13,12 @@ use arrow_schema::DataType;
 use cubecl::{Device, calculate_cube_count_elemwise, client::Client, prelude::*, server::Handle};
 use half::f16;
 use thiserror::Error;
+
+mod filter;
+mod persistence;
+
+pub use filter::{Filter, FilterMode};
+pub use persistence::PersistenceError;
 
 const UNITS_PER_CUBE: u32 = 64;
 const INVALID_ROW: u32 = u32::MAX;
@@ -115,6 +121,10 @@ pub enum QueryError {
     UnsupportedVectorType(DataType),
     #[error("filter column must be Float32 or Float16, got {0}")]
     UnsupportedFilterType(DataType),
+    #[error("unsupported metadata filter column type: {0}")]
+    UnsupportedMetadataType(DataType),
+    #[error("invalid numeric filter for column '{0}': NaN boundary or reversed range")]
+    InvalidFilter(String),
     #[error("vector dimension must be greater than zero")]
     EmptyVector,
     #[error("query dimension {query} does not match vector dimension {vectors}")]
@@ -149,6 +159,48 @@ pub struct VectorIndex {
     vectors: VectorBuffer,
     no_filter_handle: Option<Handle>,
     options: IndexOptions,
+}
+
+struct Selection {
+    handle: Option<Handle>,
+    count: usize,
+    matched: usize,
+    mode: FilterMode,
+}
+
+/// A reusable device selection bound to the index that produced it.
+/// Metadata is evaluated and uploaded once; subsequent queries reuse the selection handle.
+pub struct PreparedFilter<'a> {
+    index: &'a VectorIndex,
+    selection: Selection,
+}
+
+impl PreparedFilter<'_> {
+    /// Number of matching rows, before vector scoring and top-k.
+    pub fn len(&self) -> usize {
+        self.selection.matched
+    }
+
+    /// Whether no rows satisfy all predicates.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Whether the selection uses compact IDs or an in-kernel mask.
+    pub fn mode(&self) -> FilterMode {
+        self.selection.mode
+    }
+
+    /// Score and rank the selected rows, returning original Arrow row IDs.
+    pub fn query(
+        &self,
+        query: &[f32],
+        top_k: usize,
+        metric: Metric,
+    ) -> Result<Vec<SearchHit>, QueryError> {
+        self.index
+            .query_selected(query, top_k, metric, Some(&self.selection))
+    }
 }
 
 impl VectorIndex {
@@ -214,8 +266,8 @@ impl VectorIndex {
             }
             other => return Err(QueryError::UnsupportedVectorType(other)),
         };
-        let no_filter_handle = (batch.num_rows() != 0)
-            .then(|| client.create_from_slice(f32::as_bytes(&vec![0.0f32; batch.num_rows()])));
+        let no_filter_handle =
+            (batch.num_rows() != 0).then(|| client.create_from_slice(u32::as_bytes(&[0u32])));
 
         Ok(Self {
             client,
@@ -250,6 +302,70 @@ impl VectorIndex {
         options: IndexQueryOptions<'_>,
         metric: Metric,
     ) -> Result<Vec<SearchHit>, QueryError> {
+        if let Some(filter) = options.filter.as_ref() {
+            self.validate_query(query_vector)?;
+            if options.top_k == 0 || self.is_empty() {
+                return Ok(Vec::new());
+            }
+            // Preserve the original FloatFilter type/null/NaN semantics while using compact IDs.
+            let mask = read_filter(&self.batch, filter)?
+                .into_iter()
+                .map(|value| u32::from(value >= filter.min))
+                .collect();
+            let selection = self.selection(mask, FilterMode::BeforeScoring);
+            self.query_selected(query_vector, options.top_k, metric, Some(&selection))
+        } else {
+            self.query_selected(query_vector, options.top_k, metric, None)
+        }
+    }
+
+    /// Evaluate Arrow metadata predicates (AND) and upload a reusable selection.
+    pub fn prepare_filter(
+        &self,
+        filters: &[Filter<'_>],
+        mode: FilterMode,
+    ) -> Result<PreparedFilter<'_>, QueryError> {
+        let mask = filter::evaluate(&self.batch, filters)?;
+        Ok(PreparedFilter {
+            index: self,
+            selection: self.selection(mask, mode),
+        })
+    }
+
+    /// Evaluate filters once and execute a compact filtered query. Use `prepare_filter` when
+    /// issuing multiple queries with the same predicates to avoid repeated metadata work.
+    pub fn query_filtered(
+        &self,
+        query: &[f32],
+        top_k: usize,
+        metric: Metric,
+        filters: &[Filter<'_>],
+    ) -> Result<Vec<SearchHit>, QueryError> {
+        self.prepare_filter(filters, FilterMode::BeforeScoring)?
+            .query(query, top_k, metric)
+    }
+
+    fn selection(&self, mask: Vec<u32>, mode: FilterMode) -> Selection {
+        let matched = mask.iter().filter(|&&keep| keep != 0).count();
+        let values = match mode {
+            FilterMode::BeforeScoring => mask
+                .into_iter()
+                .enumerate()
+                .filter(|(_, keep)| *keep != 0)
+                .map(|(row, _)| row as u32)
+                .collect::<Vec<_>>(),
+            FilterMode::DuringScoring => mask,
+        };
+        let handle = (matched != 0).then(|| self.client.create_from_slice(u32::as_bytes(&values)));
+        Selection {
+            handle,
+            count: values.len(),
+            matched,
+            mode,
+        }
+    }
+
+    fn validate_query(&self, query_vector: &[f32]) -> Result<(), QueryError> {
         if query_vector.len() != self.dimension {
             return Err(QueryError::DimensionMismatch {
                 query: query_vector.len(),
@@ -259,32 +375,46 @@ impl VectorIndex {
         if query_vector.iter().any(|v| !v.is_finite()) {
             return Err(QueryError::NonFiniteVector);
         }
-        if options.top_k == 0 || self.batch.num_rows() == 0 {
+        Ok(())
+    }
+
+    fn query_selected(
+        &self,
+        query_vector: &[f32],
+        top_k: usize,
+        metric: Metric,
+        selection: Option<&Selection>,
+    ) -> Result<Vec<SearchHit>, QueryError> {
+        self.validate_query(query_vector)?;
+        if top_k == 0 || self.is_empty() || selection.is_some_and(|s| s.matched == 0) {
             return Ok(Vec::new());
         }
 
         let query_handle = self.client.create_from_slice(f32::as_bytes(query_vector));
-        let (filter_handle, filter_len, use_filter, filter_min) = match options.filter.as_ref() {
-            Some(filter) => {
-                let values = read_filter(&self.batch, filter)?;
-                let handle = self.client.create_from_slice(f32::as_bytes(&values));
-                (handle, values.len(), 1, filter.min)
-            }
+        let (filter_handle, filter_len, candidate_count, filter_mode) = match selection {
+            Some(selection) => (
+                selection.handle.as_ref().unwrap().clone(),
+                selection.count,
+                selection.count,
+                match selection.mode {
+                    FilterMode::BeforeScoring => 1,
+                    FilterMode::DuringScoring => 2,
+                },
+            ),
             None => (
                 self.no_filter_handle
                     .as_ref()
                     .expect("non-empty index has a no-filter buffer")
                     .clone(),
-                self.batch.num_rows(),
+                1,
+                self.len(),
                 0,
-                0.0,
             ),
         };
-        let scores_handle = self.client.empty(self.len() * size_of::<f32>());
-        let rows_handle = self.client.empty(self.len() * size_of::<u32>());
+        let scores_handle = self.client.empty(candidate_count * size_of::<f32>());
+        let rows_handle = self.client.empty(candidate_count * size_of::<u32>());
         let cube_dim = CubeDim::new_1d(UNITS_PER_CUBE);
-        let cube_count =
-            calculate_cube_count_elemwise(&self.client, self.batch.num_rows(), cube_dim);
+        let cube_count = calculate_cube_count_elemwise(&self.client, candidate_count, cube_dim);
         match &self.vectors {
             VectorBuffer::Float32 { handle, len } => unsafe {
                 exact_score::launch_unchecked::<f32>(
@@ -300,12 +430,11 @@ impl VectorIndex {
                     ),
                     BufferArg::from_raw_parts(query_handle, query_vector.len()),
                     BufferArg::from_raw_parts(filter_handle, filter_len),
-                    BufferArg::from_raw_parts(scores_handle.clone(), self.batch.num_rows()),
-                    BufferArg::from_raw_parts(rows_handle.clone(), self.len()),
-                    self.batch.num_rows(),
+                    BufferArg::from_raw_parts(scores_handle.clone(), candidate_count),
+                    BufferArg::from_raw_parts(rows_handle.clone(), candidate_count),
+                    candidate_count,
                     self.dimension,
-                    use_filter,
-                    filter_min,
+                    filter_mode,
                     metric.code(),
                 );
             },
@@ -323,31 +452,32 @@ impl VectorIndex {
                     ),
                     BufferArg::from_raw_parts(query_handle, query_vector.len()),
                     BufferArg::from_raw_parts(filter_handle, filter_len),
-                    BufferArg::from_raw_parts(scores_handle.clone(), self.batch.num_rows()),
-                    BufferArg::from_raw_parts(rows_handle.clone(), self.len()),
-                    self.batch.num_rows(),
+                    BufferArg::from_raw_parts(scores_handle.clone(), candidate_count),
+                    BufferArg::from_raw_parts(rows_handle.clone(), candidate_count),
+                    candidate_count,
                     self.dimension,
-                    use_filter,
-                    filter_min,
+                    filter_mode,
                     metric.code(),
                 );
             },
         }
 
-        self.select_top_k(scores_handle, rows_handle, options.top_k, metric)
+        let top_k = top_k.min(selection.map_or(self.len(), |selection| selection.matched));
+        self.select_top_k(scores_handle, rows_handle, candidate_count, top_k, metric)
     }
 
     fn select_top_k(
         &self,
         mut scores: Handle,
         mut rows: Handle,
+        candidate_count: usize,
         top_k: usize,
         metric: Metric,
     ) -> Result<Vec<SearchHit>, QueryError> {
-        let k = top_k.min(self.len());
+        let k = top_k.min(candidate_count);
         // At least two k-sized lists fit in a tile, ensuring progress even when k > 128.
-        let tile_size = 256.max(k.saturating_mul(2)).min(self.len());
-        let mut count = self.len();
+        let tile_size = 256.max(k.saturating_mul(2)).min(candidate_count);
+        let mut count = candidate_count;
         loop {
             let groups = count.div_ceil(tile_size);
             let output_len = groups * k;
@@ -540,20 +670,29 @@ fn read_filter(batch: &RecordBatch, filter: &FloatFilter<'_>) -> Result<Vec<f32>
 fn exact_score<F: Float>(
     vectors: &[F],
     query: &[f32],
-    filter_values: &[f32],
+    selection: &[u32],
     scores: &mut [f32],
     rows: &mut [u32],
     row_count: usize,
     dimension: usize,
-    use_filter: u32,
-    filter_min: f32,
+    #[comptime] filter_mode: u32,
     #[comptime] metric: u32,
 ) {
-    let row = ABSOLUTE_POS;
-    if row < row_count {
-        rows[row] = u32::MAX;
-        scores[row] = 0.0;
-        let passes_filter = use_filter == 0 || filter_values[row] >= filter_min;
+    let position = ABSOLUTE_POS;
+    if position < row_count {
+        let mut row = position;
+        let mut passes_filter = true;
+        // Compact mode maps candidate positions back to original Arrow rows. Mask mode keeps
+        // dense positions but skips vector arithmetic for rejected rows. Outputs always retain
+        // original row IDs so top-k ties and metadata lookups are independent of filter mode.
+        if filter_mode == 1 {
+            row = usize::cast_from(selection[position]);
+        }
+        if filter_mode == 2 {
+            passes_filter = selection[position] != 0;
+        }
+        rows[position] = u32::MAX;
+        scores[position] = 0.0;
         if passes_filter {
             // Scale cosine operands before squaring to avoid overflowing norms for large
             // finite values or underflowing norms for tiny vectors.
@@ -599,9 +738,9 @@ fn exact_score<F: Float>(
                     score = 0.0;
                 }
             }
-            scores[row] = score;
+            scores[position] = score;
             if !score.is_nan() {
-                rows[row] = u32::cast_from(row);
+                rows[position] = u32::cast_from(row);
             }
         }
     }
