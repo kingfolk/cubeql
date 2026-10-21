@@ -7,7 +7,9 @@ The current prototype intentionally implements one complete path only:
 - input: Apache Arrow `RecordBatch`;
 - vectors: `FixedSizeList<Float32>` or `FixedSizeList<Float16>`;
 - query: exact inner product, cosine similarity, or squared L2 distance;
-- optional predicate: `Float32`/`Float16` column `>= min`;
+- metadata predicates: floating-point equality/ranges, string equality/set membership, path prefixes;
+- reusable selections with AND semantics, compact scoring or in-kernel masks;
+- versioned Arrow IPC persistence preserving metadata and normalization options;
 - reusable device-resident indexes for repeated queries;
 - execution: CubeCL (CPU by default, with CUDA/HIP/Metal/WGPU feature switches);
 - top-k: exact device-side selection; only the final k row IDs and scores are read back.
@@ -59,6 +61,35 @@ The portable top-k implementation uses repeated selection within tiles followed 
 It is intended for small k: selection costs approximately O(N * k), and requesting every row can
 be expensive. Scoring and temporary buffers remain O(N); the host readback is at most 8 * k bytes.
 
+Prepare a selection once for repeated metadata-filtered queries:
+
+```rust
+let filters = [
+    cubeql::Filter::StringEq { column: "language", value: "rust" },
+    cubeql::Filter::PathPrefix { column: "path", prefix: "crates/opt/" },
+    cubeql::Filter::FloatRange { column: "quality", min: Some(0.8), max: None },
+];
+let selected = index.prepare_filter(&filters, cubeql::FilterMode::BeforeScoring)?;
+let hits = selected.query(&query_vector, 10, cubeql::Metric::Cosine)?;
+```
+
+Metadata is evaluated on the host. Compact mode uploads only matching original row IDs; mask
+mode uploads one UInt32 per row and checks it in the scoring kernel. Strings remain in Arrow
+host memory. The selection is bound to its index and reused without re-evaluating predicates.
+Null metadata never matches, and range endpoints are inclusive. The original `FloatFilter`
+API retains its existing FP16/FP32 and null-rejection behavior.
+
+Save and restore an index with:
+
+```rust
+index.save_ipc("code-index.arrow")?; // Fails if the file already exists.
+let restored = cubeql::VectorIndex::load_ipc(&device, "code-index.arrow")?;
+```
+
+The file contains the original Arrow batch and index configuration, not device pointers. Loading
+uploads vectors once to the chosen backend. See [docs/metadata-persistence.md](docs/metadata-persistence.md)
+for supported types, format details, and the filtering benchmark.
+
 Run the end-to-end FP32 and FP16 tests with:
 
 ```bash
@@ -83,6 +114,13 @@ cargo bench --no-default-features --features metal --bench metrics_top_k
 These benchmarks include scoring, selection, and final readback, and exclude index loading.
 See [docs/metrics-top-k.md](docs/metrics-top-k.md) for the selection algorithm, numeric rules,
 and initial CPU/Metal measurements.
+
+Compare compact filtering with in-kernel masks at different selectivities:
+
+```bash
+cargo bench --bench metadata_filters
+cargo bench --no-default-features --features metal --bench metadata_filters
+```
 
 The default feature uses CubeCL's CPU runtime so tests work without a GPU. Select another runtime
 when building an application, for example `--no-default-features --features cuda` or
