@@ -18,7 +18,7 @@ mod filter;
 mod persistence;
 
 pub use filter::{Filter, FilterMode};
-pub use persistence::PersistenceError;
+pub use persistence::{PersistenceError, read_ipc_batch, write_ipc_batch};
 
 const UNITS_PER_CUBE: u32 = 64;
 const INVALID_ROW: u32 = u32::MAX;

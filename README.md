@@ -2,6 +2,20 @@
 
 A minimal Arrow-native retrieval engine powered by CubeCL.
 
+The workspace also includes `cubeql-code`, a repository-to-Arrow index builder with Rust
+syntax-aware chunks, line-based fallbacks and incremental embedding reuse:
+
+```bash
+cargo run -p cubeql-code -- index ../cubecl --output /tmp/cubecl-code-v1.arrow
+cargo run -p cubeql-code -- index ../cubecl --previous /tmp/cubecl-code-v1.arrow \
+  --output /tmp/cubecl-code-v2.arrow
+```
+
+The CLI currently uses deterministic token-hash vectors for offline pipeline validation, **not
+a semantic embedding model**. The library accepts an embedding callback for real/precomputed
+vectors. See [docs/code-index-builder.md](docs/code-index-builder.md) for the schema, incremental
+rules, limitations and an end-to-end query example.
+
 The current prototype intentionally implements one complete path only:
 
 - input: Apache Arrow `RecordBatch`;
