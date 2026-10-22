@@ -2,6 +2,9 @@
 //! the resulting batch is searched by CubeQL on any supported CubeCL backend.
 
 mod chunk;
+mod provider;
+
+pub use provider::{CodeSearchIndex, build_repository_with_provider};
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -16,6 +19,7 @@ use arrow_array::{
 };
 use arrow_schema::{DataType, Field, Schema};
 use cubeql::{IndexOptions, PersistenceError, read_ipc_batch, write_ipc_batch};
+use cubeql_embeddings::{EmbeddingConfig, EmbeddingError};
 use ignore::WalkBuilder;
 use thiserror::Error;
 
@@ -26,6 +30,7 @@ const MODEL: &str = "cubeql.code.embedding_id";
 const DIMENSIONS: &str = "cubeql.code.dimensions";
 const CHUNKER: &str = "cubeql.code.chunker";
 const LINES: &str = "cubeql.code.fallback_lines";
+const EMBEDDING_CONFIG: &str = "cubeql.code.embedding_config";
 const CHUNKER_VERSION: &str = "syn2-lines-v1";
 /// Identity of the CLI's deterministic lexical fixture, not a learned semantic model.
 pub const HASH_EMBEDDING_ID: &str = "cubeql-hash-tokens-v1";
@@ -44,6 +49,8 @@ pub enum CodeError {
     Invalid(String),
     #[error("embedding generation failed: {0}")]
     Embedding(String),
+    #[error(transparent)]
+    Provider(#[from] EmbeddingError),
 }
 
 /// Embedding identity must change whenever the model, weights or text preprocessing changes.
@@ -64,6 +71,17 @@ impl Default for BuildOptions {
             fallback_lines: 80,
             max_file_bytes: 2 * 1024 * 1024,
         }
+    }
+}
+
+impl BuildOptions {
+    /// Build defaults whose dimensions/identity are derived from a provider's full contract.
+    pub fn for_embedding(config: &EmbeddingConfig) -> Result<Self, CodeError> {
+        Ok(Self {
+            dimensions: config.dimensions,
+            embedding_id: config.fingerprint()?,
+            ..Self::default()
+        })
     }
 }
 
@@ -92,6 +110,7 @@ pub struct CodeIndex {
     chunks: Vec<CodeChunk>,
     dimensions: usize,
     embedding_id: String,
+    embedding_config: Option<EmbeddingConfig>,
 }
 
 impl CodeIndex {
@@ -106,6 +125,10 @@ impl CodeIndex {
     }
     pub fn embedding_id(&self) -> &str {
         &self.embedding_id
+    }
+    /// None for legacy callback indexes, which do not contain a verified vector-space contract.
+    pub fn embedding_config(&self) -> Option<&EmbeddingConfig> {
+        self.embedding_config.as_ref()
     }
 
     /// Write the common CubeQL IPC format without creating a compute device.
@@ -160,6 +183,17 @@ impl CodeIndex {
             .and_then(|v| v.parse::<usize>().ok())
             .filter(|v| *v > 0 && *v <= i32::MAX as usize)
             .ok_or_else(|| invalid("invalid embedding dimensions"))?;
+        let embedding_config: Option<EmbeddingConfig> = metadata
+            .get(EMBEDDING_CONFIG)
+            .map(|json| serde_json::from_str(json).map_err(EmbeddingError::from))
+            .transpose()?;
+        if let Some(config) = &embedding_config
+            && (config.dimensions != dimensions || config.fingerprint()? != embedding_id)
+        {
+            return Err(invalid(
+                "embedding configuration does not match its identity/dimensions",
+            ));
+        }
         if metadata
             .get(LINES)
             .and_then(|v| v.parse::<usize>().ok())
@@ -198,12 +232,17 @@ impl CodeIndex {
             .and_then(|a| a.as_any().downcast_ref::<FixedSizeListArray>())
             .filter(|a| a.value_length() as usize == dimensions && a.null_count() == 0)
             .ok_or_else(|| invalid("invalid embedding column"))?;
-        vectors
+        let vector_values = vectors
             .values()
             .as_any()
             .downcast_ref::<Float32Array>()
             .filter(|a| a.null_count() == 0 && a.values().iter().all(|v| v.is_finite()))
             .ok_or_else(|| invalid("expected finite, non-null FP32 embeddings"))?;
+        if let Some(config) = &embedding_config {
+            for row in vector_values.values().chunks_exact(dimensions) {
+                config.validate_vector(row)?;
+            }
+        }
         let mut chunks = Vec::with_capacity(batch.num_rows());
         for row in 0..batch.num_rows() {
             let source = strings[5].value(row);
@@ -229,6 +268,7 @@ impl CodeIndex {
             chunks,
             dimensions,
             embedding_id,
+            embedding_config,
         })
     }
 
@@ -262,12 +302,25 @@ pub fn build_repository(
     previous: Option<&CodeIndex>,
     mut embed: impl FnMut(&str) -> Result<Vec<f32>, CodeError>,
 ) -> Result<BuildResult, CodeError> {
+    build_repository_batched(root.as_ref(), options, previous, 1, |texts| {
+        texts.iter().map(|text| embed(text)).collect()
+    })
+}
+
+fn build_repository_batched(
+    root: &Path,
+    options: &BuildOptions,
+    previous: Option<&CodeIndex>,
+    batch_size: usize,
+    mut embed: impl FnMut(&[&str]) -> Result<Vec<Vec<f32>>, CodeError>,
+) -> Result<BuildResult, CodeError> {
     if options.dimensions == 0
         || options.dimensions > i32::MAX as usize
         || options.fallback_lines == 0
         || options.max_file_bytes == 0
         || options.max_file_bytes > u32::MAX as u64
         || options.embedding_id.is_empty()
+        || batch_size == 0
     {
         return Err(invalid(
             "positive dimensions/line count/file limit and embedding ID required",
@@ -283,7 +336,7 @@ pub fn build_repository(
             "previous index has incompatible embedding or chunking configuration",
         ));
     }
-    let root = root.as_ref().canonicalize()?;
+    let root = root.canonicalize()?;
     if !root.is_dir() {
         return Err(invalid("repository root must be a directory"));
     }
@@ -380,10 +433,11 @@ pub fn build_repository(
             *remaining.entry((&c.path, &c.kind, &c.symbol)).or_default() += 1;
         }
     }
-    let mut vectors = Vec::new();
-    for (chunk, reused) in chunks.iter().zip(reused_rows) {
-        let vector = if let Some(row) = reused {
-            previous.unwrap().vector(row)
+    let mut vectors = vec![None; chunks.len()];
+    let mut pending = Vec::new();
+    for (position, (chunk, reused)) in chunks.iter().zip(reused_rows).enumerate() {
+        if let Some(row) = reused {
+            vectors[position] = Some(previous.unwrap().vector(row));
         } else {
             let count = remaining
                 .entry((&chunk.path, &chunk.kind, &chunk.symbol))
@@ -395,22 +449,41 @@ pub fn build_repository(
                 report.added += 1;
             }
             report.embedded += 1;
-            embed(&chunk.source)?
-        };
-        if vector.len() != options.dimensions || vector.iter().any(|v| !v.is_finite()) {
-            return Err(CodeError::Embedding(format!(
-                "{}:{}: expected {} finite values, got {}",
-                chunk.path,
-                chunk.start_line,
-                options.dimensions,
-                vector.len()
-            )));
+            pending.push(position);
         }
-        vectors.extend(vector);
+    }
+    for positions in pending.chunks(batch_size) {
+        let texts = positions
+            .iter()
+            .map(|row| chunks[*row].source.as_str())
+            .collect::<Vec<_>>();
+        let batch = embed(&texts)?;
+        if batch.len() != positions.len() {
+            return Err(CodeError::Embedding(
+                "provider returned the wrong number of document vectors".into(),
+            ));
+        }
+        for (row, vector) in positions.iter().copied().zip(batch) {
+            if vector.len() != options.dimensions || vector.iter().any(|v| !v.is_finite()) {
+                return Err(CodeError::Embedding(format!(
+                    "{}:{}: expected {} finite values, got {}",
+                    chunks[row].path,
+                    chunks[row].start_line,
+                    options.dimensions,
+                    vector.len()
+                )));
+            }
+            vectors[row] = Some(vector);
+        }
     }
     report.removed = remaining.values().sum();
     report.chunks = chunks.len();
-    let batch = make_batch(&chunks, vectors, options, &root)?;
+    let batch = make_batch(
+        &chunks,
+        vectors.into_iter().flat_map(Option::unwrap).collect(),
+        options,
+        &root,
+    )?;
     Ok(BuildResult {
         index: CodeIndex::from_batch(batch)?,
         report,
@@ -478,29 +551,5 @@ fn make_batch(
 /// Deterministic signed token hashing for offline pipeline tests and lexical baselines only.
 /// It has no learned semantic understanding. Use the same function for documents and queries.
 pub fn hash_embedding(text: &str, dimensions: usize) -> Result<Vec<f32>, CodeError> {
-    if dimensions == 0 || dimensions > i32::MAX as usize {
-        return Err(invalid("embedding dimensions must be in 1..=i32::MAX"));
-    }
-    let mut vector = vec![0.0_f32; dimensions];
-    for token in text
-        .split(|c: char| !c.is_alphanumeric() && c != '_')
-        .filter(|s| !s.is_empty())
-    {
-        let hash = blake3::hash(token.to_lowercase().as_bytes());
-        let bytes = hash.as_bytes();
-        let bucket =
-            (u64::from_le_bytes(bytes[..8].try_into().unwrap()) % dimensions as u64) as usize;
-        vector[bucket] += if bytes[8] & 1 == 0 { 1.0 } else { -1.0 };
-    }
-    let norm = vector
-        .iter()
-        .map(|v| (*v as f64).powi(2))
-        .sum::<f64>()
-        .sqrt();
-    if norm > 0.0 {
-        for value in &mut vector {
-            *value = (*value as f64 / norm) as f32;
-        }
-    }
-    Ok(vector)
+    Ok(cubeql_embeddings::hash_embedding(text, dimensions)?)
 }

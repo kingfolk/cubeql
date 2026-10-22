@@ -12,6 +12,7 @@ cuda = ["cubeql/cuda", "cubecl/cuda"]
 hip = ["cubeql/hip", "cubecl/hip"]
 metal = ["cubeql/metal", "cubecl/metal-native"]
 wgpu = ["cubeql/wgpu", "cubecl/wgpu"]
+local-embeddings = ["cubeql-embeddings/minilm"]
 
 [dependencies]
 arrow-array = "60.0.0"
@@ -20,11 +21,13 @@ blake3 = "1"
 clap = { version = "4", features = ["derive"] }
 cubecl = { path = "../../../cubecl/crates/cubecl", default-features = false, features = ["std"] }
 cubeql = { path = "../..", default-features = false }
+cubeql-embeddings = { path = "../cubeql-embeddings" }
 ignore = "0.4"
 proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = "1"
 syn = { version = "2", features = ["full"] }
 thiserror = "2"
+serde_json = "1"
 
 [dev-dependencies]
 tempfile = "3.27.0"

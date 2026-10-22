@@ -6,7 +6,7 @@ Building an index does not initialize a CubeCL device.
 
 ## Scope and embedding caveat
 
-The CLI uses **deterministic signed token hashing**, not a trained embedding model. It is a
+The CLI defaults to **deterministic signed token hashing**, not a trained embedding model. It is a
 reproducible offline fixture and lexical baseline: it verifies walking, chunking, incremental
 reuse, persistence, and vector retrieval, but does **not** demonstrate semantic code-search
 quality. Different tokens can collide, and synonyms are not understood. This is not yet the
@@ -14,10 +14,10 @@ natural-language code search CLI planned for Milestone 6.
 On a large corpus, collisions can dominate even exact-identifier queries; the runnable example
 is a pipeline check, not a substitute for identifier search or a relevance benchmark.
 
-The library accepts an embedding callback. A caller can supply real or precomputed vectors
-without changing the Arrow or CubeCL path. A model/provider abstraction, document batching,
-model loading, and query-model compatibility enforcement remain Milestone 5 work. The builder
-currently emits FP32 vectors; the underlying CubeQL engine still supports FP16 inputs too.
+Milestone 5 adds an optional learned MiniLM provider, batch encoding, full model metadata and
+guarded text queries. See [embedding-providers.md](embedding-providers.md) for that workflow.
+The low-level embedding callback remains supported, alongside the recommended provider API.
+The builder emits FP32 vectors; the underlying CubeQL engine still supports FP16 inputs too.
 
 ## CLI
 
@@ -42,6 +42,8 @@ Options:
 - `--fallback-lines`: non-overlapping fallback chunk size (default 80 lines).
 - `--max-file-bytes`: maximum source file size (default 2 MiB).
 - `--previous`: a compatible code-index IPC snapshot used as the embedding cache.
+- `--embedding hash|minilm`, `--model-dir`, `--batch-size`: optional provider configuration;
+  see the embedding-provider guide. MiniLM's vector width is fixed at 384.
 
 ## Walking and source extraction
 
@@ -141,9 +143,10 @@ for hit in hits {
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-To use precomputed or learned embeddings, replace the callback and set a corresponding
+The example above demonstrates the low-level, callback-only API. To use precomputed embeddings, replace the callback and set a corresponding
 `embedding_id` and `dimensions`; embed queries using the same configuration. Core
-`VectorIndex` currently validates query dimensions, not model identity. Metadata filtering,
+`VectorIndex` intentionally validates query dimensions, not model identity. The provider-aware
+`CodeSearchIndex` additionally validates the complete embedding contract. Metadata filtering,
 exact metrics and device top-k remain unchanged. The walker, parser, hashing and callback all
 run on the host; CubeCL is used for retrieval after the snapshot is loaded onto a device.
 
