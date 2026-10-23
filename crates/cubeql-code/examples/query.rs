@@ -1,6 +1,7 @@
 //! A lexical-fixture query example, not the future semantic-search CLI.
 use cubeql::{IndexQueryOptions, Metric, VectorIndex};
 use cubeql_code::{CodeIndex, HASH_EMBEDDING_ID, hash_embedding};
+use cubeql_embeddings::{EmbeddingProvider, HashProvider};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -14,7 +15,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("quote query text as a single argument".into());
     }
     let code = CodeIndex::load_ipc(path)?;
-    if code.embedding_id() != HASH_EMBEDDING_ID {
+    let fixture = HashProvider::new(code.dimensions())?;
+    if code.embedding_id() != HASH_EMBEDDING_ID && code.embedding_config() != Some(fixture.config())
+    {
         return Err("this example only queries the built-in token-hash fixture embeddings".into());
     }
     eprintln!(

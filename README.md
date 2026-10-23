@@ -11,10 +11,24 @@ cargo run -p cubeql-code -- index ../cubecl --previous /tmp/cubecl-code-v1.arrow
   --output /tmp/cubecl-code-v2.arrow
 ```
 
-The CLI currently uses deterministic token-hash vectors for offline pipeline validation, **not
-a semantic embedding model**. The library accepts an embedding callback for real/precomputed
-vectors. See [docs/code-index-builder.md](docs/code-index-builder.md) for the schema, incremental
-rules, limitations and an end-to-end query example.
+The CLI defaults to deterministic token-hash vectors for offline pipeline validation, **not
+semantic embeddings**. An optional CPU MiniLM provider now supplies real learned embeddings,
+with batched documents, model/configuration validation and offline queries:
+
+```bash
+cargo run -p cubeql-code --features local-embeddings -- model download --directory /tmp/cubeql-minilm
+cargo run -p cubeql-code --features local-embeddings -- index \
+  crates/cubeql-code/tests/fixtures/semantic-demo \
+  --embedding minilm --model-dir /tmp/cubeql-minilm --output /tmp/demo-minilm.arrow
+cargo run -p cubeql-code --features local-embeddings -- query /tmp/demo-minilm.arrow \
+  "Where do we read configuration from a file?" --model-dir /tmp/cubeql-minilm
+```
+
+MiniLM is a general English sentence model, not a code-specialized retrieval model. The generic
+`cubeql` engine has no embedding/model dependencies; `cubeql-embeddings` is a separate optional
+application-layer component. See [docs/embedding-providers.md](docs/embedding-providers.md) for
+the provider API, reproducibility contract and CLI, and
+[docs/code-index-builder.md](docs/code-index-builder.md) for code chunking and incremental rules.
 
 The current prototype intentionally implements one complete path only:
 
