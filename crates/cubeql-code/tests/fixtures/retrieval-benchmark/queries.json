@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "code-discovery-smoke-v1",
+  "queries": [
+    {"id":"identifier-config", "category":"identifier", "text":"load_config",
+     "relevant":[{"path":"config.rs","symbol":"load_config"}]},
+    {"id":"identifier-cosine", "category":"identifier", "text":"cosine_similarity",
+     "relevant":[{"path":"vectors.rs","symbol":"cosine_similarity"}]},
+    {"id":"concept-config", "category":"conceptual", "text":"Where do we read application settings from a file?",
+     "relevant":[{"path":"config.rs","symbol":"load_config"}], "filter":{"language":"rust"}},
+    {"id":"concept-product", "category":"conceptual", "text":"Compute the product of two numbers",
+     "relevant":[{"path":"utilities.rs","symbol":"multiply"}]},
+    {"id":"behavior-zero", "category":"behavioral", "text":"Avoid division by zero when normalizing an embedding",
+     "relevant":[{"path":"vectors.rs","symbol":"normalize_vector"}], "filter":{"path_prefix":"vectors"}},
+    {"id":"behavior-order", "category":"behavioral", "text":"Sort highest similarity first and break ties using smaller row identifiers",
+     "relevant":[{"path":"search.rs","symbol":"rank_hits"}]},
+    {"id":"cross-prepare", "category":"cross_file", "text":"Find the functions for reading configuration and normalizing vectors before searching",
+     "relevant":[{"path":"config.rs","symbol":"load_config"},{"path":"vectors.rs","symbol":"normalize_vector"}]},
+    {"id":"cross-rank", "category":"cross_file", "text":"Compute directional similarity between embeddings and rank search results by that score",
+     "relevant":[{"path":"vectors.rs","symbol":"cosine_similarity"},{"path":"search.rs","symbol":"rank_hits"}]}
+  ]
+}

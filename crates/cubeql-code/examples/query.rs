@@ -1,4 +1,4 @@
-//! A lexical-fixture query example, not the future semantic-search CLI.
+//! A lexical-fixture query example; use the main `search` CLI for model-aware queries.
 use cubeql::{IndexQueryOptions, Metric, VectorIndex};
 use cubeql_code::{CodeIndex, HASH_EMBEDDING_ID, hash_embedding};
 use cubeql_embeddings::{EmbeddingProvider, HashProvider};

@@ -30,6 +30,13 @@ application-layer component. See [docs/embedding-providers.md](docs/embedding-pr
 the provider API, reproducibility contract and CLI, and
 [docs/code-index-builder.md](docs/code-index-builder.md) for code chunking and incremental rules.
 
+The code-search CLI also supports `update`, host-only `inspect`, filtered `search` (`query` is
+an alias), JSON/source output and FP16 snapshots. A labeled evaluator compares vector search,
+literal matching and experimental RRF with Recall@5/10, MRR and phase-separated timings on CPU
+or Metal, including paired FP32/FP16 runs. See
+[docs/code-search-evaluation.md](docs/code-search-evaluation.md) for commands, report semantics
+and the limitations of the small synthetic benchmark. Core `cubeql` remains a generic library.
+
 The current prototype intentionally implements one complete path only:
 
 - input: Apache Arrow `RecordBatch`;
