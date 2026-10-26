@@ -1,7 +1,9 @@
 use std::path::Path;
 
 use cubecl::Device;
-use cubeql::{IndexQueryOptions, Metric, SearchHit, VectorIndex};
+use cubeql::{
+    Filter, FilterMode, IndexQueryOptions, Metric, PreparedFilter, SearchHit, VectorIndex,
+};
 use cubeql_embeddings::{EmbeddedQuery, EmbeddingConfig, EmbeddingProvider, embed_query};
 
 use crate::{
@@ -73,6 +75,27 @@ impl CodeSearchIndex {
         &self.code
     }
 
+    /// Prepare a reusable host-evaluated metadata selection. Empty filters avoid allocating
+    /// an all-rows selection. Returned row IDs always refer to this source snapshot.
+    pub fn prepare_filter(
+        &self,
+        filters: &[Filter<'_>],
+    ) -> Result<PreparedCodeSearch<'_>, CodeError> {
+        let selection = if filters.is_empty() {
+            None
+        } else {
+            Some(
+                self.vectors
+                    .prepare_filter(filters, FilterMode::BeforeScoring)
+                    .map_err(crate::PersistenceError::from)?,
+            )
+        };
+        Ok(PreparedCodeSearch {
+            index: self,
+            selection,
+        })
+    }
+
     pub fn query(
         &self,
         query: &EmbeddedQuery,
@@ -96,5 +119,27 @@ impl CodeSearchIndex {
         // Reject wrong models before paying for inference or executing a device query.
         self.config.ensure_compatible(provider.config())?;
         self.query(&embed_query(provider, text)?, top_k, metric)
+    }
+}
+
+pub struct PreparedCodeSearch<'a> {
+    index: &'a CodeSearchIndex,
+    selection: Option<PreparedFilter<'a>>,
+}
+
+impl PreparedCodeSearch<'_> {
+    pub fn query(
+        &self,
+        query: &EmbeddedQuery,
+        top_k: usize,
+        metric: Metric,
+    ) -> Result<Vec<SearchHit>, CodeError> {
+        self.index.config.ensure_compatible(query.config())?;
+        match &self.selection {
+            Some(selected) => Ok(selected
+                .query(query.vector(), top_k, metric)
+                .map_err(crate::PersistenceError::from)?),
+            None => self.index.query(query, top_k, metric),
+        }
     }
 }

@@ -9,15 +9,17 @@ Building an index does not initialize a CubeCL device.
 The CLI defaults to **deterministic signed token hashing**, not a trained embedding model. It is a
 reproducible offline fixture and lexical baseline: it verifies walking, chunking, incremental
 reuse, persistence, and vector retrieval, but does **not** demonstrate semantic code-search
-quality. Different tokens can collide, and synonyms are not understood. This is not yet the
-natural-language code search CLI planned for Milestone 6.
+quality. Different tokens can collide, and synonyms are not understood. Natural-language search
+requires a learned provider rather than the default hash fixture.
 On a large corpus, collisions can dominate even exact-identifier queries; the runnable example
 is a pipeline check, not a substitute for identifier search or a relevance benchmark.
 
 Milestone 5 adds an optional learned MiniLM provider, batch encoding, full model metadata and
 guarded text queries. See [embedding-providers.md](embedding-providers.md) for that workflow.
 The low-level embedding callback remains supported, alongside the recommended provider API.
-The builder emits FP32 vectors; the underlying CubeQL engine still supports FP16 inputs too.
+The builder emits FP32 vectors by default. Milestone 6 adds `index --precision fp16`, filtered
+search/JSON, snapshot updates and labeled evaluation. See
+[code-search-evaluation.md](code-search-evaluation.md) for that workflow.
 
 ## CLI
 

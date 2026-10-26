@@ -91,8 +91,9 @@ cargo run -p cubeql-code --features local-embeddings -- query \
 The CLI selects a provider from the saved configuration and verifies its full identity before
 uploading vectors. There is no fallback to token hashing if model loading fails. Plain-text
 output contains file path, inclusive line range, symbol and cosine score, not a relevance
-probability. `query` is the minimal provider workflow, not the full filtering/JSON/benchmark CLI
-planned for Milestone 6. It currently supports the built-in hash and MiniLM providers only.
+probability. `query` is now an alias of `search`, with metadata filters and JSON output.
+See [code-search-evaluation.md](code-search-evaluation.md) for update/inspect/search and the
+labeled FP32/FP16 evaluator. The CLI supports the built-in hash and MiniLM providers only.
 
 On Apple hardware, choose native Metal for **retrieval**, while MiniLM inference remains on CPU:
 
@@ -182,6 +183,7 @@ CUBEQL_MINILM_DIR=/tmp/cubeql-minilm cargo test -p cubeql-code --features local-
 
 These check normalization, short/long batch padding, empty/truncated inputs, basic sentence
 similarity, full IPC persistence, and natural-language queries against a tiny documented code
-fixture. They are not a substitute for the next milestone's relevance benchmark. Deterministic
+fixture. They are not a substitute for a representative relevance benchmark; Milestone 6 adds
+a separate small labeled evaluator, still only a smoke dataset. Deterministic
 precomputed providers cover batch order, incremental reuse, incompatible configs, bad dimensions,
 NaNs, failed batches, tampered metadata and model-aware queries without ML dependencies.

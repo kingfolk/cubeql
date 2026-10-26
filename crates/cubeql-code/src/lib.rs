@@ -2,9 +2,11 @@
 //! the resulting batch is searched by CubeQL on any supported CubeCL backend.
 
 mod chunk;
+pub mod evaluation;
 mod provider;
+pub mod reporting;
 
-pub use provider::{CodeSearchIndex, build_repository_with_provider};
+pub use provider::{CodeSearchIndex, PreparedCodeSearch, build_repository_with_provider};
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -15,12 +17,15 @@ use std::{
 };
 
 use arrow_array::{
-    Array, ArrayRef, FixedSizeListArray, Float32Array, RecordBatch, StringArray, UInt32Array,
+    Array, ArrayRef, FixedSizeListArray, Float16Array, Float32Array, RecordBatch, StringArray,
+    UInt32Array,
 };
 use arrow_schema::{DataType, Field, Schema};
 use cubeql::{IndexOptions, PersistenceError, read_ipc_batch, write_ipc_batch};
 use cubeql_embeddings::{EmbeddingConfig, EmbeddingError};
+use half::f16;
 use ignore::WalkBuilder;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub use chunk::CodeChunk;
@@ -31,6 +36,7 @@ const DIMENSIONS: &str = "cubeql.code.dimensions";
 const CHUNKER: &str = "cubeql.code.chunker";
 const LINES: &str = "cubeql.code.fallback_lines";
 const EMBEDDING_CONFIG: &str = "cubeql.code.embedding_config";
+const MAX_FILE_BYTES: &str = "cubeql.code.max_file_bytes";
 const CHUNKER_VERSION: &str = "syn2-lines-v1";
 /// Identity of the CLI's deterministic lexical fixture, not a learned semantic model.
 pub const HASH_EMBEDDING_ID: &str = "cubeql-hash-tokens-v1";
@@ -85,7 +91,7 @@ impl BuildOptions {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct BuildReport {
     pub files: usize,
     pub chunks: usize,
@@ -105,6 +111,7 @@ pub struct BuildResult {
 }
 
 /// A validated host-side code index. Row IDs are snapshot-local, not stable across updates.
+#[derive(Clone)]
 pub struct CodeIndex {
     batch: RecordBatch,
     chunks: Vec<CodeChunk>,
@@ -129,6 +136,87 @@ impl CodeIndex {
     /// None for legacy callback indexes, which do not contain a verified vector-space contract.
     pub fn embedding_config(&self) -> Option<&EmbeddingConfig> {
         self.embedding_config.as_ref()
+    }
+
+    pub fn precision(&self) -> VectorPrecision {
+        match self.batch.column_by_name("embedding").unwrap().data_type() {
+            DataType::FixedSizeList(field, _) if field.data_type() == &DataType::Float16 => {
+                VectorPrecision::Fp16
+            }
+            _ => VectorPrecision::Fp32,
+        }
+    }
+
+    /// Convert storage, not the embedding space. FP16 -> FP32 widens already-rounded values;
+    /// it cannot recover original FP32 precision. Conversion never invokes a provider.
+    pub fn with_precision(self, precision: VectorPrecision) -> Result<Self, CodeError> {
+        if self.precision() == precision {
+            return Ok(self);
+        }
+        let values = (0..self.chunks.len())
+            .flat_map(|row| self.vector(row))
+            .collect::<Vec<_>>();
+        let (values, ty): (ArrayRef, _) = match precision {
+            VectorPrecision::Fp32 => (Arc::new(Float32Array::from(values)), DataType::Float32),
+            VectorPrecision::Fp16 => {
+                let values = values.into_iter().map(f16::from_f32).collect::<Vec<_>>();
+                if values.iter().any(|v| !v.is_finite()) {
+                    return Err(invalid("vector overflows FP16 storage"));
+                }
+                (Arc::new(Float16Array::from(values)), DataType::Float16)
+            }
+        };
+        let embedding: ArrayRef = Arc::new(FixedSizeListArray::try_new_with_length(
+            Arc::new(Field::new("item", ty, false)),
+            self.dimensions as i32,
+            values,
+            None,
+            self.chunks.len(),
+        )?);
+        let position = self.batch.schema().index_of("embedding")?;
+        let mut columns = self.batch.columns().to_vec();
+        columns[position] = embedding.clone();
+        let mut fields = self.batch.schema().fields().to_vec();
+        fields[position] = Arc::new(
+            fields[position]
+                .as_ref()
+                .clone()
+                .with_data_type(embedding.data_type().clone()),
+        );
+        let schema = Arc::new(Schema::new_with_metadata(
+            fields,
+            self.batch.schema().metadata().clone(),
+        ));
+        Self::from_batch(RecordBatch::try_new(schema, columns)?)
+    }
+
+    pub fn root(&self) -> Option<&str> {
+        self.batch
+            .schema_ref()
+            .metadata()
+            .get("cubeql.code.root")
+            .map(String::as_str)
+    }
+
+    /// Restore construction settings for an update. Older snapshots used the 2 MiB default.
+    pub fn build_options(&self) -> Result<BuildOptions, CodeError> {
+        let metadata = self.batch.schema_ref().metadata();
+        let fallback_lines = metadata
+            .get(LINES)
+            .and_then(|s| s.parse().ok())
+            .ok_or_else(|| invalid("invalid fallback line count"))?;
+        let max_file_bytes = metadata
+            .get(MAX_FILE_BYTES)
+            .map(|s| s.parse::<u64>())
+            .transpose()
+            .map_err(|_| invalid("invalid file-size limit"))?
+            .unwrap_or(2 * 1024 * 1024);
+        Ok(BuildOptions {
+            dimensions: self.dimensions,
+            embedding_id: self.embedding_id.clone(),
+            fallback_lines,
+            max_file_bytes,
+        })
     }
 
     /// Write the common CubeQL IPC format without creating a compute device.
@@ -232,14 +320,9 @@ impl CodeIndex {
             .and_then(|a| a.as_any().downcast_ref::<FixedSizeListArray>())
             .filter(|a| a.value_length() as usize == dimensions && a.null_count() == 0)
             .ok_or_else(|| invalid("invalid embedding column"))?;
-        let vector_values = vectors
-            .values()
-            .as_any()
-            .downcast_ref::<Float32Array>()
-            .filter(|a| a.null_count() == 0 && a.values().iter().all(|v| v.is_finite()))
-            .ok_or_else(|| invalid("expected finite, non-null FP32 embeddings"))?;
+        let vector_values = vector_values(vectors.values())?;
         if let Some(config) = &embedding_config {
-            for row in vector_values.values().chunks_exact(dimensions) {
+            for row in vector_values.chunks_exact(dimensions) {
                 config.validate_vector(row)?;
             }
         }
@@ -281,13 +364,33 @@ impl CodeIndex {
             .downcast_ref::<FixedSizeListArray>()
             .unwrap();
         let values = vectors.value(row);
-        values
-            .as_any()
-            .downcast_ref::<Float32Array>()
-            .unwrap()
-            .values()
-            .to_vec()
+        vector_values(&values).unwrap()
     }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum VectorPrecision {
+    Fp16,
+    #[default]
+    Fp32,
+}
+
+fn vector_values(array: &ArrayRef) -> Result<Vec<f32>, CodeError> {
+    if array.null_count() != 0 {
+        return Err(invalid("null embedding values"));
+    }
+    let values = if let Some(array) = array.as_any().downcast_ref::<Float32Array>() {
+        array.values().to_vec()
+    } else if let Some(array) = array.as_any().downcast_ref::<Float16Array>() {
+        array.values().iter().map(|v| v.to_f32()).collect()
+    } else {
+        return Err(invalid("expected FP16/FP32 embeddings"));
+    };
+    if values.iter().any(|v| !v.is_finite()) {
+        return Err(invalid("non-finite embeddings"));
+    }
+    Ok(values)
 }
 
 fn invalid(message: impl Into<String>) -> CodeError {
@@ -484,10 +587,13 @@ fn build_repository_batched(
         options,
         &root,
     )?;
-    Ok(BuildResult {
-        index: CodeIndex::from_batch(batch)?,
-        report,
-    })
+    let index = CodeIndex::from_batch(batch)?;
+    let index = if let Some(previous) = previous {
+        index.with_precision(previous.precision())?
+    } else {
+        index
+    };
+    Ok(BuildResult { index, report })
 }
 
 fn make_batch(
@@ -536,6 +642,7 @@ fn make_batch(
         (DIMENSIONS.into(), options.dimensions.to_string()),
         (CHUNKER.into(), CHUNKER_VERSION.into()),
         (LINES.into(), options.fallback_lines.to_string()),
+        (MAX_FILE_BYTES.into(), options.max_file_bytes.to_string()),
         (
             "cubeql.code.root".into(),
             root.to_string_lossy().into_owned(),
