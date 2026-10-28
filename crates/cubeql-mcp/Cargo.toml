@@ -1,0 +1,29 @@
+[package]
+name = "cubeql-mcp"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Read-only, snapshot-local MCP tools for CubeQL code retrieval"
+
+[features]
+default = ["cpu"]
+cpu = ["cubeql-code/cpu", "cubecl/cpu"]
+cuda = ["cubeql-code/cuda", "cubecl/cuda"]
+hip = ["cubeql-code/hip", "cubecl/hip"]
+metal = ["cubeql-code/metal", "cubecl/metal-native"]
+wgpu = ["cubeql-code/wgpu", "cubecl/wgpu"]
+local-embeddings = ["cubeql-embeddings/minilm"]
+
+[dependencies]
+blake3 = "1"
+clap = { version = "4", features = ["derive"] }
+cubecl = { path = "../../../cubecl/crates/cubecl", default-features = false, features = ["std"] }
+cubeql-code = { path = "../cubeql-code", default-features = false }
+cubeql-embeddings = { path = "../cubeql-embeddings" }
+rmcp = { version = "3.8.0", default-features = false, features = ["server", "macros", "transport-io"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
+
+[dev-dependencies]
+tempfile = "3.27.0"
