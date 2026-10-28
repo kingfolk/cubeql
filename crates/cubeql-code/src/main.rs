@@ -4,12 +4,13 @@ use std::{
 };
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use cubeql::Metric;
 use cubeql_code::{
     BuildOptions, BuildResult, CodeIndex, CodeSearchIndex, VectorPrecision,
     build_repository_with_provider,
-    evaluation::{EvaluationOptions, QuerySet, evaluate},
-    reporting::{CodeFilter, SearchResponse, SearchTimings, SnapshotInfo, elapsed_ms, materialize},
+    evaluation::{EvaluationOptions, QuerySet},
+    hybrid_evaluation::evaluate,
+    reporting::{CodeFilter, RetrievalResponse, SearchTimings, SnapshotInfo, elapsed_ms},
+    retrieval::{RetrievalOptions, SearchStrategy, SnapshotTextIndex, materialize_hits},
 };
 use cubeql_embeddings::{EmbeddingProvider, HashProvider, embed_query};
 
@@ -36,6 +37,24 @@ enum OutputFormat {
     #[default]
     Text,
     Json,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum Strategy {
+    Semantic,
+    Lexical,
+    Symbol,
+    Hybrid,
+}
+impl From<Strategy> for SearchStrategy {
+    fn from(value: Strategy) -> Self {
+        match value {
+            Strategy::Semantic => Self::Semantic,
+            Strategy::Lexical => Self::Lexical,
+            Strategy::Symbol => Self::Symbol,
+            Strategy::Hybrid => Self::Hybrid,
+        }
+    }
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -108,7 +127,7 @@ enum Command {
         #[command(flatten)]
         display: Output,
     },
-    /// Embed text, apply metadata filters, return cosine top-k source locations.
+    /// Search saved code using vector, lexical, syntax-symbol or fused rankings.
     #[command(visible_alias = "query")]
     Search {
         index: PathBuf,
@@ -117,6 +136,14 @@ enum Command {
         model_dir: Option<PathBuf>,
         #[arg(long, default_value_t = 5)]
         top_k: usize,
+        #[arg(long, value_enum, default_value = "semantic")]
+        strategy: Strategy,
+        /// Candidates per source. Defaults to max(50, top-k), before overlap deduplication.
+        #[arg(long)]
+        candidate_k: Option<usize>,
+        /// Keep highly overlapping source ranges instead of suppressing them.
+        #[arg(long)]
+        no_dedup: bool,
         #[arg(long)]
         language: Option<String>,
         #[arg(long)]
@@ -358,45 +385,97 @@ fn main() -> Result<()> {
             text,
             model_dir,
             top_k,
+            strategy,
+            candidate_k,
+            no_dedup,
             language,
             path_prefix,
             include_source,
             display,
         } => {
+            let strategy = SearchStrategy::from(strategy);
+            let options = RetrievalOptions {
+                strategy,
+                top_k,
+                candidate_k: candidate_k.unwrap_or(50.max(top_k)),
+                deduplicate: !no_dedup,
+            };
+            options.validate()?;
+            if text.trim().is_empty() {
+                return Err("search text must not be empty".into());
+            }
             let mut timings = SearchTimings::default();
             let start = Instant::now();
             let code = CodeIndex::load_ipc(index)?;
             timings.read_ms = elapsed_ms(start);
             let precision = code.precision();
             let start = Instant::now();
-            let mut provider = saved_provider(&code, model_dir.as_deref())?;
-            timings.model_load_ms = elapsed_ms(start);
+            let needs_semantic = strategy.needs_embedding() && top_k > 0;
+            let mut provider = if needs_semantic {
+                Some(saved_provider(&code, model_dir.as_deref())?)
+            } else {
+                None
+            };
+            timings.model_load_ms = if needs_semantic {
+                elapsed_ms(start)
+            } else {
+                0.0
+            };
             let start = Instant::now();
-            let query = embed_query(provider.as_mut(), &text)?;
-            timings.embedding_ms = elapsed_ms(start);
-            let device = cubecl::Device::default();
+            let query = provider
+                .as_mut()
+                .map(|p| embed_query(p.as_mut(), &text))
+                .transpose()?;
+            timings.embedding_ms = if needs_semantic {
+                elapsed_ms(start)
+            } else {
+                0.0
+            };
+            let device = needs_semantic.then(cubecl::Device::default);
             let start = Instant::now();
-            let search = CodeSearchIndex::new(&device, code)?;
-            timings.upload_ms = elapsed_ms(start);
+            let (search, host) = if let Some(device) = &device {
+                (Some(CodeSearchIndex::new(device, code)?), None)
+            } else {
+                (None, Some(code))
+            };
+            timings.upload_ms = if needs_semantic {
+                elapsed_ms(start)
+            } else {
+                0.0
+            };
+            let code = search
+                .as_ref()
+                .map(CodeSearchIndex::code)
+                .or(host.as_ref())
+                .unwrap();
+            let start = Instant::now();
+            let text_index = SnapshotTextIndex::new(code);
+            text_index.warm_up(strategy);
+            timings.text_index_ms = elapsed_ms(start);
             let filter = CodeFilter {
                 language,
                 path_prefix,
             };
-            let predicates = filter.predicates();
             let start = Instant::now();
-            let selected = search.prepare_filter(&predicates)?;
+            let selected = text_index.prepare(&filter, search.as_ref())?;
             timings.filter_ms = elapsed_ms(start);
             let start = Instant::now();
-            let hits = selected.query(&query, top_k, Metric::Cosine)?;
-            timings.scoring_topk_readback_ms = elapsed_ms(start);
+            let result = selected.query(&text, query.as_ref(), options)?;
+            timings.retrieval_ms = elapsed_ms(start);
+            timings.scoring_topk_readback_ms = result.timings.semantic_ms;
+            timings.lexical_ms = result.timings.lexical_ms;
+            timings.symbol_ms = result.timings.symbol_ms;
+            timings.fusion_ms = result.timings.fusion_ms;
+            timings.dedup_ms = result.timings.dedup_ms;
             let start = Instant::now();
-            let hits = materialize(search.code(), &hits, include_source)?;
+            let hits = materialize_hits(code, &result.hits, include_source)?;
             timings.materialization_ms = elapsed_ms(start);
-            let response = SearchResponse {
-                format_version: 1,
+            let response = RetrievalResponse {
+                format_version: 2,
                 query: text,
-                metric: "cosine",
-                backend: format!("{device:?}"),
+                strategy,
+                metric: strategy.score_kind(),
+                backend: device.map_or_else(|| "Host".into(), |d| format!("{d:?}")),
                 precision,
                 hits,
                 timings,
@@ -405,9 +484,16 @@ fn main() -> Result<()> {
                 OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&response)?),
                 OutputFormat::Text => {
                     for hit in response.hits {
+                        let sources = hit
+                            .provenance
+                            .iter()
+                            .map(|p| format!("{:?}@{}", p.source, p.rank))
+                            .collect::<Vec<_>>()
+                            .join(",");
+                        let hit = hit.code;
                         println!(
-                            "{}:{}-{} {} score={:.6}",
-                            hit.path, hit.start_line, hit.end_line, hit.symbol, hit.score
+                            "{}:{}-{} {} score={:.6} sources={}",
+                            hit.path, hit.start_line, hit.end_line, hit.symbol, hit.score, sources
                         );
                         if let Some(source) = hit.source {
                             println!("{source}");

@@ -4,6 +4,10 @@ Milestone 6 adds a usable snapshot workflow and a small, reproducible retrieval 
 Everything here lives in `cubeql-code`; the generic `cubeql` Arrow/vector API still has no
 code-parser, embedding-model, CLI or evaluation dependencies.
 
+Milestone 7 extends this workflow with explicit lexical/symbol/hybrid strategies and JSON search/
+evaluation v2. The descriptions and observations below retain the original M6 baselines. See
+[hybrid-retrieval.md](hybrid-retrieval.md) for the current strategies and comparison.
+
 ## Search a saved repository
 
 From the workspace root, with the sibling CubeCL checkout required by this workspace:
@@ -115,9 +119,9 @@ answer synthesis or graph traversal. Unknown JSON fields are rejected to catch m
   `sum(1 / (60 + one_based_rank))`, then return at most `candidate_k` results. Raw cosine and
   literal scores are not added together. See the [RRF definition](https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion).
 
-RRF exists **only in the evaluator**. The `search` command is still vector-only. Production
-strategy routing, ripgrep/symbol adapters, source provenance and overlap deduplication belong to
-Milestone 7. An experimental improvement on this fixture is not proof that hybrid search is ready.
+The original two-way RRF baseline remains in the evaluator. Milestone 7 adds a separate three-way
+hybrid query strategy with stronger lexical/symbol adapters, provenance and overlap suppression.
+An experimental improvement on this fixture is not proof that production relevance is solved.
 
 Recall@5/10 is the fraction of *all labeled relevant chunks* found in the first 5/10 returned
 results. Reciprocal rank is `1 / rank_of_first_relevant`, or zero if no relevant result appears in

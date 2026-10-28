@@ -37,6 +37,13 @@ or Metal, including paired FP32/FP16 runs. See
 [docs/code-search-evaluation.md](docs/code-search-evaluation.md) for commands, report semantics
 and the limitations of the small synthetic benchmark. Core `cubeql` remains a generic library.
 
+Snapshot-local hybrid retrieval adds `search --strategy semantic|lexical|symbol|hybrid`,
+identifier-aware keyword lookup, exact syntax-symbol search, source-rank provenance and optional
+overlap suppression. Lexical/symbol modes do not load a model or initialize a device; hybrid
+fuses all three sources. The evaluator retains the old baselines and compares the current
+strategies on the same labels. See [docs/hybrid-retrieval.md](docs/hybrid-retrieval.md) for API,
+JSON v2, commands and measured limitations; fusion is not assumed to outperform its inputs.
+
 The current prototype intentionally implements one complete path only:
 
 - input: Apache Arrow `RecordBatch`;

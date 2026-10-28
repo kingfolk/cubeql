@@ -3,8 +3,10 @@
 
 mod chunk;
 pub mod evaluation;
+pub mod hybrid_evaluation;
 mod provider;
 pub mod reporting;
+pub mod retrieval;
 
 pub use provider::{CodeSearchIndex, PreparedCodeSearch, build_repository_with_provider};
 

@@ -92,6 +92,26 @@ pub struct SearchTimings {
     /// Includes device scoring, top-k, final readback and any first-use compilation.
     pub scoring_topk_readback_ms: f64,
     pub materialization_ms: f64,
+    pub text_index_ms: f64,
+    pub lexical_ms: f64,
+    pub symbol_ms: f64,
+    pub fusion_ms: f64,
+    pub dedup_ms: f64,
+    /// Complete retrieval call, including all selected branches, evidence and deduplication.
+    pub retrieval_ms: f64,
+}
+
+/// CLI search format v2: scores are explicitly strategy-dependent and every hit is explained.
+#[derive(Serialize)]
+pub struct RetrievalResponse {
+    pub format_version: u32,
+    pub query: String,
+    pub strategy: crate::retrieval::SearchStrategy,
+    pub metric: &'static str,
+    pub backend: String,
+    pub precision: VectorPrecision,
+    pub hits: Vec<crate::retrieval::RetrievedCodeHit>,
+    pub timings: SearchTimings,
 }
 
 #[derive(Serialize)]
