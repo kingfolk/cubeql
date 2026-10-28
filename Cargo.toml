@@ -6,8 +6,8 @@ license = "MIT OR Apache-2.0"
 description = "A minimal Arrow-native retrieval engine powered by CubeCL"
 
 [workspace]
-members = ["crates/cubeql-code", "crates/cubeql-embeddings"]
-default-members = [".", "crates/cubeql-code", "crates/cubeql-embeddings"]
+members = ["crates/cubeql-code", "crates/cubeql-embeddings", "crates/cubeql-mcp"]
+default-members = [".", "crates/cubeql-code", "crates/cubeql-embeddings", "crates/cubeql-mcp"]
 resolver = "3"
 
 [features]

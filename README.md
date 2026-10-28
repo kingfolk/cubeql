@@ -44,6 +44,12 @@ fuses all three sources. The evaluator retains the old baselines and compares th
 strategies on the same labels. See [docs/hybrid-retrieval.md](docs/hybrid-retrieval.md) for API,
 JSON v2, commands and measured limitations; fusion is not assumed to outperform its inputs.
 
+`cubeql-mcp` exposes read-only `search_code` and paginated `read_code` tools over MCP stdio.
+A persistent worker reuses one immutable snapshot, host text indexes and, when enabled, the
+model/device index. Search returns compact previews and snapshot-bound chunk IDs; reading never
+opens arbitrary paths or the live checkout. See [docs/mcp-code-search.md](docs/mcp-code-search.md)
+for startup commands, client configuration, limits, traces and integration status.
+
 The current prototype intentionally implements one complete path only:
 
 - input: Apache Arrow `RecordBatch`;
