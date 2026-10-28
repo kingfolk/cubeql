@@ -15,6 +15,9 @@ struct Cli {
     /// Load neither a model nor a device; only lexical/symbol strategies are supported.
     #[arg(long)]
     text_only: bool,
+    /// Explicit directory boundary for check_code. Never inferred from snapshot metadata.
+    #[arg(long)]
+    workspace_root: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -24,6 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         index: args.index,
         model_dir: args.model_dir,
         text_only: args.text_only,
+        workspace_root: args.workspace_root,
     })
     .await?;
     // stdout belongs exclusively to MCP JSON-RPC. Diagnostics and traces go to stderr.

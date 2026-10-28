@@ -1,7 +1,8 @@
 # Read-only code search over MCP
 
 `cubeql-mcp` is the first Milestone 8 adapter. It exposes the existing retrieval APIs as two
-tools in a persistent local process. It is not a new database server or a coding-agent harness.
+retrieval tools in a persistent local process, plus an optional workspace freshness check.
+It is not a new database server or a coding-agent harness.
 The generic `cubeql`, `cubeql-code` retrieval implementation and embedding-provider interfaces
 are unchanged. The adapter uses the official [Rust MCP SDK](https://github.com/modelcontextprotocol/rust-sdk)
 and [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
@@ -76,6 +77,10 @@ the selected CubeCL backend runs vector scoring/top-k, not this embedding model.
 
 ## Tool contract v1
 
+`search_code` and `read_code` retain immutable snapshot semantics. The additive `check_code`
+tool compares whole-file hashes only when `--workspace-root` explicitly grants a workspace
+boundary. See [workspace-freshness.md](workspace-freshness.md) for the full contract and examples.
+
 MCP envelopes are handled by the SDK. Each successful tool returns the following application
 object in `structuredContent`, plus the same JSON as a text content block for compatible clients.
 This contract's `format_version: 1` is separate from the existing CLI search JSON version 2.
@@ -149,9 +154,10 @@ handler sends work through a bounded queue and awaits a reply without blocking i
 - One immutable snapshot per process; no reload, watcher, update or write tool.
 - Restart after separately building an updated snapshot. Replacing/removing the IPC file or
   editing the repository does not change a running session.
-- No live-source freshness validation is implemented. `source: "snapshot"` is explicit: verify
-  current files before using retrieved code to make edits. Read saved chunks with `read_code`
-  when interpreting saved line numbers; do not assume they still match your checkout.
+- Optional `check_code` uses an explicitly configured `--workspace-root` and the new snapshot
+  file manifest to check current file contents. No live source text is returned, and neither
+  search nor read implicitly checks freshness. `source: "snapshot"` stays explicit. Verify current
+  files before making edits; a successful check is point-in-time evidence, not a filesystem lock.
 - At most eight queued jobs plus one active job. Additional admitted tool calls get `busy`.
   Cancelled queued calls are skipped; already running inference/kernels are not preempted.
 - Query: at most 8192 UTF-8 bytes, nonblank. `top_k`: 1..=100. Per-source candidates:
@@ -168,7 +174,7 @@ unknown argument fields and type/deserialization failures before invoking the ha
 its own textual tool error. Unknown tools return protocol errors. These errors do not terminate
 a healthy session. Startup failures go to stderr with a nonzero exit status.
 
-No network listener or network search is enabled. Both tools advertise read-only, non-destructive,
+No network listener or network search is enabled. All tools advertise read-only, non-destructive,
 closed-world hints. These hints do not replace client permission checks. A client allowed to
 invoke these tools can retrieve any chunk in the configured snapshot: search filters are not
 access controls. Source text and previews are untrusted data and can contain prompt injection;
@@ -180,7 +186,8 @@ you intend to expose to an agent or hosted model.
 Stderr emits versioned JSON `ready` and `request_finished` events. Readiness records snapshot ID,
 backend, precision, model identity and total startup time. Completed admitted requests record
 a process-local sequence ID, tool name, queue/worker latency, successful strategy/candidate budget,
-returned chunk IDs (or read chunk ID) and error code. Raw query text and source are not logged.
+returned chunk IDs (or read/check chunk ID), optional freshness status and error code. Raw query
+text and source are not logged. Readiness also records whether workspace checks are configured.
 SDK/startup diagnostics can also appear as non-JSON stderr lines. Argument rejections before
 enqueue, queue-full errors and cancelled queued work do not emit completion events.
 
