@@ -106,6 +106,12 @@ error, not an undisclosed strategy change. Filters have the same case-sensitive 
 semantics as the library. Deduplication is enabled. Scores and provenance follow
 [hybrid retrieval](hybrid-retrieval.md), not probability/confidence semantics.
 
+For controlled experiments, `--search-strategy lexical` (or another strategy) restricts the
+server to that requested strategy and rejects mismatches with `strategy_restricted`. Callers
+must supply it explicitly rather than relying on the hybrid default. Text-only mode rejects an
+embedding-only restriction at startup. See [harness-evaluation.md](harness-evaluation.md) for the
+three-arm Codex CLI runner; no restriction is applied unless this option is configured.
+
 Results include:
 
 - `snapshot_id`: BLAKE3 of the exact Arrow IPC bytes read at startup.

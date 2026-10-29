@@ -18,7 +18,7 @@ use tokio::sync::oneshot;
 
 use crate::contract::{
     CheckRequest, CheckResponse, Location, MAX_RESPONSE_BYTES, ReadRequest, ReadResponse,
-    SearchHit, SearchRequest, SearchResponse, ToolFailure, prefix_end,
+    SearchHit, SearchRequest, SearchResponse, Strategy, ToolFailure, prefix_end,
 };
 
 #[derive(Clone, Debug)]
@@ -29,6 +29,8 @@ pub struct ServerOptions {
     pub text_only: bool,
     /// Explicit authority for live freshness checks. Never use the index's saved root implicitly.
     pub workspace_root: Option<PathBuf>,
+    /// Reject other requested strategies instead of silently changing the experiment arm.
+    pub search_strategy: Option<Strategy>,
 }
 
 pub(crate) enum Request {
@@ -61,6 +63,16 @@ impl Worker {
         let (ready, startup) = oneshot::channel();
         let task = move || {
             let startup_start = Instant::now();
+            if options.text_only
+                && options.search_strategy.is_some_and(|s| {
+                    cubeql_code::retrieval::SearchStrategy::from(s).needs_embedding()
+                })
+            {
+                let _ = ready.send(Err(ToolFailure::invalid(
+                    "text-only mode cannot restrict search to an embedding strategy",
+                )));
+                return;
+            }
             let workspace = match options
                 .workspace_root
                 .as_ref()
@@ -106,6 +118,7 @@ impl Worker {
                 json!({"format_version":1, "event":"ready", "snapshot_id":id, "chunks":code.chunks().len(),
                 "text_only":options.text_only, "backend":backend, "precision":code.precision(),
                 "workspace_checks":workspace.is_some(),
+                "search_strategy":options.search_strategy,
                 "embedding_model":code.embedding_config().map(|c| c.model.as_str()),
                 "startup_ms":startup_start.elapsed().as_secs_f64()*1000.0})
             );
@@ -123,6 +136,7 @@ impl Worker {
                 let queue_ms = job.enqueued.elapsed().as_secs_f64() * 1000.0;
                 let method = job.request.method();
                 let result = match job.request {
+                    Request::Search(request) if options.search_strategy.is_some_and(|s| s != request.strategy) => Err(ToolFailure::new("strategy_restricted", "this server restricts search_code to its configured --search-strategy; supply that strategy explicitly")),
                     Request::Search(request) => search(
                         &id,
                         code,

@@ -55,6 +55,12 @@ New snapshots also record whole-file hashes. With an explicit `--workspace-root`
 unverifiable. Search/read remain snapshot-local; checks neither refresh the index nor lock files.
 See [docs/workspace-freshness.md](docs/workspace-freshness.md) for the guard's scope and limits.
 
+An opt-in [coding-agent evaluation runner](docs/harness-evaluation.md) prepares pinned Git source,
+then compares Codex CLI with ordinary tools versus added lexical/hybrid MCP retrieval. It records
+raw JSONL events, citation/location grading, tool adoption, latency and reported token usage.
+Preparation/offline tests make no LLM requests; real execution requires an explicit model,
+`--execute` and a run-count limit. No agent-quality improvement is claimed without real trials.
+
 The current prototype intentionally implements one complete path only:
 
 - input: Apache Arrow `RecordBatch`;
