@@ -16,6 +16,7 @@ local-embeddings = ["cubeql-embeddings/minilm"]
 
 [dependencies]
 blake3 = "1"
+cap-std = "4.0.3"
 clap = { version = "4", features = ["derive"] }
 cubecl = { path = "../../../cubecl/crates/cubecl", default-features = false, features = ["std"] }
 cubeql-code = { path = "../cubeql-code", default-features = false }
@@ -25,5 +26,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
+cubeql = { path = "../..", default-features = false }
 tempfile = "3.27.0"

@@ -67,6 +67,14 @@ impl Client {
         Self::start_with_model(index, text_only, None)
     }
     fn start_with_model(index: &Path, text_only: bool, model_dir: Option<&Path>) -> Self {
+        Self::start_with_workspace(index, text_only, model_dir, None)
+    }
+    fn start_with_workspace(
+        index: &Path,
+        text_only: bool,
+        model_dir: Option<&Path>,
+        workspace_root: Option<&Path>,
+    ) -> Self {
         let mut command = Command::new(env!("CARGO_BIN_EXE_cubeql-mcp"));
         command.arg(index);
         if text_only {
@@ -74,6 +82,9 @@ impl Client {
         }
         if let Some(directory) = model_dir {
             command.arg("--model-dir").arg(directory);
+        }
+        if let Some(directory) = workspace_root {
+            command.arg("--workspace-root").arg(directory);
         }
         let mut child = command
             .stdin(Stdio::piped())
@@ -135,11 +146,19 @@ impl Client {
         self.next_id += 1;
         self.send(json!({"jsonrpc":"2.0","id":self.next_id,"method":method,"params":params}));
         loop {
-            let message = self
-                .output
-                .recv_timeout(Duration::from_secs(45))
-                .expect("MCP response timeout or server exited")
-                .unwrap();
+            let message = match self.output.recv_timeout(Duration::from_secs(45)) {
+                Ok(message) => message.unwrap(),
+                Err(error) => {
+                    // Capture startup/runtime diagnostics before Drop reaps the subprocess.
+                    // In particular, do not hide a wrong-feature binary behind "Disconnected".
+                    let _ = self.child.kill();
+                    let status = self.child.wait();
+                    let diagnostics = self.stderr.take().unwrap().join().unwrap();
+                    panic!(
+                        "MCP response failed: {error}; status={status:?}; stderr:\n{diagnostics}"
+                    );
+                }
+            };
             if message.get("id") == Some(&json!(self.next_id)) {
                 return message;
             }
@@ -208,7 +227,7 @@ fn host_tools_negotiate_search_and_page_immutable_source_without_a_provider() {
     let mut client = Client::start(&index, true);
     let tools = client.request("tools/list", json!({}));
     let tools = tools["result"]["tools"].as_array().unwrap();
-    assert_eq!(tools.len(), 2);
+    assert_eq!(tools.len(), 3);
     for tool in tools {
         assert_eq!(tool["annotations"]["readOnlyHint"], true);
         assert_eq!(tool["annotations"]["openWorldHint"], false);
@@ -421,6 +440,193 @@ fn startup_errors_do_not_emit_protocol_or_modify_inputs() {
             .contains("unsupported embedding provider")
     );
     assert_eq!(fs::read(&path).unwrap(), original);
+}
+
+#[test]
+fn check_code_detects_whole_file_edits_and_missing_files_without_changing_snapshot_reads() {
+    let (dir, code) = fixture(VectorPrecision::Fp32, false);
+    let mut client =
+        Client::start_with_workspace(&dir.path().join("code.arrow"), true, None, Some(dir.path()));
+    let found = client.success(
+        "search_code",
+        json!({"query":"load_config","strategy":"symbol"}),
+    );
+    let handle =
+        json!({"snapshot_id":found["snapshot_id"], "chunk_id":found["hits"][0]["chunk_id"]});
+    let checked = client.success("check_code", handle.clone());
+    assert_eq!(checked["status"], "unchanged");
+    assert_eq!(checked["source"], "workspace_check");
+    assert_eq!(
+        checked["expected_file_hash"],
+        code.file_hash("lib.rs").unwrap()
+    );
+    assert_eq!(checked["expected_file_hash"], checked["actual_file_hash"]);
+    // This changes neither saved function body, but shifts every source location.
+    fs::write(
+        dir.path().join("lib.rs"),
+        format!("// new header\n{TARGET}\n{OTHER}\n"),
+    )
+    .unwrap();
+    let checked = client.success("check_code", handle.clone());
+    assert_eq!(checked["status"], "modified");
+    assert_eq!(checked["reason"], "file_hash_mismatch");
+    // Restoring the original bytes is unchanged, irrespective of write time/inode history.
+    fs::write(dir.path().join("lib.rs"), format!("{TARGET}\n{OTHER}\n")).unwrap();
+    assert_eq!(
+        client.success("check_code", handle.clone())["status"],
+        "unchanged"
+    );
+    // Editing only the other function must still invalidate full-file evidence for this one.
+    fs::write(
+        dir.path().join("lib.rs"),
+        format!("{TARGET}\nfn other_changed() {{}}\n"),
+    )
+    .unwrap();
+    assert_eq!(
+        client.success("check_code", handle.clone())["status"],
+        "modified"
+    );
+    fs::remove_file(dir.path().join("lib.rs")).unwrap();
+    assert_eq!(
+        client.success("check_code", handle.clone())["status"],
+        "missing"
+    );
+    assert_eq!(client.success("read_code", handle.clone())["text"], TARGET);
+    client.error(
+        "check_code",
+        json!({"snapshot_id":"wrong","chunk_id":0}),
+        "snapshot_mismatch",
+    );
+    client.error(
+        "check_code",
+        json!({"snapshot_id":found["snapshot_id"],"chunk_id":99999}),
+        "invalid_request",
+    );
+    let malformed = client.request(
+        "tools/call",
+        json!({"name":"check_code","arguments":{
+            "snapshot_id":found["snapshot_id"], "chunk_id":0, "path":"/etc/passwd"
+        }}),
+    );
+    assert_eq!(malformed["result"]["isError"], true);
+    let stderr = client.close();
+    let events = stderr
+        .lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .collect::<Vec<_>>();
+    assert!(
+        events
+            .iter()
+            .any(|e| e["method"] == "check_code" && e["freshness"] == "modified")
+    );
+}
+
+#[test]
+fn workspace_authority_is_explicit_and_old_snapshots_never_claim_to_be_fresh() {
+    let (dir, code) = fixture(VectorPrecision::Fp32, false);
+    let index = dir.path().join("code.arrow");
+    let mut client = Client::start(&index, true);
+    let found = client.success(
+        "search_code",
+        json!({"query":"load_config","strategy":"symbol"}),
+    );
+    let checked = client.success(
+        "check_code",
+        json!({"snapshot_id":found["snapshot_id"],"chunk_id":found["hits"][0]["chunk_id"]}),
+    );
+    assert_eq!(checked["status"], "unverifiable");
+    assert_eq!(checked["reason"], "workspace_not_configured");
+    client.close();
+
+    // Relocated workspaces are allowed only through an explicit operator-provided directory.
+    let relocated = tempfile::tempdir().unwrap();
+    fs::write(
+        relocated.path().join("lib.rs"),
+        format!("{TARGET}\n{OTHER}\n"),
+    )
+    .unwrap();
+    let mut client = Client::start_with_workspace(&index, true, None, Some(relocated.path()));
+    let found = client.success(
+        "search_code",
+        json!({"query":"load_config","strategy":"symbol"}),
+    );
+    assert_eq!(
+        client.success(
+            "check_code",
+            json!({"snapshot_id":found["snapshot_id"],"chunk_id":found["hits"][0]["chunk_id"]})
+        )["status"],
+        "unchanged"
+    );
+    client.close();
+
+    let mut batch = code.batch().clone();
+    batch
+        .schema_metadata_mut()
+        .remove("cubeql.code.file_hashes");
+    let mut bytes = Vec::new();
+    cubeql::write_ipc_batch(
+        &batch,
+        "embedding",
+        cubeql::IndexOptions::default(),
+        &mut bytes,
+    )
+    .unwrap();
+    let legacy_path = dir.path().join("legacy.arrow");
+    fs::write(&legacy_path, bytes).unwrap();
+    let mut client = Client::start_with_workspace(&legacy_path, true, None, Some(dir.path()));
+    let found = client.success(
+        "search_code",
+        json!({"query":"load_config","strategy":"symbol"}),
+    );
+    let checked = client.success(
+        "check_code",
+        json!({"snapshot_id":found["snapshot_id"],"chunk_id":found["hits"][0]["chunk_id"]}),
+    );
+    assert_eq!(checked["status"], "unverifiable");
+    assert_eq!(checked["reason"], "legacy_snapshot");
+    assert!(checked["expected_file_hash"].is_null());
+    client.close();
+}
+
+#[cfg(unix)]
+#[test]
+fn workspace_checks_reject_external_symlinks_and_never_block_on_a_substituted_fifo() {
+    use std::{
+        ffi::CString,
+        os::unix::{ffi::OsStrExt, fs::symlink},
+    };
+    let (dir, _) = fixture(VectorPrecision::Fp32, false);
+    let mut client =
+        Client::start_with_workspace(&dir.path().join("code.arrow"), true, None, Some(dir.path()));
+    let found = client.success(
+        "search_code",
+        json!({"query":"load_config","strategy":"symbol"}),
+    );
+    let handle =
+        json!({"snapshot_id":found["snapshot_id"],"chunk_id":found["hits"][0]["chunk_id"]});
+    let outside = tempfile::tempdir().unwrap();
+    fs::write(
+        outside.path().join("secret.rs"),
+        format!("{TARGET}\n{OTHER}\n"),
+    )
+    .unwrap();
+    let path = dir.path().join("lib.rs");
+    fs::remove_file(&path).unwrap();
+    symlink(outside.path().join("secret.rs"), &path).unwrap();
+    let checked = client.success("check_code", handle.clone());
+    assert_eq!(checked["status"], "unverifiable");
+    assert_eq!(checked["reason"], "inaccessible_or_outside_workspace");
+    assert_eq!(checked["checked_bytes"], 0);
+    assert!(checked["actual_file_hash"].is_null());
+    fs::remove_file(&path).unwrap();
+    let name = CString::new(path.as_os_str().as_bytes()).unwrap();
+    // SAFETY: a valid NUL-terminated path into this test's temporary directory, no aliases or
+    // pointers retained by libc. This creates only a fixture, never production source paths.
+    assert_eq!(unsafe { libc::mkfifo(name.as_ptr(), 0o600) }, 0);
+    let checked = client.success("check_code", handle);
+    assert_eq!(checked["status"], "unverifiable");
+    assert_eq!(checked["reason"], "not_regular_file");
+    client.close();
 }
 
 #[cfg(feature = "local-embeddings")]

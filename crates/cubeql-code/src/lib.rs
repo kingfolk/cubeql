@@ -11,7 +11,7 @@ pub mod retrieval;
 pub use provider::{CodeSearchIndex, PreparedCodeSearch, build_repository_with_provider};
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     fs::{File, OpenOptions},
     io::{Read, Seek, Write},
     path::Path,
@@ -39,6 +39,7 @@ const CHUNKER: &str = "cubeql.code.chunker";
 const LINES: &str = "cubeql.code.fallback_lines";
 const EMBEDDING_CONFIG: &str = "cubeql.code.embedding_config";
 const MAX_FILE_BYTES: &str = "cubeql.code.max_file_bytes";
+const FILE_HASHES: &str = "cubeql.code.file_hashes";
 const CHUNKER_VERSION: &str = "syn2-lines-v1";
 /// Identity of the CLI's deterministic lexical fixture, not a learned semantic model.
 pub const HASH_EMBEDDING_ID: &str = "cubeql-hash-tokens-v1";
@@ -120,6 +121,7 @@ pub struct CodeIndex {
     dimensions: usize,
     embedding_id: String,
     embedding_config: Option<EmbeddingConfig>,
+    file_hashes: Option<BTreeMap<String, String>>,
 }
 
 impl CodeIndex {
@@ -200,6 +202,13 @@ impl CodeIndex {
             .map(String::as_str)
     }
 
+    /// BLAKE3 of the complete file bytes used to extract this snapshot's chunks. Unlike a
+    /// chunk hash, this detects edits to comments, gaps and other chunks in the same file.
+    /// None for pre-manifest snapshots or paths not represented in the manifest.
+    pub fn file_hash(&self, path: &str) -> Option<&str> {
+        self.file_hashes.as_ref()?.get(path).map(String::as_str)
+    }
+
     /// Restore construction settings for an update. Older snapshots used the 2 MiB default.
     pub fn build_options(&self) -> Result<BuildOptions, CodeError> {
         let metadata = self.batch.schema_ref().metadata();
@@ -277,6 +286,23 @@ impl CodeIndex {
             .get(EMBEDDING_CONFIG)
             .map(|json| serde_json::from_str(json).map_err(EmbeddingError::from))
             .transpose()?;
+        // Optional additive metadata: older snapshots remain searchable, but must not be
+        // represented as freshly verified when their original full-file bytes are unknown.
+        let file_hashes: Option<BTreeMap<String, String>> = metadata
+            .get(FILE_HASHES)
+            .map(|json| {
+                serde_json::from_str(json).map_err(|_| invalid("invalid file hash manifest"))
+            })
+            .transpose()?;
+        if file_hashes.as_ref().is_some_and(|files| {
+            files.iter().any(|(path, hash)| {
+                path.is_empty()
+                    || blake3::Hash::from_hex(hash).is_err()
+                    || hash.bytes().any(|b| b.is_ascii_uppercase())
+            })
+        }) {
+            return Err(invalid("invalid file hash manifest entry"));
+        }
         if let Some(config) = &embedding_config
             && (config.dimensions != dimensions || config.fingerprint()? != embedding_id)
         {
@@ -330,6 +356,12 @@ impl CodeIndex {
         }
         let mut chunks = Vec::with_capacity(batch.num_rows());
         for row in 0..batch.num_rows() {
+            if file_hashes
+                .as_ref()
+                .is_some_and(|files| !files.contains_key(strings[0].value(row)))
+            {
+                return Err(invalid("file hash manifest is missing a chunk's path"));
+            }
             let source = strings[5].value(row);
             if start.value(row) == 0
                 || end.value(row) < start.value(row)
@@ -354,6 +386,7 @@ impl CodeIndex {
             dimensions,
             embedding_id,
             embedding_config,
+            file_hashes,
         })
     }
 
@@ -468,6 +501,7 @@ fn build_repository_batched(
     paths.sort();
     let mut report = BuildReport::default();
     let mut chunks = Vec::new();
+    let mut file_hashes = BTreeMap::new();
     for path in paths {
         let relative = path
             .strip_prefix(&root)
@@ -496,6 +530,10 @@ fn build_repository_batched(
             }
         };
         report.files += 1;
+        file_hashes.insert(
+            relative.clone(),
+            blake3::hash(source.as_bytes()).to_hex().to_string(),
+        );
         let (mut file_chunks, fallback) = chunk::chunk_file(
             &relative,
             chunk::language(&path).unwrap(),
@@ -588,6 +626,7 @@ fn build_repository_batched(
         vectors.into_iter().flat_map(Option::unwrap).collect(),
         options,
         &root,
+        &file_hashes,
     )?;
     let index = CodeIndex::from_batch(batch)?;
     let index = if let Some(previous) = previous {
@@ -603,6 +642,7 @@ fn make_batch(
     vectors: Vec<f32>,
     options: &BuildOptions,
     root: &Path,
+    file_hashes: &BTreeMap<String, String>,
 ) -> Result<RecordBatch, CodeError> {
     let strings = |get: fn(&CodeChunk) -> &str| -> ArrayRef {
         Arc::new(StringArray::from(
@@ -645,6 +685,10 @@ fn make_batch(
         (CHUNKER.into(), CHUNKER_VERSION.into()),
         (LINES.into(), options.fallback_lines.to_string()),
         (MAX_FILE_BYTES.into(), options.max_file_bytes.to_string()),
+        (
+            FILE_HASHES.into(),
+            serde_json::to_string(file_hashes).map_err(EmbeddingError::from)?,
+        ),
         (
             "cubeql.code.root".into(),
             root.to_string_lossy().into_owned(),

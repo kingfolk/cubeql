@@ -50,6 +50,11 @@ model/device index. Search returns compact previews and snapshot-bound chunk IDs
 opens arbitrary paths or the live checkout. See [docs/mcp-code-search.md](docs/mcp-code-search.md)
 for startup commands, client configuration, limits, traces and integration status.
 
+New snapshots also record whole-file hashes. With an explicit `--workspace-root`, MCP's
+`check_code` reports whether a saved hit's current file is unchanged, modified, missing or
+unverifiable. Search/read remain snapshot-local; checks neither refresh the index nor lock files.
+See [docs/workspace-freshness.md](docs/workspace-freshness.md) for the guard's scope and limits.
+
 The current prototype intentionally implements one complete path only:
 
 - input: Apache Arrow `RecordBatch`;

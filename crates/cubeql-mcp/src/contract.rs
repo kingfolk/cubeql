@@ -95,6 +95,49 @@ pub struct ReadRequest {
     #[schemars(range(min = 4, max = 65536))]
     pub max_bytes: usize,
 }
+
+#[derive(Debug, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CheckRequest {
+    /// Copy snapshot_id from search_code; checks never accept a caller-provided file path.
+    pub snapshot_id: String,
+    /// Check the complete workspace file containing this saved chunk.
+    pub chunk_id: usize,
+}
+impl CheckRequest {
+    pub(crate) fn validate(&self) -> Result<(), ToolFailure> {
+        if self.snapshot_id.len() > 128 {
+            return Err(ToolFailure::invalid("snapshot_id is too long"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Freshness {
+    /// Complete file bytes matched the saved file hash at check time, not a future edit lock.
+    Unchanged,
+    Modified,
+    Missing,
+    /// Never treat a missing workspace, missing manifest, or failed read as unchanged.
+    Unverifiable,
+}
+
+#[derive(Serialize)]
+pub struct CheckResponse {
+    pub format_version: u32,
+    pub snapshot_id: String,
+    pub source: &'static str,
+    #[serde(flatten)]
+    pub location: Location,
+    pub status: Freshness,
+    /// Machine-readable explanation, e.g. file_hash_match or legacy_snapshot.
+    pub reason: &'static str,
+    pub expected_file_hash: Option<String>,
+    pub actual_file_hash: Option<String>,
+    pub checked_bytes: u64,
+}
 fn default_read_bytes() -> usize {
     8192
 }

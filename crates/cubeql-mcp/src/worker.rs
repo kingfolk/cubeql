@@ -17,8 +17,8 @@ use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
 use crate::contract::{
-    Location, MAX_RESPONSE_BYTES, ReadRequest, ReadResponse, SearchHit, SearchRequest,
-    SearchResponse, ToolFailure, prefix_end,
+    CheckRequest, CheckResponse, Location, MAX_RESPONSE_BYTES, ReadRequest, ReadResponse,
+    SearchHit, SearchRequest, SearchResponse, ToolFailure, prefix_end,
 };
 
 #[derive(Clone, Debug)]
@@ -27,17 +27,21 @@ pub struct ServerOptions {
     pub model_dir: Option<PathBuf>,
     /// Load only host text/symbol adapters; semantic/hybrid requests then return an explicit error.
     pub text_only: bool,
+    /// Explicit authority for live freshness checks. Never use the index's saved root implicitly.
+    pub workspace_root: Option<PathBuf>,
 }
 
 pub(crate) enum Request {
     Search(SearchRequest),
     Read(ReadRequest),
+    Check(CheckRequest),
 }
 impl Request {
     fn method(&self) -> &'static str {
         match self {
             Self::Search(_) => "search_code",
             Self::Read(_) => "read_code",
+            Self::Check(_) => "check_code",
         }
     }
 }
@@ -57,6 +61,18 @@ impl Worker {
         let (ready, startup) = oneshot::channel();
         let task = move || {
             let startup_start = Instant::now();
+            let workspace = match options
+                .workspace_root
+                .as_ref()
+                .map(|path| cap_std::fs::Dir::open_ambient_dir(path, cap_std::ambient_authority()))
+                .transpose()
+            {
+                Ok(workspace) => workspace,
+                Err(error) => {
+                    let _ = ready.send(Err(failed(error)));
+                    return;
+                }
+            };
             // Construct every non-Send model/device value inside its owning thread.
             let initialized = initialize(&options);
             let (id, code, mut provider) = match initialized {
@@ -89,6 +105,7 @@ impl Worker {
                 "{}",
                 json!({"format_version":1, "event":"ready", "snapshot_id":id, "chunks":code.chunks().len(),
                 "text_only":options.text_only, "backend":backend, "precision":code.precision(),
+                "workspace_checks":workspace.is_some(),
                 "embedding_model":code.embedding_config().map(|c| c.model.as_str()),
                 "startup_ms":startup_start.elapsed().as_secs_f64()*1000.0})
             );
@@ -116,6 +133,7 @@ impl Worker {
                         request,
                     ),
                     Request::Read(request) => read(&id, code, request),
+                    Request::Check(request) => check(&id, code, workspace.as_ref(), request),
                 }
                 .and_then(bounded);
                 eprintln!(
@@ -125,7 +143,9 @@ impl Worker {
                     "elapsed_ms":start.elapsed().as_secs_f64()*1000.0,
                     "strategy":result.as_ref().ok().and_then(|v| v.get("strategy")),
                     "candidate_k":result.as_ref().ok().and_then(|v| v.get("candidate_k")),
-                    "read_chunk_id":result.as_ref().ok().and_then(|v| v.get("chunk_id")),
+                    "read_chunk_id":(method == "read_code").then(|| result.as_ref().ok().and_then(|v| v.get("chunk_id"))).flatten(),
+                    "checked_chunk_id":(method == "check_code").then(|| result.as_ref().ok().and_then(|v| v.get("chunk_id"))).flatten(),
+                    "freshness":result.as_ref().ok().and_then(|v| v.get("status")),
                     "returned_chunk_ids":result.as_ref().ok().and_then(|v| v.get("hits")).and_then(Value::as_array)
                         .map(|hits| hits.iter().map(|h| h["chunk_id"].clone()).collect::<Vec<_>>()),
                     "error":result.as_ref().err().map(|e| e.code)})
@@ -149,6 +169,7 @@ impl Worker {
                 request.validate()?;
             }
             Request::Read(request) => request.validate()?,
+            Request::Check(request) => request.validate()?,
         }
         let (reply, response) = oneshot::channel();
         self.sender
@@ -374,6 +395,44 @@ fn location(row: usize, chunk: &CodeChunk) -> Location {
         end_line: chunk.end_line,
         content_hash: chunk.content_hash.clone(),
     }
+}
+
+fn check(
+    id: &str,
+    code: &CodeIndex,
+    workspace: Option<&cap_std::fs::Dir>,
+    request: CheckRequest,
+) -> Result<Value, ToolFailure> {
+    request.validate()?;
+    if request.snapshot_id != id {
+        return Err(ToolFailure::new(
+            "snapshot_mismatch",
+            "snapshot_id does not match this server; search again",
+        ));
+    }
+    let chunk = code
+        .chunks()
+        .get(request.chunk_id)
+        .ok_or_else(|| ToolFailure::invalid("unknown chunk_id"))?;
+    let expected = code.file_hash(&chunk.path);
+    let checked = crate::freshness::check_file(
+        workspace,
+        &chunk.path,
+        expected,
+        crate::freshness::MAX_CHECK_BYTES,
+    );
+    serde_json::to_value(CheckResponse {
+        format_version: 1,
+        snapshot_id: id.into(),
+        source: "workspace_check",
+        location: location(request.chunk_id, chunk),
+        status: checked.status,
+        reason: checked.reason,
+        expected_file_hash: expected.map(str::to_owned),
+        actual_file_hash: checked.actual_hash,
+        checked_bytes: checked.bytes,
+    })
+    .map_err(failed)
 }
 fn bounded(value: Value) -> Result<Value, ToolFailure> {
     if serde_json::to_vec(&value).map_err(failed)?.len() > MAX_RESPONSE_BYTES {
