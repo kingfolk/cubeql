@@ -7,9 +7,12 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import harness_eval as runner
+import mcp_audit
+import io
 
 
 class AnalysisTests(unittest.TestCase):
@@ -55,6 +58,142 @@ class AnalysisTests(unittest.TestCase):
         self.assertFalse(runner.grade(answer, task)["location_success"])
         answer["locations"][0]["start_line"] = 1
         self.assertEqual(runner.grade(answer, task)["location_recall"], 0)
+
+    def test_rust_aliases_preserve_crate_module_impl_path_and_range_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "Cargo.toml").write_text('[package]\nname="cubeql-code"\nversion="0.1.0"\n')
+            (root / "src").mkdir()
+            (root / "src/retrieval.rs").write_text("pub fn target() {}\n")
+            label = {"path":"src/retrieval.rs","symbol":"Collector::target","start_line":10,"end_line":20}
+            label["symbol_aliases"] = runner.rust_symbol_aliases(root, label)
+            task = {"relevant":[label]}
+            for name in ["Collector::target", "retrieval::Collector::target",
+                         "crate::retrieval::Collector::target", "cubeql_code::retrieval::Collector::target"]:
+                answer = {"locations":[dict(path=label["path"], symbol=name, start_line=12, end_line=14)],"explanation":""}
+                self.assertTrue(runner.grade(answer, task)["location_success"], name)
+            for name in ["target", "Other::target", "other::Collector::target",
+                         "wrong_crate::retrieval::Collector::target", "cubeql_code::wrong::Collector::target"]:
+                answer["locations"][0]["symbol"] = name
+                self.assertFalse(runner.grade(answer, task)["location_success"], name)
+            answer["locations"][0] = dict(path="src/other.rs", symbol="Collector::target", start_line=12, end_line=14)
+            self.assertFalse(runner.grade(answer, task)["location_success"])
+            answer["locations"][0] = dict(path=label["path"], symbol="Collector::target", start_line=1, end_line=14)
+            self.assertFalse(runner.grade(answer, task)["location_success"])
+
+    def test_aliases_keep_inline_scopes_and_fail_closed_for_custom_layouts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest = root / "Cargo.toml"
+            manifest.write_text('[package]\nname="fixture"\nversion="0.1.0"\n')
+            (root / "src").mkdir()
+            source = root / "src/lib.rs"
+            source.write_text("mod a {}\nmod b {}\n")
+            label = {"path":"src/lib.rs","symbol":"a::target","start_line":1,"end_line":1}
+            aliases = runner.rust_symbol_aliases(root, label)
+            self.assertIn("fixture::a::target", aliases)
+            self.assertNotIn("fixture::b::target", aliases)
+            self.assertNotIn("target", aliases)
+            source.write_text('#[path="elsewhere.rs"] mod custom;')
+            self.assertEqual(runner.rust_symbol_aliases(root, label), ["a::target"])
+            source.write_text("include!(\"elsewhere.rs\");")
+            self.assertEqual(runner.rust_symbol_aliases(root, label), ["a::target"])
+            source.write_text("pub fn target() {}")
+            manifest.write_text('[package]\nname="fixture"\n[lib]\npath="custom.rs"\n')
+            self.assertEqual(runner.rust_symbol_aliases(root, label), ["a::target"])
+
+    def test_cargo_library_names_and_nested_module_filenames_are_not_confused(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "Cargo.toml").write_text('[package]\nname="package-name"\n[lib]\nname="library_name"\n')
+            (root / "src/nested").mkdir(parents=True)
+            for filename, qualified in [("lib.rs","library_name::target"),
+                                        ("main.rs","package_name::target"),
+                                        ("nested/mod.rs","library_name::nested::target"),
+                                        ("nested/lib.rs","library_name::nested::lib::target")]:
+                (root / "src" / filename).write_text("pub fn target() {}")
+                label = {"path":"src/"+filename,"symbol":"target"}
+                self.assertIn(qualified, runner.rust_symbol_aliases(root, label))
+
+    def test_failed_search_attempt_is_not_successful_retrieval_adoption(self):
+        item = {"id":"x","type":"mcp_tool_call","server":"cubeql","tool":"search_code",
+                "result":{"isError":True,"structuredContent":{"strategy":"lexical","hits":[]}}}
+        values = [{"type":"item.completed","item":item},{"type":"turn.completed"}]
+        result = runner.analyze(self.events(values), "lexical")
+        self.assertEqual(result["tool_calls"]["search_code"], 1)
+        self.assertEqual(result["successful_search_calls"], 0)
+
+    def test_same_client_discovery_requires_initialize_and_complete_expected_catalog(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "audit.jsonl"
+            self.assertEqual(runner.discovery(path, "lexical")["status"], "unobserved")
+            output = io.BytesIO()
+            audit = mcp_audit.Discovery(output)
+            def observe(value, incoming):
+                audit.observe(json.dumps(value).encode(), incoming)
+            observe({"id":1,"method":"initialize"}, True)
+            observe({"id":1,"result":{}}, False)
+            observe({"id":2,"method":"tools/list"}, True)
+            tools = [{"name":name,"inputSchema":{"type":"object"},"annotations":{"readOnlyHint":True}}
+                     for name in runner.MCP_TOOLS]
+            observe({"id":2,"result":{"tools":tools}}, False)
+            path.write_bytes(output.getvalue())
+            self.assertEqual(runner.discovery(path, "lexical")["status"], "client_discovered")
+            record = json.loads(path.read_text())
+            for key, value in [("initialized",False), ("next_cursor","more"), ("tools",tools[:1])]:
+                path.write_text(json.dumps(dict(record, **{key:value})))
+                with self.assertRaises(ValueError):
+                    runner.discovery(path, "hybrid")
+            path.write_text("invalid")
+            with self.assertRaises(ValueError):
+                runner.discovery(path, "lexical")
+
+    def test_legacy_plans_cannot_resume_with_changed_grading(self):
+        with mock.patch.object(runner, "load_plan", return_value={"version":1}):
+            with self.assertRaisesRegex(ValueError, "legacy plans"):
+                runner.run(argparse.Namespace(execute=True, max_runs=1, plan=Path("plan.json")))
+
+    def test_regrade_is_offline_versioned_and_never_overwrites_original_artifacts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            (source / "src").mkdir(parents=True)
+            (source / "Cargo.toml").write_text('[package]\nname="fixture"\nversion="0.1.0"\n')
+            (source / "src/lib.rs").write_text("pub fn target() {}\n")
+            (root / "snapshot.arrow").write_bytes(b"fixture snapshot")
+            plan = {"version":1,"harness":"codex-exec-jsonl","model":"fixture","reasoning_effort":"medium",
+                    "timeout_seconds":30,"embedding":"hash","mcp_executable":sys.executable,
+                    "dataset":{"tasks":[{"id":"t","relevant":[{"path":"src/lib.rs","symbol":"target",
+                                                                              "start_line":1,"end_line":1}]}]},
+                    "trials":[{"id":"t-0-baseline","task_id":"t","arm":"baseline","repeat":0}],
+                    "commit":"fixed","source_sha256":runner.fingerprint(source),
+                    "snapshot_sha256":runner.digest(root / "snapshot.arrow")}
+            runner.write_json(root / "plan.json", plan)
+            directory = root / "runs/t-0-baseline"
+            directory.mkdir(parents=True)
+            runner.write_json(directory / "answer.json", {"locations":[{"path":"src/lib.rs",
+                "symbol":"fixture::target","start_line":1,"end_line":1}],"explanation":""})
+            runner.write_json(directory / "result.json", {"arm":"baseline","valid":True,
+                "grading":{"location_success":False,"location_recall":0},"elapsed_seconds":1,
+                "tool_calls":{"mcp_tool_call":0},
+                "tokens":{key:None for key in ("input_tokens","output_tokens","cached_input_tokens","reasoning_output_tokens")}})
+            originals = {p:runner.digest(p) for p in root.rglob("*") if p.is_file()}
+            args = argparse.Namespace(plan=root / "plan.json", output=root / "regraded.json")
+            with mock.patch.object(subprocess, "Popen", side_effect=AssertionError("must be offline")):
+                report = runner.regrade(args)
+            self.assertEqual(report["model_requests_started"], 0)
+            self.assertEqual(report["arms"]["baseline"]["location_successes"], 1)
+            self.assertTrue(runner.read_json(args.output)["post_hoc_regrade"])
+            self.assertEqual(runner.report(args.plan)["arms"]["baseline"]["location_successes"], 0)
+            self.assertEqual(originals, {p:runner.digest(p) for p in originals})
+            with self.assertRaises(FileExistsError):
+                runner.regrade(args)
+
+    def test_unrequested_tool_catalog_is_not_discovery_evidence(self):
+        output = io.BytesIO()
+        audit = mcp_audit.Discovery(output)
+        audit.observe(json.dumps({"id":99,"result":{"tools":[]}}).encode(), False)
+        self.assertEqual(output.getvalue(), b"")
 
     def test_unsafe_paths_and_duplicate_labels_are_rejected(self):
         for path in ["../a", "/tmp/a", "C:/a", "a\\b", "a//b"]:
@@ -163,6 +302,38 @@ class OfflineIntegrationTests(unittest.TestCase):
             self.assertEqual(report["arms"]["baseline"]["cubeql_calls"], 0)
             self.assertEqual(report["arms"]["lexical"]["cubeql_calls"], 2)
             self.assertEqual(report["arms"]["hybrid"]["cubeql_calls"], 2)
+            for arm in ("lexical", "hybrid"):
+                self.assertEqual(report["arms"][arm]["client_discovery_observed_runs"], 1)
+                self.assertEqual(report["arms"][arm]["search_adoption_runs"], 1)
+                self.assertTrue((output / f"runs/target-0-{arm}/mcp-discovery.jsonl").is_file())
+            self.assertEqual(report["comparison_warnings"], [])
+            # A callable server without tools/list by the actual CLI is NOT proven visible.
+            # The runner must stop after the first augmented trial rather than pay for more.
+            no_discovery = root / "no-discovery"
+            shutil.copytree(output, no_discovery, ignore=shutil.ignore_patterns("runs", "preflight-*"))
+            with mock.patch.dict(os.environ, {"CUBEQL_FIXTURE_SKIP_DISCOVERY":"1"}):
+                missing = runner.run(argparse.Namespace(plan=no_discovery / "plan.json", execute=True,
+                                                       max_runs=3, codex=str(fixture)))
+            self.assertEqual(missing["arms"]["lexical"]["invalid"], 1)
+            self.assertEqual(missing["arms"]["hybrid"]["missing"], 1)
+            self.assertIn("mcp_discovery_unobserved", missing["runs"][1]["problems"])
+            # An unavailable MCP server is caught in the offline preflight, before exec.
+            failure = root / "preflight-failure"
+            shutil.copytree(output, failure, ignore=shutil.ignore_patterns("runs", "preflight-*"))
+            broken = runner.read_json(failure / "plan.json")
+            broken["mcp_executable"] = sys.executable  # Python cannot speak MCP for an Arrow file.
+            broken["mcp_sha256"] = runner.digest(Path(sys.executable))
+            (failure / "plan.json").write_text(json.dumps(broken))
+            real_process = runner.process
+            def offline_only(command, *args):
+                self.assertNotIn("exec", command)
+                return real_process(command, *args)
+            with mock.patch.object(runner, "process", side_effect=offline_only):
+                with self.assertRaisesRegex(ValueError, "preflight failed"):
+                    runner.run(argparse.Namespace(plan=failure / "plan.json", execute=True,
+                                                 max_runs=3, codex=str(fixture)))
+            self.assertEqual(list((failure / "runs").iterdir()), [])
+            self.assertTrue(list(failure.glob("preflight-*/lexical/stderr.log")))
             self.assertEqual((repo / "lib.rs").read_text(), "pub fn dirty_worktree() {}\n")
             with self.assertRaises(FileExistsError):
                 output.mkdir(exist_ok=False)

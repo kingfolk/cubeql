@@ -23,10 +23,14 @@ import tarfile
 import tempfile
 import threading
 import time
+import tomllib
 
 ARMS = ("baseline", "lexical", "hybrid")
 MAX_LOG = 32 * 1024 * 1024
 SKIP_DIRS = {".git", ".codex", ".agents", "evals"}
+GRADER = "path-aware-rust-aliases-v2"
+AUDIT_SCRIPT = Path(__file__).with_name("mcp_audit.py").resolve()
+MCP_TOOLS = {"search_code", "read_code", "check_code"}
 ANSWER_SCHEMA = {
     "type": "object", "additionalProperties": False,
     "properties": {
@@ -158,6 +162,58 @@ def export_source(repo, revision, destination, omitted_file):
     return commit, omitted
 
 
+def rust_symbol_aliases(source, label):
+    """Conservative spelling aliases, never arbitrary suffix matching or a Rust resolver.
+
+    The exact snapshot identity always remains accepted. Infer extra spellings only for
+    conventional Cargo src paths. Custom module-path attributes/includes disable inference;
+    path + the complete snapshot-local symbol (including impl/inline scope) + range still
+    have to match. A wrong crate/module/impl name is never discarded by the grader.
+    """
+    aliases = {label["symbol"]}
+    path = source / label["path"]
+    if path.suffix != ".rs":
+        return sorted(aliases)
+    manifest = next((p / "Cargo.toml" for p in path.parents
+                     if p.is_relative_to(source) and (p / "Cargo.toml").is_file()), None)
+    if manifest is None:
+        return sorted(aliases)
+    cargo = tomllib.loads(manifest.read_text(encoding="utf-8"))
+    package = cargo.get("package", {}).get("name")
+    if not isinstance(package, str):
+        return sorted(aliases)
+    base = manifest.parent / "src"
+    if not path.is_relative_to(base):
+        return sorted(aliases)
+    # Fail closed for layouts that need real Rust name resolution. This deliberately also
+    # rejects commented-out path attributes rather than risking a false positive.
+    if cargo.get("lib", {}).get("path") or cargo.get("bin"):
+        return sorted(aliases)
+    for rust in base.rglob("*.rs"):
+        text = rust.read_text(encoding="utf-8")
+        if re.search(r"#\s*\[[^\]]*\bpath\s*=|\binclude\s*!", text):
+            return sorted(aliases)
+    parts = list(path.relative_to(base).with_suffix("").parts)
+    if parts[0] in ("bin", "examples", "tests"):
+        return sorted(aliases)
+    if parts[-1] == "mod" or (len(parts) == 1 and parts[0] in ("lib", "main")):
+        parts.pop()
+    crate = (package.replace("-", "_") if parts == [] and path.name == "main.rs"
+             else cargo.get("lib", {}).get("name", package.replace("-", "_")))
+    if not isinstance(crate, str) or not all(re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", p)
+                                           for p in [crate, *parts]):
+        return sorted(aliases)
+    module_symbol = "::".join([*parts, label["symbol"]])
+    aliases.update((module_symbol, "crate::" + module_symbol, crate + "::" + module_symbol))
+    return sorted(aliases)
+
+
+def resolve_labels(tasks, source):
+    for task in tasks["tasks"]:
+        for label in task["relevant"]:
+            label["symbol_aliases"] = rust_symbol_aliases(source, label)
+
+
 def prepare(args):
     tasks = load_tasks(args.tasks.resolve())
     require(positive(args.repeats) and args.repeats <= 20, "repeats must be 1..=20")
@@ -205,7 +261,10 @@ def prepare(args):
             for arm in ARMS[shift:] + ARMS[:shift]:
                 trials.append({"id": f"{task['id']}-{repeat}-{arm}", "task_id": task["id"],
                                "repeat": repeat, "arm": arm})
-    plan = {"version": 1, "harness": "codex-exec-jsonl", "model": args.model,
+    resolve_labels(tasks, source)
+    plan = {"version": 2, "harness": "codex-exec-jsonl", "model": args.model,
+            "grader": GRADER, "audit_sha256": digest(AUDIT_SCRIPT),
+            "runner_sha256": digest(Path(__file__)),
             "reasoning_effort": args.reasoning_effort, "timeout_seconds": args.timeout,
             "commit": commit, "source_sha256": source_hash, "omitted_paths": omitted,
             "snapshot_sha256": digest(output / "snapshot.arrow"), "embedding": args.embedding,
@@ -215,6 +274,7 @@ def prepare(args):
             "snapshot_info": build["snapshot"],
             "limitations": ["location grading only; explanations require manual review",
                             "read-only sandbox is not a confidentiality boundary",
+                            "MCP tools/list attests client discovery, not model attention",
                             "hash embeddings are fixtures, not semantic quality evidence"]}
     write_json(output / "answer-schema.json", ANSWER_SCHEMA)
     write_json(output / "plan.json", plan)
@@ -236,6 +296,16 @@ def prompt(task, arm):
             + tools + "\nQuestion: " + task["question"])
 
 
+def mcp_command(plan, arm, workspace, prepared):
+    args = [plan["mcp_executable"], str(prepared / "snapshot.arrow"),
+            "--workspace-root", str(workspace), "--search-strategy", arm]
+    if arm == "lexical":
+        args += ["--text-only"]
+    elif plan["embedding"] == "minilm":
+        args += ["--model-dir", plan["model_dir"]]
+    return args
+
+
 def codex_command(codex, plan, trial, workspace, run_dir, prepared):
     command = [codex, "exec", "--strict-config", "--ignore-user-config", "--ephemeral", "--json", "--color", "never",
                "--sandbox", "read-only", "--cd", str(workspace), "--model", plan["model"],
@@ -246,14 +316,11 @@ def codex_command(codex, plan, trial, workspace, run_dir, prepared):
               "features.plugins=false", "shell_environment_policy.inherit=\"core\"",
               "model_reasoning_effort=" + json.dumps(plan["reasoning_effort"])]
     if trial["arm"] != "baseline":
-        mcp_args = [str(prepared / "snapshot.arrow"), "--workspace-root", str(workspace),
-                    "--search-strategy", trial["arm"]]
-        if trial["arm"] == "lexical":
-            mcp_args += ["--text-only"]
-        elif plan["embedding"] == "minilm":
-            mcp_args += ["--model-dir", plan["model_dir"]]
+        # Audit the *actual exec client's* discovery, not a second client's tool catalog.
+        mcp_args = [str(AUDIT_SCRIPT), "--audit", str(run_dir / "mcp-discovery.jsonl"), "--",
+                    *mcp_command(plan, trial["arm"], workspace, prepared)]
         # JSON strings/arrays are a TOML-compatible encoding for these ordinary path values.
-        server = ("{command=" + json.dumps(plan["mcp_executable"], ensure_ascii=False) + ",args="
+        server = ("{command=" + json.dumps(sys.executable, ensure_ascii=False) + ",args="
                   + json.dumps(mcp_args, ensure_ascii=False) + ",required=true,startup_timeout_sec=120,tool_timeout_sec=120,"
                   'enabled_tools=["search_code","read_code","check_code"],default_tools_approval_mode="approve"}')
         config.append("mcp_servers.cubeql=" + server)
@@ -261,6 +328,62 @@ def codex_command(codex, plan, trial, workspace, run_dir, prepared):
         command += ["-c", value]
     task = next(t for t in plan["dataset"]["tasks"] if t["id"] == trial["task_id"])
     return command + [prompt(task, trial["arm"])]
+
+
+def discovery(path, arm):
+    if arm == "baseline":
+        return {"status": "not_applicable", "tools": []}
+    if not path.exists():
+        return {"status": "unobserved", "tools": []}
+    require(path.stat().st_size <= 4 * 1024 * 1024, "discovery audit too large")
+    records = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    tools = set()
+    for record in records:
+        require(record["event"] == "tools_list_response" and record["initialized"]
+                and not record["error"] and not record["next_cursor"], "invalid discovery response")
+        require(isinstance(record["tools"], list), "missing tool catalog")
+        names = [tool["name"] for tool in record["tools"]]
+        require(len(names) == len(MCP_TOOLS) and set(names) == MCP_TOOLS, "unexpected MCP tool catalog")
+        require(all(tool.get("annotations", {}).get("readOnlyHint") is True
+                    and isinstance(tool.get("inputSchema"), dict) for tool in record["tools"]),
+                "MCP tools must have schemas and read-only annotations")
+        tools.update(names)
+    return {"status": "client_discovered" if tools else "unobserved", "tools": sorted(tools)}
+
+
+def validate_artifacts(plan, root):
+    require(fingerprint(root / "source") == plan["source_sha256"], "prepared source changed")
+    require(digest(root / "snapshot.arrow") == plan["snapshot_sha256"], "prepared snapshot changed")
+    require(digest(Path(plan["mcp_executable"])) == plan["mcp_sha256"], "MCP binary changed; prepare a new plan")
+    require(read_json(root / "answer-schema.json") == ANSWER_SCHEMA, "answer schema changed")
+
+
+def probe(plan, root, directory):
+    """Real CubeQL startup/catalog preflight, no Codex/model invocation or config edits."""
+    results = {}
+    for arm in ("lexical", "hybrid"):
+        output = directory / arm
+        output.mkdir(mode=0o700)
+        execution = process([sys.executable, str(AUDIT_SCRIPT), "--probe", "--audit",
+                             str(output / "mcp-discovery.jsonl"), "--",
+                             *mcp_command(plan, arm, root / "source", root)], root, output, 120)
+        require(execution["exit_code"] == 0 and not execution["failure"],
+                f"{arm} MCP preflight failed; inspect {output}; no model was started")
+        result = discovery(output / "mcp-discovery.jsonl", arm)
+        require(result["status"] == "client_discovered", "preflight did not discover tools")
+        results[arm] = result
+    return {"model_requests_started": 0, "scope": "server_catalog_only",
+            "model_visible_tools": "not_proven_by_preflight", "arms": results}
+
+
+def preflight(args):
+    root = args.plan.resolve().parent
+    plan = load_plan(args.plan)
+    validate_artifacts(plan, root)
+    args.output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    result = probe(plan, root, args.output)
+    write_json(args.output / "preflight.json", result)
+    return result
 
 
 def process(command, cwd, directory, timeout):
@@ -349,6 +472,7 @@ def analyze(events, arm):
     counts = {"command_execution": 0, "mcp_tool_call": 0, "search_code": 0,
               "read_code": 0, "check_code": 0}
     read_bytes, chunks = 0, set()
+    successful_searches = 0
     context_observed = True
     for item in items.values():
         kind = item.get("type")
@@ -387,11 +511,16 @@ def analyze(events, arm):
                 continue
             if tool == "search_code" and "hits" in value and value.get("strategy") != arm:
                 problems.append("wrong_retrieval_strategy")
+            if (tool == "search_code" and isinstance(value.get("hits"), list)
+                    and value.get("strategy") == arm and not result.get("isError")
+                    and item.get("status") != "failed" and not item.get("error")):
+                successful_searches += 1
             if tool == "read_code" and isinstance(value.get("text"), str):
                 read_bytes += len(value["text"].encode())
                 chunks.add((value.get("snapshot_id"), value.get("chunk_id")))
     return {"tokens": tokens, "tool_calls": counts, "read_bytes_returned": read_bytes if context_observed else None,
-            "distinct_snapshot_chunks_read": len(chunks) if context_observed else None, "problems": sorted(set(problems))}
+            "distinct_snapshot_chunks_read": len(chunks) if context_observed else None,
+            "successful_search_calls": successful_searches, "problems": sorted(set(problems))}
 
 
 def grade(answer, task):
@@ -405,7 +534,8 @@ def grade(answer, task):
                 and positive(location["start_line"]) and positive(location["end_line"])
                 and location["start_line"] <= location["end_line"], "invalid cited location")
         locations.append(location)
-    matched = sum(any(c["path"] == label["path"] and c["symbol"] == label["symbol"]
+    matched = sum(any(c["path"] == label["path"]
+                      and c["symbol"] in label.get("symbol_aliases", [label["symbol"]])
                       and label["start_line"] <= c["start_line"] <= c["end_line"] <= label["end_line"]
                       for c in locations) for label in task["relevant"])
     return {"location_recall": matched / len(task["relevant"]),
@@ -414,15 +544,15 @@ def grade(answer, task):
 
 
 def run(args):
-    require(args.execute, "model execution requires --execute; prepare/doctor/report are offline")
+    require(args.execute, "model execution requires --execute; prepare/preflight/regrade/report are offline")
     require(positive(args.max_runs), "explicit positive --max-runs is required")
     root = args.plan.resolve().parent
     require(args.plan.name == "plan.json", "execute the prepared plan.json, not another artifact")
     plan = load_plan(args.plan)
-    require(fingerprint(root / "source") == plan["source_sha256"], "prepared source changed")
-    require(digest(root / "snapshot.arrow") == plan["snapshot_sha256"], "prepared snapshot changed")
-    require(digest(Path(plan["mcp_executable"])) == plan["mcp_sha256"], "MCP binary changed; prepare a new plan")
-    require(read_json(root / "answer-schema.json") == ANSWER_SCHEMA, "answer schema changed")
+    require(plan["version"] == 2, "legacy plans are report/regrade-only; prepare a new v2 experiment")
+    require(plan["grader"] == GRADER and plan["audit_sha256"] == digest(AUDIT_SCRIPT)
+            and plan["runner_sha256"] == digest(Path(__file__)), "runner changed; prepare a new experiment")
+    validate_artifacts(plan, root)
     codex = executable(args.codex)
     version = checked([codex, "--version"]).strip()
     help_text = checked([codex, "exec", "--help"])
@@ -433,6 +563,11 @@ def run(args):
     existing = list(runs.iterdir())
     versions = [read_json(p / "result.json").get("harness_version") for p in existing if (p / "result.json").exists()]
     require(all(v == version for v in versions), "harness version changed between trials")
+    # Always probe before the first paid exec in this invocation. Temporary preflight
+    # directories are unique, including resumes; failures/evidence are never overwritten.
+    saved = Path(tempfile.mkdtemp(prefix="preflight-", dir=root))
+    preflight_result = probe(plan, root, saved)
+    write_json(saved / "preflight.json", preflight_result)
     started = 0
     for trial in plan["trials"]:
         if started >= args.max_runs:
@@ -453,9 +588,17 @@ def run(args):
             write_json(directory / "invocation.json", {"argv": command, "harness_version": version})
             execution = process(command, workspace, directory, plan["timeout_seconds"])
             parsed = analyze((directory / "events.jsonl").read_text(errors="replace"), trial["arm"])
+            try:
+                catalog = discovery(directory / "mcp-discovery.jsonl", trial["arm"])
+                if catalog["status"] == "unobserved":
+                    parsed["problems"].append("mcp_discovery_unobserved")
+            except (ValueError, OSError, KeyError, TypeError) as error:
+                catalog = {"status": "invalid", "tools": [], "error": str(error)[:300]}
+                parsed["problems"].append("invalid_mcp_discovery")
             if fingerprint(workspace) != plan["source_sha256"]:
                 parsed["problems"].append("workspace_modified")
-        result = {**trial, **execution, **parsed, "harness_version": version, "grading": None}
+        result = {**trial, **execution, **parsed, "harness_version": version, "grading": None,
+                  "grader": GRADER, "mcp_discovery": catalog}
         if execution["failure"] or execution["exit_code"] != 0:
             result["problems"].append("process_failed")
         try:
@@ -467,12 +610,14 @@ def run(args):
         print(json.dumps({"trial": trial["id"], "valid": result["valid"]}), file=sys.stderr)
         if execution["failure"] and "group_signal_denied" in execution["failure"]:
             break  # Cannot guarantee child-tree cleanup; do not start more model processes.
+        if catalog["status"] in ("unobserved", "invalid"):
+            break  # Fail closed on tool availability before spending on more model trials.
     return report(root / "plan.json")
 
 
 def load_plan(path):
     plan = read_json(path)
-    require(plan["version"] == 1 and plan["harness"] == "codex-exec-jsonl", "unsupported plan")
+    require(plan["version"] in (1, 2) and plan["harness"] == "codex-exec-jsonl", "unsupported plan")
     require(isinstance(plan["model"], str) and plan["model"].strip() and not plan["model"].startswith("-"), "invalid model")
     require(plan["reasoning_effort"] in ("low", "medium", "high") and positive(plan["timeout_seconds"])
             and plan["timeout_seconds"] <= 3600 and plan["embedding"] in ("hash", "minilm"), "invalid execution settings")
@@ -498,6 +643,10 @@ def report(path):
         result_path = root / "runs" / trial["id"] / "result.json"
         if result_path.exists():
             results.append(read_json(result_path))
+    return summarize(plan, results)
+
+
+def summarize(plan, results):
     summaries = {}
     for arm in ARMS:
         rows = [r for r in results if r["arm"] == arm]
@@ -514,12 +663,56 @@ def report(path):
                           "location_success_rate_completed": (sum(r["grading"]["location_success"] for r in valid) / len(rows)) if rows else None,
                           "median_seconds": statistics.median(r["elapsed_seconds"] for r in rows) if rows else None,
                           "cubeql_calls": sum(r["tool_calls"]["mcp_tool_call"] for r in rows),
+                          "client_discovery_observed_runs": sum(r.get("mcp_discovery", {}).get("status") == "client_discovered" for r in rows),
+                          "search_adoption_runs": sum(r["tool_calls"].get("search_code", 0) > 0 for r in rows),
+                          "successful_search_runs": sum(r.get("successful_search_calls", 0) > 0 for r in rows),
                           "tokens": token_totals}
+    warnings = []
+    for arm in ("lexical", "hybrid"):
+        summary = summaries[arm]
+        if summary["client_discovery_observed_runs"] < summary["completed"]:
+            warnings.append(arm + ": client discovery not established for every completed run")
+        if not summary["successful_search_runs"]:
+            warnings.append(arm + ": no proven successful CubeQL search; not retrieval-quality evidence")
     return {"version": 1, "commit": plan["commit"], "embedding": plan["embedding"],
+            "grader": plan.get("grader", "exact-symbol-v1"), "comparison_warnings": warnings,
             "requested_model": plan["model"], "reasoning_effort": plan["reasoning_effort"],
             "source_sha256": plan["source_sha256"], "snapshot_sha256": plan["snapshot_sha256"],
             "quality_claim": "none; inspect trials and manually review explanations",
             "complete_matrix": len(results) == len(plan["trials"]), "arms": summaries, "runs": results}
+
+
+def regrade(args):
+    """New offline derivative; never mutate a legacy plan, answer or original score."""
+    root = args.plan.resolve().parent
+    plan = load_plan(args.plan)
+    require(fingerprint(root / "source") == plan["source_sha256"], "prepared source changed")
+    require(digest(root / "snapshot.arrow") == plan["snapshot_sha256"], "prepared snapshot changed")
+    resolve_labels(plan["dataset"], root / "source")
+    plan["grader"] = GRADER
+    results = []
+    tasks = {task["id"]: task for task in plan["dataset"]["tasks"]}
+    for trial in plan["trials"]:
+        directory = root / "runs" / trial["id"]
+        if not (directory / "result.json").exists():
+            continue
+        result = read_json(directory / "result.json")
+        result["previous_grading"] = result["grading"]
+        result["grader"] = GRADER
+        try:
+            result["grading"] = grade(read_json(directory / "answer.json"), tasks[trial["task_id"]])
+        except (ValueError, OSError, TypeError):
+            result["grading"] = {"location_recall": 0, "location_success": False,
+                                 "explanation_review": "not_automatically_graded"}
+        results.append(result)
+    value = summarize(plan, results)
+    value.update({"post_hoc_regrade": True, "original_plan_sha256": digest(args.plan),
+                  "regrader_sha256": digest(Path(__file__)),
+                  "resolved_labels": {t["id"]: t["relevant"] for t in plan["dataset"]["tasks"]},
+                  "model_requests_started": 0, "original_artifacts_modified": False})
+    write_json(args.output, value)
+    return {"output": str(args.output.resolve()), "model_requests_started": 0,
+            "arms": value["arms"], "comparison_warnings": value["comparison_warnings"]}
 
 
 def main():
@@ -545,9 +738,24 @@ def main():
     execute.add_argument("--codex", default="codex")
     summarize = commands.add_parser("report", help="summarize saved results without model requests")
     summarize.add_argument("plan", type=Path)
+    check = commands.add_parser("preflight", help="probe real MCP startup/catalog, no model requests")
+    check.add_argument("plan", type=Path)
+    check.add_argument("--output", type=Path, required=True)
+    rescore = commands.add_parser("regrade", help="write a separate offline v2 grading report")
+    rescore.add_argument("plan", type=Path)
+    rescore.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        value = prepare(args) if args.command == "prepare" else run(args) if args.command == "run" else report(args.plan)
+        if args.command == "prepare":
+            value = prepare(args)
+        elif args.command == "run":
+            value = run(args)
+        elif args.command == "preflight":
+            value = preflight(args)
+        elif args.command == "regrade":
+            value = regrade(args)
+        else:
+            value = report(args.plan)
         print(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False))
     except (ValueError, OSError, subprocess.SubprocessError, KeyError, TypeError) as error:
         parser.exit(1, f"harness evaluation failed: {error}\n")

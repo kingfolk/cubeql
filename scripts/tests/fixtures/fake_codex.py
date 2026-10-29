@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """OFFLINE protocol fixture, NOT a language model or evidence of retrieval quality."""
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -47,6 +48,9 @@ if server:
     request(1, "initialize", {"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"OFFLINE-FIXTURE","version":"1"}})
     child.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n')
     child.stdin.flush()
+    if not os.getenv("CUBEQL_FIXTURE_SKIP_DISCOVERY"):
+        tools = request(10, "tools/list", {})
+        assert {t["name"] for t in tools["tools"]} == {"search_code", "read_code", "check_code"}
     strategy = server["args"][server["args"].index("--search-strategy") + 1]
     found = request(2, "tools/call", {"name":"search_code","arguments":{"query":"target","strategy":strategy}})
     assert not found["isError"]
