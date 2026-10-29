@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "name": "cubeql-agent-code-discovery-v1",
+  "tasks": [
+    {
+      "id": "file-evidence",
+      "question": "Where does the code index builder record the complete file contents' hash, including text outside extracted functions? Explain how this differs from the hash of an individual chunk.",
+      "relevant": [{"path": "crates/cubeql-code/src/lib.rs", "symbol": "build_repository_batched"}]
+    },
+    {
+      "id": "workspace-boundary",
+      "question": "Find where a saved code hit's current workspace file is checked without allowing its path to escape the configured directory. Explain how special files and files that are too large are handled.",
+      "relevant": [{"path": "crates/cubeql-mcp/src/freshness.rs", "symbol": "check_file"}]
+    },
+    {
+      "id": "fusion-and-overlap",
+      "question": "Find both the rank-based combination of retrieval sources and the suppression of code chunks whose source ranges overlap heavily. Explain how the implementation avoids adding incompatible raw scores and wasting final result slots.",
+      "relevant": [
+        {"path": "crates/cubeql-code/src/evaluation.rs", "symbol": "reciprocal_rank_fusion"},
+        {"path": "crates/cubeql-code/src/retrieval.rs", "symbol": "deduplicate"}
+      ]
+    }
+  ]
+}
