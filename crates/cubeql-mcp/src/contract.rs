@@ -10,7 +10,9 @@ pub const MAX_CANDIDATES: usize = 1000;
 pub const MAX_READ_BYTES: usize = 65536;
 pub const MAX_RESPONSE_BYTES: usize = 512 * 1024;
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, JsonSchema)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, Serialize, JsonSchema, clap::ValueEnum,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Strategy {
     Semantic,

@@ -75,6 +75,15 @@ impl Client {
         model_dir: Option<&Path>,
         workspace_root: Option<&Path>,
     ) -> Self {
+        Self::start_with_policy(index, text_only, model_dir, workspace_root, None)
+    }
+    fn start_with_policy(
+        index: &Path,
+        text_only: bool,
+        model_dir: Option<&Path>,
+        workspace_root: Option<&Path>,
+        strategy: Option<&str>,
+    ) -> Self {
         let mut command = Command::new(env!("CARGO_BIN_EXE_cubeql-mcp"));
         command.arg(index);
         if text_only {
@@ -85,6 +94,9 @@ impl Client {
         }
         if let Some(directory) = workspace_root {
             command.arg("--workspace-root").arg(directory);
+        }
+        if let Some(strategy) = strategy {
+            command.arg("--search-strategy").arg(strategy);
         }
         let mut child = command
             .stdin(Stdio::piped())
@@ -440,6 +452,48 @@ fn startup_errors_do_not_emit_protocol_or_modify_inputs() {
             .contains("unsupported embedding provider")
     );
     assert_eq!(fs::read(&path).unwrap(), original);
+}
+
+#[test]
+fn evaluation_strategy_policies_reject_cross_arm_searches_without_disabling_source_reading() {
+    let (dir, _) = fixture(VectorPrecision::Fp32, false);
+    for (text_only, strategy) in [(true, "lexical"), (false, "hybrid")] {
+        let mut client = Client::start_with_policy(
+            &dir.path().join("code.arrow"),
+            text_only,
+            None,
+            None,
+            Some(strategy),
+        );
+        let found = client.success(
+            "search_code",
+            json!({"query":"load_config","strategy":strategy}),
+        );
+        assert_eq!(found["strategy"], strategy);
+        for other in ["semantic", "lexical", "symbol", "hybrid"]
+            .into_iter()
+            .filter(|other| *other != strategy)
+        {
+            client.error(
+                "search_code",
+                json!({"query":"load_config","strategy":other}),
+                "strategy_restricted",
+            );
+        }
+        let read = client.success(
+            "read_code",
+            json!({"snapshot_id":found["snapshot_id"],"chunk_id":found["hits"][0]["chunk_id"]}),
+        );
+        assert_eq!(read["text"], TARGET);
+        client.close();
+    }
+    let output = Command::new(env!("CARGO_BIN_EXE_cubeql-mcp"))
+        .arg(dir.path().join("code.arrow"))
+        .args(["--text-only", "--search-strategy", "hybrid"])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
 }
 
 #[test]

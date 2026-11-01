@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use cubeql_mcp::contract::Strategy;
 use cubeql_mcp::{CodeServer, ServerOptions};
 use rmcp::{ServiceExt, transport::stdio};
 
@@ -18,6 +19,9 @@ struct Cli {
     /// Explicit directory boundary for check_code. Never inferred from snapshot metadata.
     #[arg(long)]
     workspace_root: Option<PathBuf>,
+    /// Restrict search_code to exactly this strategy (useful for controlled evaluations).
+    #[arg(long, value_enum)]
+    search_strategy: Option<Strategy>,
 }
 
 #[tokio::main]
@@ -28,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model_dir: args.model_dir,
         text_only: args.text_only,
         workspace_root: args.workspace_root,
+        search_strategy: args.search_strategy,
     })
     .await?;
     // stdout belongs exclusively to MCP JSON-RPC. Diagnostics and traces go to stderr.
