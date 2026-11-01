@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "name": "cubecl-paired-wording-diagnostic-v1",
+  "queries": [
+    {"id":"wording-loaded-fast-path","category":"conceptual","text":"Which part avoids preparing a kernel again when the device already has it, but does not ignore other kernels still waiting to be compiled?","filter":{"language":"rust"},
+     "relevant":[{"path":"crates/cubecl-server/src/compiler/loader.rs","symbol":"KernelLoader < T >::load"}]},
+    {"id":"wording-compiler-failure","category":"behavioral","text":"For an NVIDIA kernel that fails to build, where can I get the compiler's explanation together with the exact generated program that failed?","filter":{"language":"rust"},
+     "relevant":[{"path":"crates/cubecl-cuda/src/compute/artifact.rs","symbol":"CudaArtifactCompiler::compile_to_ptx"}]},
+    {"id":"wording-inplace-write","category":"conceptual","text":"I reuse an input allocation for the answer instead of creating a separate output buffer. Where is that original buffer's write access recorded for the launch?","filter":{"language":"rust"},
+     "relevant":[{"path":"crates/cubecl-core/src/compute/launcher.rs","symbol":"KernelLauncher::alias_io"}]},
+    {"id":"wording-scratch-consolidation","category":"conceptual","text":"During IR rewriting, where are several GPU scratch buffers consolidated into one block of memory, keeping the original buffers accessible through byte offsets?","filter":{"language":"rust"},
+     "relevant":[{"path":"crates/cubecl-opt/src/passes/alloc_shared_memory.rs","symbol":"<AllocateSharedMemoryBlockPass as Pass>::run"}]},
+    {"id":"wording-environment-switch","category":"behavioral","text":"A different execution environment is activated. Which cache guard prevents using loaded kernels left over from the previous environment when the cache is next accessed?","filter":{"language":"rust"},
+     "relevant":[{"path":"crates/cubecl-server/src/compiler/loader.rs","symbol":"CompilationCache < K , V >::reset_if_switched"}]},
+    {"id":"wording-at-least-one-trial","category":"behavioral","text":"Even if early stopping is configured with no patience at all, where do we guarantee that autotuning tries one candidate before stopping?","filter":{"language":"rust"},
+     "relevant":[{"path":"crates/cubecl-runtime/src/tune/patience.rs","symbol":"PatienceTracker::exhausted"}]}
+  ]
+}

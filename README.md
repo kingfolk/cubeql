@@ -37,6 +37,11 @@ or Metal, including paired FP32/FP16 runs. See
 [docs/code-search-evaluation.md](docs/code-search-evaluation.md) for commands, report semantics
 and the limitations of the small synthetic benchmark. Core `cubeql` remains a generic library.
 
+Versioned [retrieval benchmark reports](benchmarks/retrieval/README.md) record experiments
+against pinned real repositories, with English reports, query labels, per-query results and
+source/model/binary provenance. Each run uses a dated directory ending in its recorded CubeQL
+commit, so measurements from different code revisions remain separate.
+
 Snapshot-local hybrid retrieval adds `search --strategy semantic|lexical|symbol|hybrid`,
 identifier-aware keyword lookup, exact syntax-symbol search, source-rank provenance and optional
 overlap suppression. Lexical/symbol modes do not load a model or initialize a device; hybrid

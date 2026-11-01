@@ -1,0 +1,1676 @@
+{
+  "schema_version": 1,
+  "sets": [
+    {
+      "name": "v1-k50",
+      "backend": "Cpu(CpuDevice)",
+      "options": {
+        "candidate_k": 50,
+        "compare_fp16": false,
+        "repeats": 3
+      },
+      "overall": {
+        "experimental_rrf": {
+          "mrr": 0.3238715062265992,
+          "queries": 40,
+          "recall_at_10": 0.5541666666666667,
+          "recall_at_5": 0.4,
+          "all_anchors_top10_rate": 0.5,
+          "median_query_warm_retrieval_ms": 21.585541499999998
+        },
+        "hybrid": {
+          "mrr": 0.5191739612511671,
+          "queries": 40,
+          "recall_at_10": 0.7229166666666667,
+          "recall_at_5": 0.6604166666666667,
+          "all_anchors_top10_rate": 0.65,
+          "median_query_warm_retrieval_ms": 27.1274375
+        },
+        "lexical": {
+          "mrr": 0.3977595797060082,
+          "queries": 40,
+          "recall_at_10": 0.5708333333333333,
+          "recall_at_5": 0.4333333333333334,
+          "all_anchors_top10_rate": 0.525,
+          "median_query_warm_retrieval_ms": 18.5964585
+        },
+        "literal": {
+          "mrr": 0.25,
+          "queries": 40,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 13.520729500000002
+        },
+        "semantic": {
+          "mrr": 0.1973109806035736,
+          "queries": 40,
+          "recall_at_10": 0.37916666666666665,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.325,
+          "median_query_warm_retrieval_ms": 7.683167
+        },
+        "symbol": {
+          "mrr": 0.25,
+          "queries": 40,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 0.010208000000000002
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "experimental_rrf": {
+            "mrr": 0.3117099567099567,
+            "queries": 10,
+            "recall_at_10": 0.55,
+            "recall_at_5": 0.35
+          },
+          "hybrid": {
+            "mrr": 0.45166666666666677,
+            "queries": 10,
+            "recall_at_10": 0.9,
+            "recall_at_5": 0.8
+          },
+          "lexical": {
+            "mrr": 0.3561317254174397,
+            "queries": 10,
+            "recall_at_10": 0.6,
+            "recall_at_5": 0.35
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 10,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.3117099567099567,
+            "queries": 10,
+            "recall_at_10": 0.55,
+            "recall_at_5": 0.35
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 10,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "conceptual": {
+          "experimental_rrf": {
+            "mrr": 0.22433643375680581,
+            "queries": 10,
+            "recall_at_10": 0.3,
+            "recall_at_5": 0.2
+          },
+          "hybrid": {
+            "mrr": 0.39129901960784313,
+            "queries": 10,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.5
+          },
+          "lexical": {
+            "mrr": 0.39785714285714285,
+            "queries": 10,
+            "recall_at_10": 0.6,
+            "recall_at_5": 0.6
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 10,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.22433643375680581,
+            "queries": 10,
+            "recall_at_10": 0.3,
+            "recall_at_5": 0.2
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 10,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "cross_file": {
+          "experimental_rrf": {
+            "mrr": 0.13015392015392016,
+            "queries": 10,
+            "recall_at_10": 0.36666666666666664,
+            "recall_at_5": 0.15
+          },
+          "hybrid": {
+            "mrr": 0.2837301587301587,
+            "queries": 10,
+            "recall_at_10": 0.4916666666666666,
+            "recall_at_5": 0.3416666666666667
+          },
+          "lexical": {
+            "mrr": 0.4735970695970696,
+            "queries": 10,
+            "recall_at_10": 0.2833333333333333,
+            "recall_at_5": 0.2833333333333333
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 10,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.13015392015392016,
+            "queries": 10,
+            "recall_at_10": 0.36666666666666664,
+            "recall_at_5": 0.15
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 10,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "identifier": {
+          "experimental_rrf": {
+            "mrr": 0.6292857142857143,
+            "queries": 10,
+            "recall_at_10": 1.0,
+            "recall_at_5": 0.9
+          },
+          "hybrid": {
+            "mrr": 0.95,
+            "queries": 10,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "lexical": {
+            "mrr": 0.36345238095238097,
+            "queries": 10,
+            "recall_at_10": 0.8,
+            "recall_at_5": 0.5
+          },
+          "literal": {
+            "mrr": 1.0,
+            "queries": 10,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "semantic": {
+            "mrr": 0.12304361179361178,
+            "queries": 10,
+            "recall_at_10": 0.3,
+            "recall_at_5": 0.3
+          },
+          "symbol": {
+            "mrr": 1.0,
+            "queries": 10,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          }
+        }
+      },
+      "model": {
+        "artifacts": {
+          "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+          "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+          "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037"
+        },
+        "dimensions": 384,
+        "document_prefix": "",
+        "implementation": "candle-0.11-bert-fp32-cpu-v1",
+        "max_tokens": 256,
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "normalization": "l2",
+        "pooling": "attention-mask-mean",
+        "query_prefix": "",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+      },
+      "corpus_fingerprint": "3ad4afd5220b95c3987c463f6ebe009c1c5adab2ccac8bc256da69bf8d7176cb",
+      "timing": {
+        "read_ms": 55.252458,
+        "model_load_ms": 360.55879200000004,
+        "embedding_total_ms": 461.738001,
+        "text_index_ms": 526.413458,
+        "upload_ms": 13.969541,
+        "baseline_upload_ms": 41.340292
+      },
+      "paired_descriptive_intervals": [
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus lexical",
+          "mean_difference": 0.15208333333333332,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.06097560975609756,
+            0.2571428571428571
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 27,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus semantic",
+          "mean_difference": 0.34375,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.21794871794871795,
+            0.4551282051282051
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 27,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "lexical minus semantic",
+          "mean_difference": 0.19166666666666668,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.037037037037037035,
+            0.32592592592592595
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 27,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        }
+      ],
+      "cluster_sizes": [
+        4,
+        4,
+        3,
+        3,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "extension-v2-k50",
+      "backend": "Cpu(CpuDevice)",
+      "options": {
+        "candidate_k": 50,
+        "compare_fp16": false,
+        "repeats": 3
+      },
+      "overall": {
+        "experimental_rrf": {
+          "mrr": 0.4249652777777779,
+          "queries": 24,
+          "recall_at_10": 0.5902777777777778,
+          "recall_at_5": 0.4930555555555556,
+          "all_anchors_top10_rate": 0.5416666666666666,
+          "median_query_warm_retrieval_ms": 21.0233955
+        },
+        "hybrid": {
+          "mrr": 0.4610987574803364,
+          "queries": 24,
+          "recall_at_10": 0.638888888888889,
+          "recall_at_5": 0.5208333333333334,
+          "all_anchors_top10_rate": 0.5416666666666666,
+          "median_query_warm_retrieval_ms": 26.2878125
+        },
+        "lexical": {
+          "mrr": 0.35628700003700003,
+          "queries": 24,
+          "recall_at_10": 0.513888888888889,
+          "recall_at_5": 0.3958333333333334,
+          "all_anchors_top10_rate": 0.4166666666666667,
+          "median_query_warm_retrieval_ms": 15.855583
+        },
+        "literal": {
+          "mrr": 0.25,
+          "queries": 24,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 12.894874999999999
+        },
+        "semantic": {
+          "mrr": 0.27959490740740733,
+          "queries": 24,
+          "recall_at_10": 0.5069444444444445,
+          "recall_at_5": 0.3263888888888889,
+          "all_anchors_top10_rate": 0.4583333333333333,
+          "median_query_warm_retrieval_ms": 7.4774795
+        },
+        "symbol": {
+          "mrr": 0.25,
+          "queries": 24,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 0.004812
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "experimental_rrf": {
+            "mrr": 0.5590277777777778,
+            "queries": 6,
+            "recall_at_10": 0.6666666666666666,
+            "recall_at_5": 0.5833333333333334
+          },
+          "hybrid": {
+            "mrr": 0.24327485380116962,
+            "queries": 6,
+            "recall_at_10": 0.5833333333333334,
+            "recall_at_5": 0.4166666666666667
+          },
+          "lexical": {
+            "mrr": 0.08278388278388278,
+            "queries": 6,
+            "recall_at_10": 0.3333333333333333,
+            "recall_at_5": 0.16666666666666666
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 6,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.5590277777777778,
+            "queries": 6,
+            "recall_at_10": 0.6666666666666666,
+            "recall_at_5": 0.5833333333333334
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 6,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "conceptual": {
+          "experimental_rrf": {
+            "mrr": 0.20472222222222222,
+            "queries": 6,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.3333333333333333
+          },
+          "hybrid": {
+            "mrr": 0.302046102046102,
+            "queries": 6,
+            "recall_at_10": 0.6666666666666666,
+            "recall_at_5": 0.5
+          },
+          "lexical": {
+            "mrr": 0.20744348244348243,
+            "queries": 6,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.3333333333333333
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 6,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.20472222222222222,
+            "queries": 6,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.3333333333333333
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 6,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "cross_file": {
+          "experimental_rrf": {
+            "mrr": 0.2555555555555556,
+            "queries": 6,
+            "recall_at_10": 0.3611111111111111,
+            "recall_at_5": 0.2222222222222222
+          },
+          "hybrid": {
+            "mrr": 0.4518518518518519,
+            "queries": 6,
+            "recall_at_10": 0.47222222222222227,
+            "recall_at_5": 0.3333333333333333
+          },
+          "lexical": {
+            "mrr": 0.49603174603174605,
+            "queries": 6,
+            "recall_at_10": 0.3888888888888889,
+            "recall_at_5": 0.24999999999999997
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 6,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.2555555555555556,
+            "queries": 6,
+            "recall_at_10": 0.3611111111111111,
+            "recall_at_5": 0.2222222222222222
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 6,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "identifier": {
+          "experimental_rrf": {
+            "mrr": 0.6805555555555557,
+            "queries": 6,
+            "recall_at_10": 0.8333333333333334,
+            "recall_at_5": 0.8333333333333334
+          },
+          "hybrid": {
+            "mrr": 0.8472222222222222,
+            "queries": 6,
+            "recall_at_10": 0.8333333333333334,
+            "recall_at_5": 0.8333333333333334
+          },
+          "lexical": {
+            "mrr": 0.638888888888889,
+            "queries": 6,
+            "recall_at_10": 0.8333333333333334,
+            "recall_at_5": 0.8333333333333334
+          },
+          "literal": {
+            "mrr": 1.0,
+            "queries": 6,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "semantic": {
+            "mrr": 0.09907407407407408,
+            "queries": 6,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.16666666666666666
+          },
+          "symbol": {
+            "mrr": 1.0,
+            "queries": 6,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          }
+        }
+      },
+      "model": {
+        "artifacts": {
+          "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+          "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+          "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037"
+        },
+        "dimensions": 384,
+        "document_prefix": "",
+        "implementation": "candle-0.11-bert-fp32-cpu-v1",
+        "max_tokens": 256,
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "normalization": "l2",
+        "pooling": "attention-mask-mean",
+        "query_prefix": "",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+      },
+      "corpus_fingerprint": "3ad4afd5220b95c3987c463f6ebe009c1c5adab2ccac8bc256da69bf8d7176cb",
+      "timing": {
+        "read_ms": 63.22625,
+        "model_load_ms": 317.257791,
+        "embedding_total_ms": 273.131464,
+        "text_index_ms": 528.6885,
+        "upload_ms": 14.110083000000001,
+        "baseline_upload_ms": 30.31525
+      },
+      "paired_descriptive_intervals": [
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus lexical",
+          "mean_difference": 0.125,
+          "descriptive_cluster_bootstrap_95pct": [
+            -0.038461538461538464,
+            0.30952380952380953
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 14,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus semantic",
+          "mean_difference": 0.13194444444444445,
+          "descriptive_cluster_bootstrap_95pct": [
+            -0.008333333333333335,
+            0.2857142857142857
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 14,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "lexical minus semantic",
+          "mean_difference": 0.006944444444444443,
+          "descriptive_cluster_bootstrap_95pct": [
+            -0.2569444444444444,
+            0.25
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 14,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        }
+      ],
+      "cluster_sizes": [
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "combined-v2-k50",
+      "backend": "Cpu(CpuDevice)",
+      "options": {
+        "candidate_k": 50,
+        "compare_fp16": false,
+        "repeats": 3
+      },
+      "overall": {
+        "experimental_rrf": {
+          "mrr": 0.3617816705582912,
+          "queries": 64,
+          "recall_at_10": 0.5677083333333335,
+          "recall_at_5": 0.4348958333333333,
+          "all_anchors_top10_rate": 0.515625,
+          "median_query_warm_retrieval_ms": 21.278334
+        },
+        "hybrid": {
+          "mrr": 0.49739575983710554,
+          "queries": 64,
+          "recall_at_10": 0.6914062500000001,
+          "recall_at_5": 0.6080729166666667,
+          "all_anchors_top10_rate": 0.609375,
+          "median_query_warm_retrieval_ms": 27.388833
+        },
+        "lexical": {
+          "mrr": 0.3822073623301302,
+          "queries": 64,
+          "recall_at_10": 0.5494791666666666,
+          "recall_at_5": 0.4192708333333333,
+          "all_anchors_top10_rate": 0.484375,
+          "median_query_warm_retrieval_ms": 17.655916500000004
+        },
+        "literal": {
+          "mrr": 0.25,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 13.363916499999998
+        },
+        "semantic": {
+          "mrr": 0.22816745315501133,
+          "queries": 64,
+          "recall_at_10": 0.42708333333333326,
+          "recall_at_5": 0.2786458333333333,
+          "all_anchors_top10_rate": 0.375,
+          "median_query_warm_retrieval_ms": 8.66875
+        },
+        "symbol": {
+          "mrr": 0.25,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 0.0073335
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "experimental_rrf": {
+            "mrr": 0.40445413961038956,
+            "queries": 16,
+            "recall_at_10": 0.59375,
+            "recall_at_5": 0.4375
+          },
+          "hybrid": {
+            "mrr": 0.37351973684210527,
+            "queries": 16,
+            "recall_at_10": 0.78125,
+            "recall_at_5": 0.65625
+          },
+          "lexical": {
+            "mrr": 0.25362628442985585,
+            "queries": 16,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.28125
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.40445413961038956,
+            "queries": 16,
+            "recall_at_10": 0.59375,
+            "recall_at_5": 0.4375
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "conceptual": {
+          "experimental_rrf": {
+            "mrr": 0.21698110443133697,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.25
+          },
+          "hybrid": {
+            "mrr": 0.35782917552219023,
+            "queries": 16,
+            "recall_at_10": 0.5625,
+            "recall_at_5": 0.5
+          },
+          "lexical": {
+            "mrr": 0.3264520202020202,
+            "queries": 16,
+            "recall_at_10": 0.5625,
+            "recall_at_5": 0.5
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.21698110443133697,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.25
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "cross_file": {
+          "experimental_rrf": {
+            "mrr": 0.17717953342953344,
+            "queries": 16,
+            "recall_at_10": 0.36458333333333326,
+            "recall_at_5": 0.17708333333333334
+          },
+          "hybrid": {
+            "mrr": 0.3467757936507937,
+            "queries": 16,
+            "recall_at_10": 0.48437499999999994,
+            "recall_at_5": 0.33854166666666663
+          },
+          "lexical": {
+            "mrr": 0.4820100732600733,
+            "queries": 16,
+            "recall_at_10": 0.32291666666666663,
+            "recall_at_5": 0.2708333333333333
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.17717953342953344,
+            "queries": 16,
+            "recall_at_10": 0.36458333333333326,
+            "recall_at_5": 0.17708333333333334
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "identifier": {
+          "experimental_rrf": {
+            "mrr": 0.6485119047619048,
+            "queries": 16,
+            "recall_at_10": 0.9375,
+            "recall_at_5": 0.875
+          },
+          "hybrid": {
+            "mrr": 0.9114583333333334,
+            "queries": 16,
+            "recall_at_10": 0.9375,
+            "recall_at_5": 0.9375
+          },
+          "lexical": {
+            "mrr": 0.4667410714285714,
+            "queries": 16,
+            "recall_at_10": 0.8125,
+            "recall_at_5": 0.625
+          },
+          "literal": {
+            "mrr": 1.0,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "semantic": {
+            "mrr": 0.11405503514878515,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.25
+          },
+          "symbol": {
+            "mrr": 1.0,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          }
+        }
+      },
+      "model": {
+        "artifacts": {
+          "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+          "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+          "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037"
+        },
+        "dimensions": 384,
+        "document_prefix": "",
+        "implementation": "candle-0.11-bert-fp32-cpu-v1",
+        "max_tokens": 256,
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "normalization": "l2",
+        "pooling": "attention-mask-mean",
+        "query_prefix": "",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+      },
+      "corpus_fingerprint": "3ad4afd5220b95c3987c463f6ebe009c1c5adab2ccac8bc256da69bf8d7176cb",
+      "timing": {
+        "read_ms": 56.738584,
+        "model_load_ms": 299.052833,
+        "embedding_total_ms": 713.0985840000001,
+        "text_index_ms": 538.9235,
+        "upload_ms": 21.435917,
+        "baseline_upload_ms": 21.172583
+      },
+      "paired_descriptive_intervals": [
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus lexical",
+          "mean_difference": 0.14192708333333334,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.05874316939890711,
+            0.23333333333333334
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 41,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus semantic",
+          "mean_difference": 0.2643229166666667,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.16101694915254236,
+            0.3602150537634409
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 41,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "lexical minus semantic",
+          "mean_difference": 0.12239583333333333,
+          "descriptive_cluster_bootstrap_95pct": [
+            -0.01977401129943503,
+            0.25
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 41,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        }
+      ],
+      "cluster_sizes": [
+        4,
+        4,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "combined-v2-k100",
+      "backend": "Cpu(CpuDevice)",
+      "options": {
+        "candidate_k": 100,
+        "compare_fp16": false,
+        "repeats": 3
+      },
+      "overall": {
+        "experimental_rrf": {
+          "mrr": 0.37190349766557085,
+          "queries": 64,
+          "recall_at_10": 0.5833333333333335,
+          "recall_at_5": 0.4505208333333333,
+          "all_anchors_top10_rate": 0.53125,
+          "median_query_warm_retrieval_ms": 23.5582295
+        },
+        "hybrid": {
+          "mrr": 0.5209727757235422,
+          "queries": 64,
+          "recall_at_10": 0.6940104166666667,
+          "recall_at_5": 0.6471354166666667,
+          "all_anchors_top10_rate": 0.625,
+          "median_query_warm_retrieval_ms": 28.878458000000002
+        },
+        "lexical": {
+          "mrr": 0.3835194997830106,
+          "queries": 64,
+          "recall_at_10": 0.5494791666666666,
+          "recall_at_5": 0.4192708333333333,
+          "all_anchors_top10_rate": 0.484375,
+          "median_query_warm_retrieval_ms": 17.7659375
+        },
+        "literal": {
+          "mrr": 0.25,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 13.3636665
+        },
+        "semantic": {
+          "mrr": 0.22936761775122105,
+          "queries": 64,
+          "recall_at_10": 0.42708333333333326,
+          "recall_at_5": 0.2786458333333333,
+          "all_anchors_top10_rate": 0.375,
+          "median_query_warm_retrieval_ms": 11.005625000000002
+        },
+        "symbol": {
+          "mrr": 0.25046502976190477,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25,
+          "all_anchors_top10_rate": 0.25,
+          "median_query_warm_retrieval_ms": 0.007083
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "experimental_rrf": {
+            "mrr": 0.40553172581728614,
+            "queries": 16,
+            "recall_at_10": 0.59375,
+            "recall_at_5": 0.4375
+          },
+          "hybrid": {
+            "mrr": 0.3885119047619048,
+            "queries": 16,
+            "recall_at_10": 0.78125,
+            "recall_at_5": 0.71875
+          },
+          "lexical": {
+            "mrr": 0.255381488671804,
+            "queries": 16,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.28125
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.40553172581728614,
+            "queries": 16,
+            "recall_at_10": 0.59375,
+            "recall_at_5": 0.4375
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "conceptual": {
+          "experimental_rrf": {
+            "mrr": 0.21698110443133697,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.25
+          },
+          "hybrid": {
+            "mrr": 0.404989274046688,
+            "queries": 16,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.5
+          },
+          "lexical": {
+            "mrr": 0.3278791089409927,
+            "queries": 16,
+            "recall_at_10": 0.5625,
+            "recall_at_5": 0.5
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.21698110443133697,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.25
+          },
+          "symbol": {
+            "mrr": 0.0008680555555555555,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "cross_file": {
+          "experimental_rrf": {
+            "mrr": 0.178047588985089,
+            "queries": 16,
+            "recall_at_10": 0.36458333333333326,
+            "recall_at_5": 0.17708333333333334
+          },
+          "hybrid": {
+            "mrr": 0.3685149240855763,
+            "queries": 16,
+            "recall_at_10": 0.49479166666666663,
+            "recall_at_5": 0.36979166666666663
+          },
+          "lexical": {
+            "mrr": 0.48305173992673994,
+            "queries": 16,
+            "recall_at_10": 0.32291666666666663,
+            "recall_at_5": 0.2708333333333333
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.178047588985089,
+            "queries": 16,
+            "recall_at_10": 0.36458333333333326,
+            "recall_at_5": 0.17708333333333334
+          },
+          "symbol": {
+            "mrr": 0.000992063492063492,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "identifier": {
+          "experimental_rrf": {
+            "mrr": 0.6870535714285715,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 0.9375
+          },
+          "hybrid": {
+            "mrr": 0.921875,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "lexical": {
+            "mrr": 0.4677656615925058,
+            "queries": 16,
+            "recall_at_10": 0.8125,
+            "recall_at_5": 0.625
+          },
+          "literal": {
+            "mrr": 1.0,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "semantic": {
+            "mrr": 0.11691005177117182,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.25
+          },
+          "symbol": {
+            "mrr": 1.0,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          }
+        }
+      },
+      "model": {
+        "artifacts": {
+          "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+          "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+          "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037"
+        },
+        "dimensions": 384,
+        "document_prefix": "",
+        "implementation": "candle-0.11-bert-fp32-cpu-v1",
+        "max_tokens": 256,
+        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "normalization": "l2",
+        "pooling": "attention-mask-mean",
+        "query_prefix": "",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+      },
+      "corpus_fingerprint": "3ad4afd5220b95c3987c463f6ebe009c1c5adab2ccac8bc256da69bf8d7176cb",
+      "timing": {
+        "read_ms": 62.96858399999999,
+        "model_load_ms": 338.556083,
+        "embedding_total_ms": 713.543626,
+        "text_index_ms": 531.5905,
+        "upload_ms": 24.182416000000003,
+        "baseline_upload_ms": 24.67925
+      },
+      "paired_descriptive_intervals": [
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus lexical",
+          "mean_difference": 0.14453125,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.04497354497354497,
+            0.24269005847953215
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 41,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "hybrid minus semantic",
+          "mean_difference": 0.2669270833333333,
+          "descriptive_cluster_bootstrap_95pct": [
+            0.1388888888888889,
+            0.3783068783068783
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 41,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        },
+        {
+          "metric": "anchor_recall_at_10",
+          "difference": "lexical minus semantic",
+          "mean_difference": 0.12239583333333333,
+          "descriptive_cluster_bootstrap_95pct": [
+            -0.01977401129943503,
+            0.25
+          ],
+          "replicates": 2000,
+          "anchor_connected_clusters": 41,
+          "caution": "not a random sample of real traffic; not a population significance claim"
+        }
+      ],
+      "cluster_sizes": [
+        4,
+        4,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "separate_vs_combined_metric_mismatches": [],
+  "candidate_budget_recall10_changes": [
+    {
+      "id": "cross-cuda-artifact-and-load",
+      "mode": "hybrid",
+      "k50_recall10": 0.5,
+      "k100_recall10": 1.0
+    },
+    {
+      "id": "v2-identifier-anchor",
+      "mode": "experimental_rrf",
+      "k50_recall10": 0.0,
+      "k100_recall10": 1.0
+    },
+    {
+      "id": "v2-identifier-anchor",
+      "mode": "hybrid",
+      "k50_recall10": 0.0,
+      "k100_recall10": 1.0
+    },
+    {
+      "id": "v2-concept-layout-selection",
+      "mode": "hybrid",
+      "k50_recall10": 1.0,
+      "k100_recall10": 0.0
+    },
+    {
+      "id": "v2-behavior-zero-patience",
+      "mode": "hybrid",
+      "k50_recall10": 1.0,
+      "k100_recall10": 0.0
+    },
+    {
+      "id": "v2-behavior-incompatible-byte-width",
+      "mode": "hybrid",
+      "k50_recall10": 0.0,
+      "k100_recall10": 1.0
+    },
+    {
+      "id": "v2-cross-layout-and-contiguity",
+      "mode": "hybrid",
+      "k50_recall10": 0.3333333333333333,
+      "k100_recall10": 0.0
+    }
+  ],
+  "wording_diagnostic": {
+    "pairs": [
+      {
+        "id": "wording-loaded-fast-path",
+        "original_id": "concept-loaded-kernel-fast-path",
+        "metrics": {
+          "lexical": {
+            "original": {
+              "first_relevant_rank": 4,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 0.25
+            },
+            "reworded": {
+              "first_relevant_rank": 32,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.03125
+            }
+          },
+          "semantic": {
+            "original": {
+              "first_relevant_rank": 8,
+              "recall_at_10": 1.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.125
+            },
+            "reworded": {
+              "first_relevant_rank": 8,
+              "recall_at_10": 1.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.125
+            }
+          },
+          "hybrid": {
+            "original": {
+              "first_relevant_rank": 1,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 1.0
+            },
+            "reworded": {
+              "first_relevant_rank": 3,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 0.3333333333333333
+            }
+          }
+        }
+      },
+      {
+        "id": "wording-compiler-failure",
+        "original_id": "behavior-compile-error-source",
+        "metrics": {
+          "lexical": {
+            "original": {
+              "first_relevant_rank": 49,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.02040816326530612
+            },
+            "reworded": {
+              "first_relevant_rank": 13,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.07692307692307693
+            }
+          },
+          "semantic": {
+            "original": {
+              "first_relevant_rank": 8,
+              "recall_at_10": 1.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.125
+            },
+            "reworded": {
+              "first_relevant_rank": 9,
+              "recall_at_10": 1.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.1111111111111111
+            }
+          },
+          "hybrid": {
+            "original": {
+              "first_relevant_rank": 3,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 0.3333333333333333
+            },
+            "reworded": {
+              "first_relevant_rank": 2,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 0.5
+            }
+          }
+        }
+      },
+      {
+        "id": "wording-inplace-write",
+        "original_id": "concept-inplace-write-attribution",
+        "metrics": {
+          "lexical": {
+            "original": {
+              "first_relevant_rank": 1,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 1.0
+            },
+            "reworded": {
+              "first_relevant_rank": 48,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.020833333333333332
+            }
+          },
+          "semantic": {
+            "original": {
+              "first_relevant_rank": 1,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 1.0
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          },
+          "hybrid": {
+            "original": {
+              "first_relevant_rank": 1,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 1.0
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          }
+        }
+      },
+      {
+        "id": "wording-scratch-consolidation",
+        "original_id": "concept-shared-single-block",
+        "metrics": {
+          "lexical": {
+            "original": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          },
+          "semantic": {
+            "original": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          },
+          "hybrid": {
+            "original": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          }
+        }
+      },
+      {
+        "id": "wording-environment-switch",
+        "original_id": "behavior-environment-cache-reset",
+        "metrics": {
+          "lexical": {
+            "original": {
+              "first_relevant_rank": 8,
+              "recall_at_10": 1.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.125
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          },
+          "semantic": {
+            "original": {
+              "first_relevant_rank": 11,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.09090909090909091
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          },
+          "hybrid": {
+            "original": {
+              "first_relevant_rank": 2,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 0.5
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          }
+        }
+      },
+      {
+        "id": "wording-at-least-one-trial",
+        "original_id": "v2-behavior-zero-patience",
+        "metrics": {
+          "lexical": {
+            "original": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          },
+          "semantic": {
+            "original": {
+              "first_relevant_rank": 1,
+              "recall_at_10": 1.0,
+              "recall_at_5": 1.0,
+              "reciprocal_rank": 1.0
+            },
+            "reworded": {
+              "first_relevant_rank": 34,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.029411764705882353
+            }
+          },
+          "hybrid": {
+            "original": {
+              "first_relevant_rank": 10,
+              "recall_at_10": 1.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.1
+            },
+            "reworded": {
+              "first_relevant_rank": null,
+              "recall_at_10": 0.0,
+              "recall_at_5": 0.0,
+              "reciprocal_rank": 0.0
+            }
+          }
+        }
+      }
+    ],
+    "warning": "six paired diagnostics, not independent samples"
+  },
+  "source_span_diagnostic": {
+    "literal": {
+      "exact_anchor_recall10": 0.25,
+      "anchor_span_coverage10": 0.25,
+      "anchor_file_presence10": 0.25
+    },
+    "symbol": {
+      "exact_anchor_recall10": 0.25,
+      "anchor_span_coverage10": 0.25,
+      "anchor_file_presence10": 0.28125
+    },
+    "lexical": {
+      "exact_anchor_recall10": 0.5494791666666666,
+      "anchor_span_coverage10": 0.5494791666666666,
+      "anchor_file_presence10": 0.7552083333333334
+    },
+    "semantic": {
+      "exact_anchor_recall10": 0.4270833333333333,
+      "anchor_span_coverage10": 0.4270833333333333,
+      "anchor_file_presence10": 0.7265625
+    },
+    "experimental_rrf": {
+      "exact_anchor_recall10": 0.5677083333333334,
+      "anchor_span_coverage10": 0.5677083333333334,
+      "anchor_file_presence10": 0.7734375
+    },
+    "hybrid": {
+      "exact_anchor_recall10": 0.69140625,
+      "anchor_span_coverage10": 0.69140625,
+      "anchor_file_presence10": 0.8984375
+    }
+  },
+  "ambiguity_diagnostic": {
+    "scope": "post-score diagnostic; no label or main result changes",
+    "query": "anchor",
+    "excluded_only_in_sensitivity": "v2-identifier-anchor",
+    "reason": "The query does not specify autotuning; other returned functions also have the name anchor.",
+    "symbol_top_hits": [
+      {
+        "end_line": 42,
+        "kind": "function",
+        "language": "rust",
+        "path": "crates/cubecl-runtime/src/tune/util.rs",
+        "provenance": [
+          {
+            "rank": 1,
+            "raw_score": 3.0,
+            "source": "symbol"
+          }
+        ],
+        "row": 20626,
+        "score": 3.0,
+        "start_line": 13,
+        "symbol": "anchor"
+      },
+      {
+        "end_line": 71,
+        "kind": "method",
+        "language": "rust",
+        "path": "crates/cubecl-opt/src/analyses/dataflow_solver/dense.rs",
+        "provenance": [
+          {
+            "rank": 2,
+            "raw_score": 2.0,
+            "source": "symbol"
+          }
+        ],
+        "row": 17684,
+        "score": 2.0,
+        "start_line": 69,
+        "symbol": "DenseLattice < T >::anchor"
+      },
+      {
+        "end_line": 97,
+        "kind": "method",
+        "language": "rust",
+        "path": "crates/cubecl-opt/src/analyses/dataflow_solver/sparse.rs",
+        "provenance": [
+          {
+            "rank": 3,
+            "raw_score": 2.0,
+            "source": "symbol"
+          }
+        ],
+        "row": 17846,
+        "score": 2.0,
+        "start_line": 95,
+        "symbol": "SparseLattice < T >::anchor"
+      }
+    ],
+    "recall10_excluding_this_one_query": {
+      "lexical": 0.5582010582010581,
+      "semantic": 0.43386243386243384,
+      "hybrid": 0.7023809523809523
+    },
+    "remaining_queries": 63,
+    "additional_model_calls": 0
+  }
+}
