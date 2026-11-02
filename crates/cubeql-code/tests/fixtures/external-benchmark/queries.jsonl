@@ -1,0 +1,3 @@
+{"_id":"q-config","text":"read settings from disk"}
+{"_id":"q-cache","text":"store a value"}
+{"_id":"q-unjudged","text":"settings without a judgment"}

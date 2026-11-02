@@ -1,6 +1,7 @@
 //! Repository-to-Arrow indexing. Parsing, hashing and embedding preparation run on the host;
 //! the resulting batch is searched by CubeQL on any supported CubeCL backend.
 
+pub mod benchmark;
 mod chunk;
 pub mod evaluation;
 pub mod hybrid_evaluation;

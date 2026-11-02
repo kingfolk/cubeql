@@ -6,6 +6,7 @@ use std::{
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use cubeql_code::{
     BuildOptions, BuildResult, CodeIndex, CodeSearchIndex, VectorPrecision,
+    benchmark::{self, Dataset, RunOptions},
     build_repository_with_provider,
     evaluation::{EvaluationOptions, QuerySet},
     hybrid_evaluation::evaluate,
@@ -174,6 +175,45 @@ enum Command {
         #[command(subcommand)]
         command: ModelCommand,
     },
+    /// Import external corpus/query/qrels data and export native document rankings.
+    Benchmark {
+        #[command(subcommand)]
+        command: BenchmarkCommand,
+    },
+}
+
+#[derive(Subcommand)]
+enum BenchmarkCommand {
+    /// Validate all IDs/judgments and fingerprint inputs without loading a model or device.
+    Validate {
+        dataset: PathBuf,
+        #[arg(long, default_value = "test")]
+        split: String,
+    },
+    /// Exact cosine retrieval; preserve document units/IDs and leave scoring to the evaluator.
+    Run {
+        dataset: PathBuf,
+        #[arg(long, default_value = "test")]
+        split: String,
+        /// Must be a new directory. Failures leave diagnostics; retries use another directory.
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, value_enum, default_value = "hash")]
+        embedding: ProviderKind,
+        #[arg(long)]
+        model_dir: Option<PathBuf>,
+        #[arg(long)]
+        dimensions: Option<usize>,
+        #[arg(long, default_value_t = 8)]
+        batch_size: usize,
+        #[arg(long, default_value_t = 100)]
+        top_k: usize,
+        #[arg(long, default_value = "cubeql-semantic")]
+        run_tag: String,
+        /// Optional caller-supplied provenance, not a build-attested revision.
+        #[arg(long)]
+        engine_revision: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -283,6 +323,90 @@ fn print_build(result: BuildResult, output: &Path, format: OutputFormat) -> Resu
 
 fn main() -> Result<()> {
     match Cli::parse().command {
+        Command::Benchmark { command } => match command {
+            BenchmarkCommand::Validate { dataset, split } => {
+                let dataset = Dataset::load(dataset, &split)?;
+                println!("{}", serde_json::to_string_pretty(dataset.summary())?);
+            }
+            BenchmarkCommand::Run {
+                dataset,
+                split,
+                output,
+                embedding,
+                model_dir,
+                dimensions,
+                batch_size,
+                top_k,
+                run_tag,
+                engine_revision,
+            } => {
+                let dataset = Dataset::load(dataset, &split)?;
+                let options = RunOptions {
+                    top_k,
+                    batch_size,
+                    run_tag,
+                };
+                options.validate()?;
+                std::fs::create_dir(&output)?;
+                let outcome = (|| -> Result<()> {
+                    benchmark::write_json(&output.join("dataset.json"), dataset.summary())?;
+                    benchmark::write_json(&output.join("qrels.json"), dataset.qrels())?;
+                    benchmark::write_json(
+                        &output.join("request.json"),
+                        &serde_json::json!({
+                            "options": &options,
+                            "embedding": match embedding { ProviderKind::Hash => "hash", ProviderKind::Minilm => "minilm" },
+                            "model_dir": &model_dir,
+                            "dimensions": dimensions,
+                            "split": &split,
+                            "engine_revision": engine_revision.as_deref()
+                        }),
+                    )?;
+                    let start = Instant::now();
+                    let mut provider = provider(embedding, dimensions, model_dir.as_deref())?;
+                    let model_load_ms = elapsed_ms(start);
+                    // Capture binary/model provenance before a potentially long encoding run,
+                    // and retain it even if document/query inference subsequently fails.
+                    let mut executable_hash = blake3::Hasher::new();
+                    executable_hash
+                        .update_reader(std::fs::File::open(std::env::current_exe()?)?)?;
+                    benchmark::write_json(
+                        &output.join("preparation.json"),
+                        &serde_json::json!({
+                            "model_load_ms": model_load_ms,
+                            "cubeql_code_version": env!("CARGO_PKG_VERSION"),
+                            "embedding": provider.config(),
+                            "executable_blake3": executable_hash.finalize().to_hex().to_string(),
+                            "engine_revision": engine_revision,
+                            "engine_revision_source": "optional-caller-supplied-not-build-attested"
+                        }),
+                    )?;
+                    let run = benchmark::run(
+                        &dataset,
+                        &cubecl::Device::default(),
+                        provider.as_mut(),
+                        options,
+                    )?;
+                    run.save(&output)?;
+                    println!(
+                        "{}",
+                        serde_json::to_string(
+                            &serde_json::json!({"status":"complete","output":output,"queries":run.report.queries.len()})
+                        )?
+                    );
+                    Ok(())
+                })();
+                if let Err(error) = outcome {
+                    if let Err(record_error) = benchmark::write_json(
+                        &output.join("failure.json"),
+                        &serde_json::json!({"status":"failed","error":error.to_string()}),
+                    ) {
+                        eprintln!("could not save benchmark failure: {record_error}");
+                    }
+                    return Err(error);
+                }
+            }
+        },
         Command::Index {
             root,
             output,

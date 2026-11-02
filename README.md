@@ -42,6 +42,11 @@ against pinned real repositories, with English reports, query labels, per-query 
 source/model/binary provenance. Each run uses a dated directory ending in its recorded CubeQL
 commit, so measurements from different code revisions remain separate.
 
+For external datasets, `cubeql-code benchmark validate/run` imports standard corpus/query
+JSONL and qrels TSV, preserves document IDs and units, and exports native JSON/TREC rankings
+for an external evaluator. See [docs/external-benchmarks.md](docs/external-benchmarks.md) for
+the format, offline smoke example, provenance and scoring boundaries.
+
 Snapshot-local hybrid retrieval adds `search --strategy semantic|lexical|symbol|hybrid`,
 identifier-aware keyword lookup, exact syntax-symbol search, source-rank provenance and optional
 overlap suppression. Lexical/symbol modes do not load a model or initialize a device; hybrid

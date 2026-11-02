@@ -1,0 +1,4 @@
+query-id	corpus-id	score
+q-config	../doc-config	2
+q-config	doc-cache	0
+q-cache	doc-cache	1
