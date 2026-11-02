@@ -1,0 +1,3 @@
+{"_id":"doc-cache","title":"Cache","text":"fn cache_value() { store(); }","metadata":{"language":"rust"}}
+{"_id":"../doc-config","title":null,"text":"fn load_config() { read_file(); }"}
+{"_id":"doc-http","text":"fn send_request() { connect(); }"}
