@@ -1,0 +1,5 @@
+# Preparation, native scoring and independent vector replay checks (Python 3.12).
+numpy==2.2.6
+pyarrow==20.0.0
+pytrec-eval-terrier==0.5.11
+threadpoolctl==3.7.0

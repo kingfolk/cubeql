@@ -1,0 +1,29 @@
+{
+  "format_version": 1,
+  "kind": "historical-baseline-bundle",
+  "status": "complete",
+  "files_sha256": {
+    "README.md": "0d455399a877e7eafee1ecfef7b199dca17f5baeb0d85503407859ea3433a2be",
+    "baseline.json": "1460c800bdfc57939b35954c49515c70df69adcd42e7b93cba86c50256009250",
+    "cubecl-tracked.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cubeql-tracked.patch": "a64cdb76b6aba54e71b4728368d4b7ec6a39bcea5d541e6db985b6d3a8da6ca3",
+    "evidence.tar.gz": "38236a0c81d40c5cdb5a64f1a7988727476d34c7a3d300ffa8b9d2de2b4c45ce",
+    "provenance.json": "8b599c0255e74d77ad88904e26211585ce61a80315bd2fb905e6ae4bddf0354d",
+    "recipe-source/Cargo.lock": "55a14ffd61aa39eb23745a0c8ee846e1d8fd034e34d2c073857fbe7576334551",
+    "recipe-source/Cargo.toml": "e9ea89da0e19ce7f6ae59c1510e32f09eaf0962f8a55481fdf2ad68347a90f43",
+    "recipe-source/benchmarks/external/baseline.py": "d82f97afe5bcd7da563069043ed770c3dbec208798599bf0a37bfba077f669fa",
+    "recipe-source/benchmarks/external/common.py": "725748e7a4a44ef4189072997cb663230e35264f5d8e9abf0da1c78042508b09",
+    "recipe-source/benchmarks/external/data.py": "2eef52f9843ef951b793fc139b85f955fd5306b6634253a44154af7cfeb69c2f",
+    "recipe-source/benchmarks/external/encoding.py": "8b2588aa9bbbb7fb603e2175be6426cc4c7fa58c08dc1bd7d7ecde674e15c6da",
+    "recipe-source/benchmarks/external/reference.py": "8c686f474f19c647ad33ef36a33c2b78998f4306ab364faa2d6008bec475dadf",
+    "recipe-source/benchmarks/external/runner.py": "e0f69c82365d99760db72fb2d04ada710c3c70b462f7ec1ad2bab775172c6659",
+    "recipe-source/benchmarks/external/scoring.py": "7982230620ce4ecc286539aaa228e9d6c3d9bb72b491a4d586f9052ca38eab7c",
+    "recipe-source/benchmarks/external/specs/coderank.json": "cd150ef463c3b126989623b028ca0ed9fbbe3bff56ee01a9e3bb740a27be1e58",
+    "recipe-source/benchmarks/external/specs/coir-apps.json": "23c1dc0bcbd9fbc387f8fe7b7d70c61b5cb0ed9bada358e2c4c8ad6caa2a6b3e",
+    "recipe-source/benchmarks/external/specs/coir-evaluator.json": "f2ab7e80461bb807d4a4cfb525f10e33f9117b69ea9b4b1b4e0b6350be145094",
+    "recipe-source/crates/cubeql-code/Cargo.toml": "01043b397ba1f34b7ec20eadfebc667f19538f3750d4ce98fd7c932de43a9bb2",
+    "recipe-source/crates/cubeql-code/examples/benchmark_replay.rs": "307718fe9852d443160e29ea083007c2d60f99ff1263b41209652681eda84cb5",
+    "request.json": "665e503ab85d63b04864ef41b6bd0ae833e88dcabb7d74c5c135b3adc1fd3559"
+  },
+  "mutable_exclusions": []
+}

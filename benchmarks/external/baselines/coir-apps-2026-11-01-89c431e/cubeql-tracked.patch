@@ -1,0 +1,31 @@
+diff --git a/.gitignore b/.gitignore
+index 10a48a6..09f30ff 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,4 @@
+ /target/
+ __pycache__/
+ *.pyc
++/.benchmark-data/
+diff --git a/Cargo.lock b/Cargo.lock
+index 9317ca5..c557cc6 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1662,6 +1662,7 @@ dependencies = [
+  "quote",
+  "serde",
+  "serde_json",
++ "sha2",
+  "syn 2.0.119",
+  "tempfile",
+  "thiserror 2.0.21",
+diff --git a/crates/cubeql-code/Cargo.toml b/crates/cubeql-code/Cargo.toml
+index 4ef8094..840d77a 100644
+--- a/crates/cubeql-code/Cargo.toml
++++ b/crates/cubeql-code/Cargo.toml
+@@ -32,4 +32,5 @@ serde = { version = "1", features = ["derive"] }
+ half = "2.7.1"
+ 
+ [dev-dependencies]
++sha2 = "0.10.9"
+ tempfile = "3.27.0"

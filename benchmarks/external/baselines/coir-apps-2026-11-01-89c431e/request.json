@@ -1,0 +1,31 @@
+{
+  "operation": "package-historical-baseline",
+  "dataset": {
+    "name": "CoIR APPS complete official test task",
+    "source_revisions": {
+      "CoIR-Retrieval/apps-queries-corpus": "1ca5257697c7d73e5d178040221d2f0eb4c2989c",
+      "CoIR-Retrieval/apps-qrels": "a4fb4d92996bcfe1e0b0af9e97ea4b70b80ec9d5"
+    },
+    "files": {
+      "corpus.parquet": {
+        "url": "https://huggingface.co/datasets/CoIR-Retrieval/apps-queries-corpus/resolve/1ca5257697c7d73e5d178040221d2f0eb4c2989c/data/corpus-00000-of-00001-279bc28cd351fa67.parquet",
+        "sha256": "cd73319dc06f19760f4916053a8f5f70a88fd10eee725605a85a98085c177e6e"
+      },
+      "queries.parquet": {
+        "url": "https://huggingface.co/datasets/CoIR-Retrieval/apps-queries-corpus/resolve/1ca5257697c7d73e5d178040221d2f0eb4c2989c/data/queries-00000-of-00001-37cf369ef664f0a0.parquet",
+        "sha256": "a8d440ac0ab1994ba195a0a6051c6a30ed57b25bb0f2d9d250bb341d8f0cfb09"
+      },
+      "test-qrels.parquet": {
+        "url": "https://huggingface.co/datasets/CoIR-Retrieval/apps-qrels/resolve/a4fb4d92996bcfe1e0b0af9e97ea4b70b80ec9d5/data/test-00000-of-00001-832c77cf909fcbbc.parquet",
+        "sha256": "ad93131da8934a4bbcbc415180bcf23ec01d74b566f92d5cdc7eb9ca2e22db81"
+      }
+    },
+    "converted_sha256": {
+      "corpus.jsonl": "1edeba10ef8184918fa10a8a3aca119d85bf9ab660932d9c67607c3a21626844",
+      "queries.jsonl": "6a172a372f947298c2145b73a57b16eafd9d74524933711847295040ae513628",
+      "qrels/test.tsv": "86447fd734cefcb181c28921373d905f86abdb648de7a4f600db2735453a67c1"
+    }
+  },
+  "legacy_freeze_sha256": "c078ec7e940d79bf333f675194ee2b1abdbe1f15a2b226ae69a75f0085ac7af9",
+  "coderank_summary_sha256": "c378a34c116900e530e7f07db5c0d4373b630a541c06534d3aede4730c3e85c2"
+}

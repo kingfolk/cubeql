@@ -1,0 +1,20 @@
+{
+  "name": "native CoIR evaluator",
+  "repository": "https://github.com/CoIR-team/coir",
+  "revision": "89d0e769c18f0576a766072ba1071d4e04cca3dd",
+  "pytrec_eval_terrier": "0.5.11",
+  "files": {
+    "native_coir/evaluation.py": {
+      "url": "https://raw.githubusercontent.com/CoIR-team/coir/89d0e769c18f0576a766072ba1071d4e04cca3dd/coir/beir/retrieval/evaluation.py",
+      "sha256": "c22417b963105a2536d57ae3248bacc94ee993c000f4f70fb8b6c48bea3d2eac"
+    },
+    "native_coir/custom_metrics.py": {
+      "url": "https://raw.githubusercontent.com/CoIR-team/coir/89d0e769c18f0576a766072ba1071d4e04cca3dd/coir/beir/retrieval/custom_metrics.py",
+      "sha256": "892753c145a421927afe388d2c3477fd126e396ac7be37ab47b7e58796a12f42"
+    },
+    "native_coir/search/base.py": {
+      "url": "https://raw.githubusercontent.com/CoIR-team/coir/89d0e769c18f0576a766072ba1071d4e04cca3dd/coir/beir/retrieval/search/base.py",
+      "sha256": "598110fe7ea9eb0022c8ccf30c923a8f9fce2fa08cd83dfa52fc9960d7657edd"
+    }
+  }
+}
