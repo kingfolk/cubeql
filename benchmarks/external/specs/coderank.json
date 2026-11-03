@@ -1,0 +1,59 @@
+{
+  "name": "nomic-ai/CodeRankEmbed",
+  "revision": "3c4b60807d71f79b43f3c4363786d9493691f8b1",
+  "license": "MIT (model card)",
+  "files": {
+    "1_Pooling/config.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/1_Pooling/config.json",
+      "sha256": "d02ebf56344d20f773449b15d0c10ee9a86a9178f3b3c9bfecb8b87d4350ce38"
+    },
+    "README.md": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/README.md",
+      "sha256": "69a6d76a2b533dd0f293b5d1b33a5b433201af38cf48c887b8ec795b641849a0"
+    },
+    "config.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/config.json",
+      "sha256": "5ff856a41d0f53ef2d74520627d464bd75c2efd8f26f381bd528654895c29b6c"
+    },
+    "config_sentence_transformers.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/config_sentence_transformers.json",
+      "sha256": "06bc4c2dc7098e98669beb67cf21dc1373e44a77c7eecdf70aad6585d87190cf"
+    },
+    "configuration_hf_nomic_bert.py": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/configuration_hf_nomic_bert.py",
+      "sha256": "8632792e922e62ab1a6feaab15baf406e223c0547a21de23ab4f520b2b36d674"
+    },
+    "model.safetensors": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/model.safetensors",
+      "sha256": "827529bcd58aef0d9082e66eeff7e7d53a02f62bd005f841a26b3d3e2fb17ebe"
+    },
+    "modeling_hf_nomic_bert.py": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/modeling_hf_nomic_bert.py",
+      "sha256": "502ccfb9c2d5dac976109ac2f04dc3125d8540329e5d4af92bc587d6dc65edcd"
+    },
+    "modules.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/modules.json",
+      "sha256": "8f4b264b80206c830bebbdcae377e137925650a433b689343a63bdc9b3145460"
+    },
+    "sentence_bert_config.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/sentence_bert_config.json",
+      "sha256": "d8ecbf1eb946d17aec64c83e6614e5ec1b19b62498cf72a4ed4ec882c86af07e"
+    },
+    "special_tokens_map.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/special_tokens_map.json",
+      "sha256": "5d5b662e421ea9fac075174bb0688ee0d9431699900b90662acd44b2a350503a"
+    },
+    "tokenizer.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/tokenizer.json",
+      "sha256": "91f1def9b9391fdabe028cd3f3fcc4efd34e5d1f08c3bf2de513ebb5911a1854"
+    },
+    "tokenizer_config.json": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/tokenizer_config.json",
+      "sha256": "7809f768ee3614618b3f1b91dcbfab4f6a9d4b79fb1ad5d17feb65a7c1bb5b7a"
+    },
+    "vocab.txt": {
+      "url": "https://huggingface.co/nomic-ai/CodeRankEmbed/resolve/3c4b60807d71f79b43f3c4363786d9493691f8b1/vocab.txt",
+      "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+    }
+  }
+}

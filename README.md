@@ -47,6 +47,11 @@ JSONL and qrels TSV, preserves document IDs and units, and exports native JSON/T
 for an external evaluator. See [docs/external-benchmarks.md](docs/external-benchmarks.md) for
 the format, offline smoke example, provenance and scoring boundaries.
 
+The [portable benchmark recipe](benchmarks/external/README.md) adds pinned CoIR APPS
+preparation, resumable CodeRankEmbed encoding, an ID-checked vector replay example,
+independent cosine checks and native scoring. Its historical ranking bundle can be audited
+and rescored without rerunning model inference; corpora and weights stay outside Git.
+
 Snapshot-local hybrid retrieval adds `search --strategy semantic|lexical|symbol|hybrid`,
 identifier-aware keyword lookup, exact syntax-symbol search, source-rank provenance and optional
 overlap suppression. Lexical/symbol modes do not load a model or initialize a device; hybrid

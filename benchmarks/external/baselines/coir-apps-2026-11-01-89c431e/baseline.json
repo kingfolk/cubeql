@@ -1,0 +1,328 @@
+{
+  "format_version": 1,
+  "benchmark": "CoIR APPS full official test task",
+  "documents": 8765,
+  "queries": 3765,
+  "candidate_window": 100,
+  "cutoffs": [
+    1,
+    5,
+    10,
+    100
+  ],
+  "dataset_sha256": {
+    "corpus.jsonl": "1edeba10ef8184918fa10a8a3aca119d85bf9ab660932d9c67607c3a21626844",
+    "queries.jsonl": "6a172a372f947298c2145b73a57b16eafd9d74524933711847295040ae513628",
+    "qrels/test.tsv": "86447fd734cefcb181c28921373d905f86abdb648de7a4f600db2735453a67c1"
+  },
+  "modes": {
+    "minilm": {
+      "results": "rankings/minilm/results.json",
+      "trec": "rankings/minilm/run.trec",
+      "expected": {
+        "queries": 3765,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.03958,
+            "NDCG@5": 0.05872,
+            "NDCG@10": 0.06596,
+            "NDCG@100": 0.09593
+          },
+          "map": {
+            "MAP@1": 0.03958,
+            "MAP@5": 0.05286,
+            "MAP@10": 0.05581,
+            "MAP@100": 0.06082
+          },
+          "recall": {
+            "Recall@1": 0.03958,
+            "Recall@5": 0.07649,
+            "Recall@10": 0.09907,
+            "Recall@100": 0.25259
+          },
+          "precision": {
+            "P@1": 0.03958,
+            "P@5": 0.0153,
+            "P@10": 0.00991,
+            "P@100": 0.00253
+          },
+          "mrr": {
+            "MRR@100": 0.06082
+          }
+        },
+        "ndcg_at_10_unrounded": 0.06595686861486243,
+        "pytrec_mrr_at_100": 0.060824188964218824
+      }
+    },
+    "bm25_word": {
+      "results": "rankings/bm25_word/results.json",
+      "trec": "rankings/bm25_word/run.trec",
+      "expected": {
+        "queries": 3765,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.00797,
+            "NDCG@5": 0.01036,
+            "NDCG@10": 0.01152,
+            "NDCG@100": 0.02145
+          },
+          "map": {
+            "MAP@1": 0.00797,
+            "MAP@5": 0.00965,
+            "MAP@10": 0.01011,
+            "MAP@100": 0.01153
+          },
+          "recall": {
+            "Recall@1": 0.00797,
+            "Recall@5": 0.01248,
+            "Recall@10": 0.0162,
+            "Recall@100": 0.07039
+          },
+          "precision": {
+            "P@1": 0.00797,
+            "P@5": 0.0025,
+            "P@10": 0.00162,
+            "P@100": 0.0007
+          },
+          "mrr": {
+            "MRR@100": 0.01153
+          }
+        },
+        "ndcg_at_10_unrounded": 0.01151936685441623,
+        "pytrec_mrr_at_100": 0.011527225213483759
+      }
+    },
+    "bm25_code": {
+      "results": "rankings/bm25_code/results.json",
+      "trec": "rankings/bm25_code/run.trec",
+      "expected": {
+        "queries": 3765,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.00903,
+            "NDCG@5": 0.01301,
+            "NDCG@10": 0.01501,
+            "NDCG@100": 0.02794
+          },
+          "map": {
+            "MAP@1": 0.00903,
+            "MAP@5": 0.01185,
+            "MAP@10": 0.01265,
+            "MAP@100": 0.01452
+          },
+          "recall": {
+            "Recall@1": 0.00903,
+            "Recall@5": 0.01647,
+            "Recall@10": 0.02284,
+            "Recall@100": 0.09296
+          },
+          "precision": {
+            "P@1": 0.00903,
+            "P@5": 0.00329,
+            "P@10": 0.00228,
+            "P@100": 0.00093
+          },
+          "mrr": {
+            "MRR@100": 0.01452
+          }
+        },
+        "ndcg_at_10_unrounded": 0.015012190061829992,
+        "pytrec_mrr_at_100": 0.014519222978013864
+      }
+    },
+    "experimental_rrf": {
+      "results": "rankings/experimental_rrf/results.json",
+      "trec": "rankings/experimental_rrf/run.trec",
+      "expected": {
+        "queries": 3765,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.03479,
+            "NDCG@5": 0.05797,
+            "NDCG@10": 0.06354,
+            "NDCG@100": 0.0861
+          },
+          "map": {
+            "MAP@1": 0.03479,
+            "MAP@5": 0.05096,
+            "MAP@10": 0.05324,
+            "MAP@100": 0.05689
+          },
+          "recall": {
+            "Recall@1": 0.03479,
+            "Recall@5": 0.07915,
+            "Recall@10": 0.09641,
+            "Recall@100": 0.21355
+          },
+          "precision": {
+            "P@1": 0.03479,
+            "P@5": 0.01583,
+            "P@10": 0.00964,
+            "P@100": 0.00214
+          },
+          "mrr": {
+            "MRR@100": 0.05325
+          }
+        },
+        "ndcg_at_10_unrounded": 0.06353592977040451,
+        "pytrec_mrr_at_100": 0.05688512270067265
+      }
+    },
+    "coderank_256_cubeql": {
+      "results": "rankings/coderank_256_cubeql/results.json",
+      "trec": "rankings/coderank_256_cubeql/run.trec",
+      "expected": {
+        "queries": 3765,
+        "ndcg_at_10_unrounded": 0.1983961818846342,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.13307,
+            "NDCG@5": 0.18112,
+            "NDCG@10": 0.1984,
+            "NDCG@100": 0.24287
+          },
+          "recall": {
+            "Recall@1": 0.13307,
+            "Recall@5": 0.22337,
+            "Recall@10": 0.27703,
+            "Recall@100": 0.49934
+          },
+          "mrr": {
+            "MRR@100": 0.18205
+          }
+        },
+        "pytrec_mrr_at_100": 0.1820484060112161
+      }
+    },
+    "coderank_256_reference": {
+      "results": "rankings/coderank_256_reference/results.json",
+      "trec": "rankings/coderank_256_reference/run.trec",
+      "expected": {
+        "queries": 3765,
+        "ndcg_at_10_unrounded": 0.1983961818846342,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.13307,
+            "NDCG@5": 0.18112,
+            "NDCG@10": 0.1984,
+            "NDCG@100": 0.24287
+          },
+          "recall": {
+            "Recall@1": 0.13307,
+            "Recall@5": 0.22337,
+            "Recall@10": 0.27703,
+            "Recall@100": 0.49934
+          },
+          "mrr": {
+            "MRR@100": 0.18205
+          }
+        },
+        "pytrec_mrr_at_100": 0.1820484060112161
+      }
+    },
+    "coderank_8192_cubeql": {
+      "results": "rankings/coderank_8192_cubeql/results.json",
+      "trec": "rankings/coderank_8192_cubeql/run.trec",
+      "expected": {
+        "queries": 3765,
+        "ndcg_at_10_unrounded": 0.23459623504525487,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.15697,
+            "NDCG@5": 0.21589,
+            "NDCG@10": 0.2346,
+            "NDCG@100": 0.28215
+          },
+          "recall": {
+            "Recall@1": 0.15697,
+            "Recall@5": 0.27092,
+            "Recall@10": 0.32882,
+            "Recall@100": 0.5668
+          },
+          "mrr": {
+            "MRR@100": 0.21387
+          }
+        },
+        "pytrec_mrr_at_100": 0.21386922923121762
+      }
+    },
+    "coderank_8192_reference": {
+      "results": "rankings/coderank_8192_reference/results.json",
+      "trec": "rankings/coderank_8192_reference/run.trec",
+      "expected": {
+        "queries": 3765,
+        "ndcg_at_10_unrounded": 0.23459623504525487,
+        "native_coir": {
+          "ndcg": {
+            "NDCG@1": 0.15697,
+            "NDCG@5": 0.21589,
+            "NDCG@10": 0.2346,
+            "NDCG@100": 0.28215
+          },
+          "recall": {
+            "Recall@1": 0.15697,
+            "Recall@5": 0.27092,
+            "Recall@10": 0.32882,
+            "Recall@100": 0.5668
+          },
+          "mrr": {
+            "MRR@100": 0.21387
+          }
+        },
+        "pytrec_mrr_at_100": 0.21386922923121762
+      }
+    }
+  },
+  "archive": {
+    "file": "evidence.tar.gz",
+    "sha256": "38236a0c81d40c5cdb5a64f1a7988727476d34c7a3d300ffa8b9d2de2b4c45ce",
+    "members_sha256": {
+      "rankings/minilm/results.json": "e4230ad335a97b64e30cdd8993defa37cfe49438e80087f116ba236f9802743d",
+      "rankings/minilm/run.trec": "d5be481968888a5b152121fd3101c0cfd4a6ad641e628b228655711004657468",
+      "rankings/bm25_word/results.json": "1d1f33fcf455ea0340d4764078872994ef7df3e7bd0643bb992b7e48a3905253",
+      "rankings/bm25_word/run.trec": "bd33ce150c205ce0d4ad55d0036f83633ac3d0f10e5d0fafb49c0b478274c661",
+      "rankings/bm25_code/results.json": "f286bf1a9baf4bb048fb3dc98855f20d7e70fa262d3a6262a775a73456eb1b62",
+      "rankings/bm25_code/run.trec": "3cc8f3de0593d8621e70d742576d9f6c863ff4ae38da1a1c249bef101d1ef260",
+      "rankings/experimental_rrf/results.json": "d695301520ed91e91103b572ef3e2f7f23efb3b7fc5b30e31a70969714892b3d",
+      "rankings/experimental_rrf/run.trec": "3e8f82a4e01dbc91acbc7fa239c2946539e43819256f955a141f659deb906dc0",
+      "rankings/coderank_256_cubeql/results.json": "d97ba3db1ad69662edb4bed2fe9cde15e2557cc0cdee6c8337be7d46b745a639",
+      "rankings/coderank_256_cubeql/run.trec": "aab6e3c65800c31cd4c6923fd66c0b2f8a716009fdb7c4232b195c9071605938",
+      "rankings/coderank_256_reference/results.json": "760377d9bc0786258704a6f3a4e26f2313efa6c74abb997fbe5d673358744606",
+      "rankings/coderank_256_reference/run.trec": "4e9e4229ff440b9a62749bd1e78a60af6ed9f98aaea453052fbb38290fcea65e",
+      "rankings/coderank_8192_cubeql/results.json": "6bc970fcfd33ea26f9cf415aca4337e52ac86a9bfd183caea9a2dfa58479ac2c",
+      "rankings/coderank_8192_cubeql/run.trec": "aad94a6cd2fb58dc2addbbf3d8f7078d4d4e880d577537670763cc6379b7bae3",
+      "rankings/coderank_8192_reference/results.json": "566f708547513ec370bd298527fb4240f1f9636e7ac51990f51aad724b67c089",
+      "rankings/coderank_8192_reference/run.trec": "be5341503361ca77a85effff157f413bd7ea4f18a9576fe82abe3e388c84cd2d",
+      "historical/minilm/freeze.json": "c078ec7e940d79bf333f675194ee2b1abdbe1f15a2b226ae69a75f0085ac7af9",
+      "historical/minilm/summary.json": "1569ad894064f3010ebd9ddbb46cda2f133d08c554512b7a43d2509bab3affe1",
+      "historical/minilm/per-query-metrics.csv": "82629f280729b50c9f58fca4cf9da5f00317ef4a66b50144513dbb61ef971b0f",
+      "historical/minilm/tie-policy-diagnostic.json": "40004814d479316b36eeb29c299e833ccb23d9b3a94a419e4549c1ff05179fd7",
+      "historical/coderank/summary.json": "c378a34c116900e530e7f07db5c0d4373b630a541c06534d3aede4730c3e85c2",
+      "historical/coderank/per-query-comparison.csv": "7dec9e18ef1083c0dab5153d040fdb58402ef18c91186c4bee3e0bec157e810c",
+      "historical/coderank/tie-gap-diagnostic.json": "b334b1ec43ca12593c5615ebe0c7f48c413dedd974b22508e40d76a3af83bf44",
+      "historical/coderank/baseline-source-equivalence.json": "452baf3ebbe588e8925a9102ea6e301a1a957aba4f1524ad6bba85bb910993d3",
+      "historical/coderank/context-256/encoding-freeze.json": "840d20d1f6cc82a9d453cc95d9d0a384f8170a50b09831755c9101bdb8b9a5c8",
+      "historical/coderank/context-256/encoding-complete.json": "4d753aef888de6675eb2ff7e71b177e4062dfb53d7aabc8ba93d7b8742dc1f32",
+      "historical/coderank/context-256/retrieval-freeze.json": "ec5fb518bd59cd797346b4fae79e659c98f1d6cd0c0c2498322ba0b26ff8e9f3",
+      "historical/coderank/context-256/engine-parity.json": "f19d4d956dfcfe29b7dc910544e1eaaa62c7be356be0aa7e5cd755bf8bf2c467",
+      "historical/coderank/context-8192/encoding-freeze.json": "0c1076d7e64205f7b67828618bf3106f633c321111f8da4c052794871f4b5014",
+      "historical/coderank/context-8192/encoding-complete.json": "88aea7ceb63a318d6c3525c07ce5e95c162a864f5ee5f5b12079315d2aeb8e18",
+      "historical/coderank/context-8192/retrieval-freeze.json": "0c1487102cf00603fb307fe64b4ed374fc6da34b50ea65c07b8c497b868870e6",
+      "historical/coderank/context-8192/engine-parity.json": "58ce7759c37b3cc8e55ef007598232f722ec40ffcc1e949b77b34461171b34a4",
+      "historical/coderank/failed-context-256-model-kwargs/failure.json": "d203891b0e4b2edbd13ea94224012e10bcae8853517c64f95b2db61b7757866f",
+      "historical/coderank/minilm-fidelity-preflight-failure.json": "e1185514dc1b40f8057834186c469c54b9d966e40259481447a4cfdcb140926a",
+      "historical/coderank/source-freeze-amendment.json": "911fd488ede2295f97f1958fd0f34c43290facd27188e5364c7b4d426aa37c87"
+    }
+  },
+  "evidence_status": "historical locally measured runs; packaging does not rerun inference",
+  "original_source_note": "MiniLM used the adapter before commit 89c431e; original freeze retains dirty source identity. CodeRank helper and dependency identities remain separate.",
+  "excluded": [
+    "corpus/query text",
+    "qrels",
+    "model weights",
+    "Arrow indexes",
+    "vectors",
+    "third-party evaluator source"
+  ],
+  "new_paid_model_calls": 0
+}

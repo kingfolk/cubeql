@@ -1,0 +1,7 @@
+-r requirements.txt
+torch==2.7.1
+sentence-transformers==4.1.0
+transformers==4.51.3
+einops==0.8.1
+tokenizers==0.21.4
+safetensors==0.8.0
