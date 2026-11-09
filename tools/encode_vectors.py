@@ -151,6 +151,78 @@ def normalize_validate(matrix, rows: int, dimensions: int):
             raise ValueError("encoder returned vectors that are not L2 normalized")
 
 
+def load_local_encoder(model_name: str, model_dir: Path, maximum: int, device: str):
+    """Load the pinned local model once and return its tokenizer and batch encoder."""
+    import numpy as np
+    import torch
+    if device == "mps" and not torch.backends.mps.is_available():
+        raise ValueError("MPS was explicitly requested but is unavailable; no CPU fallback is used")
+    torch.set_num_threads(THREADS)
+    torch.set_num_interop_threads(1)
+    torch.manual_seed(SEED)
+    torch.use_deterministic_algorithms(True)
+    started = time.perf_counter()
+    path = str(model_dir.resolve())
+    if model_name == "coderank":
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer(path, device="cpu", trust_remote_code=True,
+            local_files_only=True, config_kwargs={"use_flash_attn": False})
+        model.max_seq_length = maximum
+        model.eval().float()
+        if model.get_sentence_embedding_dimension() != CODE_RANK_DIMS or not model[1].pooling_mode_cls_token or model[1].pooling_mode_mean_tokens:
+            raise ValueError("CodeRank model lacks the pinned 768-dimensional CLS configuration")
+        if model[0].auto_model.config.use_flash_attn:
+            raise ValueError("CodeRank model enabled flash attention")
+        tokenizer = model.tokenizer
+    else:
+        from transformers import AutoModel, AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True)
+        model = AutoModel.from_pretrained(path, local_files_only=True,
+            torch_dtype=torch.float32, attn_implementation="sdpa").to(device).float().eval()
+        model.config.use_cache = False
+        if int(model.config.hidden_size) != JINA_DIMS:
+            raise ValueError("Jina model hidden size is not the pinned 896 dimensions")
+
+    def embed(batch):
+        if model_name == "coderank":
+            with torch.inference_mode():
+                values = model.encode(batch, batch_size=len(batch), show_progress_bar=False,
+                    convert_to_numpy=True, normalize_embeddings=True)
+                return np.asarray(values, dtype=np.float32)
+        tokenizer.padding_side = "right"
+        encoded = tokenizer(batch, padding=True, truncation=True, max_length=maximum,
+            return_tensors="pt")
+        encoded = {key: value.to(device) for key, value in encoded.items()}
+        with torch.inference_mode():
+            outputs = model(**encoded)
+            mask = encoded["attention_mask"]
+            indices = mask.sum(dim=1) - 1
+            vectors = outputs.last_hidden_state[torch.arange(len(batch), device=outputs.last_hidden_state.device), indices]
+            vectors = torch.nn.functional.normalize(vectors.float(), p=2, dim=1)
+            return vectors.cpu().numpy().astype(np.float32, copy=False)
+    return tokenizer, embed, time.perf_counter() - started
+
+
+def encode_text_batch(texts, tokenizer, embed, maximum: int, dimensions: int):
+    """Shared prefix-free batch inference primitive used by export and resident modes."""
+    import math
+    lengths = [len(value) for value in tokenizer(texts, add_special_tokens=True,
+        truncation=False, padding=False)["input_ids"]] if texts else []
+    if any(length < 1 for length in lengths):
+        raise ValueError("tokenizer returned an empty token sequence")
+    values = embed(texts)
+    rows = values.tolist() if hasattr(values, "tolist") else values
+    if not isinstance(rows, list) or len(rows) != len(texts):
+        raise ValueError("encoder returned vectors with invalid dtype, shape or values")
+    for row in rows:
+        if not isinstance(row, list) or len(row) != dimensions or any(type(x) not in (float, int) or not math.isfinite(x) for x in row):
+            raise ValueError("encoder returned vectors with invalid dtype, shape or values")
+        norm = math.sqrt(sum(float(x) * float(x) for x in row))
+        if abs(norm - 1.0) > 1e-3:
+            raise ValueError("encoder returned vectors that are not L2 normalized")
+    return rows, lengths
+
+
 def export(output: Path, input_sha: str, config: dict, documents, queries, matrices):
     import numpy as np
     files = {}
@@ -211,34 +283,7 @@ def encode(args):
             write_json(args.output / f"attempt-{attempt:04}.json", {"started_utc": datetime.now(timezone.utc).isoformat(),
                 "resume": args.resume, "pid": os.getpid(), "request_sha256": sha256(args.output / "request.json")})
             import numpy as np
-            import torch
-            if args.device == "mps" and not torch.backends.mps.is_available():
-                raise ValueError("MPS was explicitly requested but is unavailable; no CPU fallback is used")
-            torch.set_num_threads(THREADS)
-            torch.set_num_interop_threads(1)
-            torch.manual_seed(SEED)
-            torch.use_deterministic_algorithms(True)
-            model_load_started = time.perf_counter()
-            if args.model == "coderank":
-                from sentence_transformers import SentenceTransformer
-                model = SentenceTransformer(str(args.model_dir.resolve()), device="cpu", trust_remote_code=True,
-                    local_files_only=True, config_kwargs={"use_flash_attn": False})
-                model.max_seq_length = args.max_tokens
-                model.eval().float()
-                if model.get_sentence_embedding_dimension() != CODE_RANK_DIMS or not model[1].pooling_mode_cls_token or model[1].pooling_mode_mean_tokens:
-                    raise ValueError("CodeRank model lacks the pinned 768-dimensional CLS configuration")
-                if model[0].auto_model.config.use_flash_attn:
-                    raise ValueError("CodeRank model enabled flash attention")
-                tokenizer = model.tokenizer
-            else:
-                from transformers import AutoModel, AutoTokenizer
-                tokenizer = AutoTokenizer.from_pretrained(str(args.model_dir.resolve()), local_files_only=True)
-                model = AutoModel.from_pretrained(str(args.model_dir.resolve()), local_files_only=True,
-                    torch_dtype=torch.float32, attn_implementation="sdpa").to(args.device).float().eval()
-                model.config.use_cache = False
-                if int(model.config.hidden_size) != JINA_DIMS:
-                    raise ValueError("Jina model hidden size is not the pinned 896 dimensions")
-            model_load_seconds = time.perf_counter() - model_load_started
+            tokenizer, embed, model_load_seconds = load_local_encoder(args.model, args.model_dir, args.max_tokens, args.device)
             records = {role: inputs[role] for role in ("documents", "queries")}
             matrices, timings = {}, {}
             for role in ("documents", "queries"):
@@ -246,26 +291,9 @@ def encode(args):
                 prefix = config["document_prefix"] if role == "documents" else config["query_prefix"]
                 texts = [prefix + row["text"] for row in rows]
                 ids = [row["id"] for row in rows]
-                lengths = ([len(value) for value in tokenizer(texts, add_special_tokens=True,
-                    truncation=False, padding=False)["input_ids"]] if rows else [])
                 dimensions = config["dimensions"]
-                def embed(batch):
-                    if args.model == "coderank":
-                        with torch.inference_mode():
-                            values = model.encode(batch, batch_size=len(batch), show_progress_bar=False,
-                                convert_to_numpy=True, normalize_embeddings=True)
-                            return np.asarray(values, dtype=np.float32)
-                    tokenizer.padding_side = "right"
-                    encoded = tokenizer(batch, padding=True, truncation=True, max_length=args.max_tokens,
-                        return_tensors="pt")
-                    encoded = {key: value.to(args.device) for key, value in encoded.items()}
-                    with torch.inference_mode():
-                        outputs = model(**encoded)
-                        mask = encoded["attention_mask"]
-                        indices = mask.sum(dim=1) - 1
-                        vectors = outputs.last_hidden_state[torch.arange(len(batch), device=outputs.last_hidden_state.device), indices]
-                        vectors = torch.nn.functional.normalize(vectors.float(), p=2, dim=1)
-                        return vectors.cpu().numpy().astype(np.float32, copy=False)
+                lengths = [len(value) for value in tokenizer(texts, add_special_tokens=True,
+                    truncation=False, padding=False)["input_ids"]] if rows else []
                 started = time.perf_counter()
                 matrices[role], details = encode_batches(texts, ids, lengths, args.max_tokens,
                     dimensions, args.output / f"{role}-batches", embed)

@@ -9,6 +9,9 @@ use thiserror::Error;
 mod bundle;
 pub use bundle::{BundleProvider, EmbeddingInput, EmbeddingInputs, VectorBundle};
 
+mod process;
+pub use process::{EncoderProcessConfig, ProcessProvider};
+
 #[cfg(feature = "minilm")]
 mod minilm;
 #[cfg(feature = "minilm")]
