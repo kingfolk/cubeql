@@ -16,6 +16,104 @@ import io
 
 
 class AnalysisTests(unittest.TestCase):
+    def test_process_encoder_preserves_virtual_environment_interpreter(self):
+        import venv
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            environment = root / "venv"
+            venv.EnvBuilder(with_pip=False).create(environment)
+            executable = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            config = root / "encoder.json"
+            config.write_text(json.dumps({"format_version": 1, "command": str(executable)}))
+            profile = runner.encoder_profile(config)
+            self.assertEqual(profile["config"]["command"], str(executable))
+            prefix = subprocess.check_output([profile["config"]["command"], "-c",
+                                              "import sys;print(sys.prefix)"], text=True).strip()
+            self.assertEqual(Path(prefix).resolve(), environment.resolve())
+
+    def test_all_supported_plan_versions_load_but_legacy_process_profiles_fail(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "plan.json"
+            plan = {"version": 1, "harness": "codex-exec-jsonl", "model": "fixture",
+                    "reasoning_effort": "medium", "timeout_seconds": 30, "embedding": "hash",
+                    "mcp_executable": sys.executable, "dataset": {"tasks": [{"id": "t"}]},
+                    "trials": [{"id": "t-0-baseline", "task_id": "t", "arm": "baseline", "repeat": 0}]}
+            for version in (1, 2, runner.PLAN_VERSION):
+                plan["version"] = version
+                path.write_text(json.dumps(plan))
+                self.assertEqual(runner.load_plan(path)["version"], version)
+            plan["embedding"] = "process"
+            path.write_text(json.dumps(plan))
+            self.assertEqual(runner.load_plan(path)["embedding"], "process")
+            plan["version"] = 2
+            path.write_text(json.dumps(plan))
+            with self.assertRaisesRegex(ValueError, "version/embedding mismatch"):
+                runner.load_plan(path)
+
+    def test_process_encoder_profile_freezes_and_rejects_tampered_launch_inputs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            executable = root / "worker"
+            executable.write_text("#!/bin/sh\nexit 0\n")
+            executable.chmod(0o755)
+            launch = root / "serve.py"
+            launch.write_text("worker source")
+            config = root / "encoder.json"
+            config.write_text(json.dumps({"format_version":1,"command":str(executable),
+                "args":["serve.py"],"startup_timeout_ms":1000,"request_timeout_ms":500}))
+            profile = runner.encoder_profile(config)
+            self.assertEqual(profile["config"]["args"], [str(launch.resolve())])
+            frozen = root / "encoder-copy.json"
+            frozen.write_text(json.dumps(profile["config"]))
+            plan = {"encoder_profile":{"source_path":profile["source_path"],
+                "source_sha256":profile["source_sha256"],"inputs":profile["inputs"]},
+                "encoder_config_copy":str(frozen),"encoder_config_sha256":runner.digest(frozen)}
+            runner.verify_encoder_profile(plan)
+            launch.write_text("changed worker source")
+            with self.assertRaisesRegex(ValueError, "launch input changed"):
+                runner.verify_encoder_profile(plan)
+
+    def test_process_encoder_accepts_model_directory_without_hashing_or_guessing_enum_paths(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            executable = root / "worker"
+            executable.write_text("#!/bin/sh\nexit 0\n")
+            executable.chmod(0o755)
+            model_dir = root / "artifacts" / "coderank"
+            model_dir.mkdir(parents=True)
+            enum_dir = root / "coderank"
+            enum_dir.mkdir()
+            config = root / "encoder.json"
+            config.write_text(json.dumps({"format_version":1,"command":str(executable),
+                "args":["--model-dir",str(model_dir),"--model","coderank"]}))
+            profile = runner.encoder_profile(config)
+            self.assertEqual(profile["config"]["args"], ["--model-dir",str(model_dir.resolve()),
+                                                         "--model","coderank"])
+            self.assertNotIn(str(model_dir.resolve()), {item["path"] for item in profile["inputs"]})
+            self.assertNotIn(str(enum_dir.resolve()), {item["path"] for item in profile["inputs"]})
+
+    def test_process_encoder_arguments_and_profile_combinations(self):
+        plan = {"mcp_executable":"/bin/mcp","embedding":"process","encoder_config_copy":"/tmp/frozen.json"}
+        self.assertEqual(runner.mcp_command(plan, "hybrid", Path("/workspace"), Path("/prepared"))[-2:],
+                         ["--encoder-config", "/tmp/frozen.json"])
+        lexical = runner.mcp_command(plan, "lexical", Path("/workspace"), Path("/prepared"))
+        self.assertIn("--text-only", lexical)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            command = root / "worker"
+            command.write_text("#!/bin/sh\nexit 0\n")
+            command.chmod(0o755)
+            config = root / "config.json"
+            config.write_text(json.dumps({"format_version":1,"command":str(command),"args":[]}))
+            (root / "tasks.json").write_text(json.dumps({"version":1,"name":"x","tasks":[
+                {"id":"t","question":"q","relevant":[{"path":"a.rs","symbol":"a"}]}]}))
+            args = argparse.Namespace(tasks=root / "tasks.json", repeats=1, timeout=30, model="fixture",
+                model_dir=None, embedding="hash", encoder_config=config, encoder_artifact=[],
+                cubeql_code="code", cubeql_mcp="mcp", repo=root, revision="HEAD", output=root / "out",
+                reasoning_effort="medium")
+            with self.assertRaisesRegex(ValueError, "require --embedding process"):
+                runner.prepare(args)
+
     def events(self, values):
         return "\n".join(json.dumps(v) for v in values)
 
@@ -261,6 +359,67 @@ class AnalysisTests(unittest.TestCase):
 
 @unittest.skipUnless(os.getenv("CUBEQL_EVAL_REAL_BINARIES") == "1", "build Rust binaries and opt into offline integration")
 class OfflineIntegrationTests(unittest.TestCase):
+    def test_process_plan_roundtrip_preflight_run_and_tamper_guard(self):
+        repository = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo = root / "repo"
+            repo.mkdir()
+            (repo / "lib.rs").write_text("pub fn target() {}\npub fn unrelated() {}\n")
+            subprocess.run(["git", "init", "--quiet", repo], check=True)
+            subprocess.run(["git", "-C", repo, "add", "--all"], check=True)
+            subprocess.run(["git", "-C", repo, "-c", "user.name=Fixture", "-c",
+                            "user.email=fixture@invalid", "-c", "commit.gpgsign=false", "-c",
+                            "core.hooksPath=/dev/null", "commit", "-qm", "fixture"], check=True)
+            tasks = root / "tasks.json"
+            tasks.write_text(json.dumps({"version": 1, "name": "OFFLINE-PROCESS", "tasks": [
+                {"id": "target", "question": "Find target", "relevant": [{"path": "lib.rs", "symbol": "target"}]}]}))
+            worker = root / "encoder.py"
+            worker.write_text('''import json,sys
+from pathlib import Path
+config={'model':'harness-fixture','revision':'1','dimensions':2,'normalization':'none',
+        'implementation':'fixture','pooling':'fixture','max_tokens':None,
+        'document_prefix':'','query_prefix':'','artifacts':{}}
+with Path(sys.argv[1]).open('a') as f:f.write('load\\n')
+print(json.dumps({'protocol_version':1,'event':'ready','config':config,'model_load_ms':0}),flush=True)
+for line in sys.stdin:
+ q=json.loads(line)
+ with Path(sys.argv[1]).open('a') as f:f.write(q['role']+'\\n')
+ print(json.dumps({'protocol_version':1,'id':q['id'],'vectors':[[1.,0.] for _ in q['texts']],'encoding_ms':0}),flush=True)
+''')
+            config = root / "encoder.json"
+            config.write_text(json.dumps({"format_version": 1, "command": sys.executable,
+                "args": [str(worker), str(root / "requests.log")]}))
+            fake = root / "fake-codex"
+            shutil.copyfile(Path(__file__).parent / "fixtures/fake_codex.py", fake)
+            fake.chmod(0o755)
+            output = root / "prepared"
+            result = runner.prepare(argparse.Namespace(tasks=tasks, repeats=1, timeout=30,
+                model="offline-fixture", model_dir=None, embedding="process", encoder_config=config,
+                encoder_artifact=[], cubeql_code=str(repository / "target/debug/cubeql-code"),
+                cubeql_mcp=str(repository / "target/debug/cubeql-mcp"), repo=repo, revision="HEAD",
+                output=output, reasoning_effort="medium"))
+            self.assertEqual(result["model_requests_started"], 0)
+            plan = runner.load_plan(output / "plan.json")
+            self.assertEqual(plan["version"], runner.PLAN_VERSION)
+            self.assertEqual(runner.read_json(Path(plan["encoder_config_copy"]))["command"], sys.executable)
+            report = runner.run(argparse.Namespace(plan=output / "plan.json", execute=True,
+                                                  max_runs=3, codex=str(fake)))
+            self.assertTrue(report["complete_matrix"])
+            for arm in runner.ARMS:
+                self.assertEqual(report["arms"][arm]["valid"], 1, report)
+            calls = (root / "requests.log").read_text().splitlines()
+            # Preparation, hybrid preflight and hybrid fixture session only. Lexical
+            # and baseline must never start this process encoder.
+            self.assertEqual(calls.count("load"), 3)
+            self.assertEqual(calls.count("document"), 1)
+            self.assertEqual(calls.count("query"), 1)
+            worker.write_text(worker.read_text() + "\n# changed launch dependency\n")
+            with mock.patch.object(runner, "process", side_effect=AssertionError("must fail before launch")):
+                with self.assertRaisesRegex(ValueError, "launch input changed"):
+                    runner.run(argparse.Namespace(plan=output / "plan.json", execute=True,
+                                                  max_runs=1, codex=str(fake)))
+
     def test_pinned_three_arm_run_uses_real_cubeql_mcp_without_a_model_request(self):
         repository = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as temp:
