@@ -1,0 +1,7 @@
+# Jina's public reference stack; CPU FP32 / SDPA encoder, no flash-attn dependency.
+numpy==2.2.6
+blake3==1.0.8
+torch==2.7.1
+transformers==4.53.3
+tokenizers==0.21.4
+safetensors==0.6.2

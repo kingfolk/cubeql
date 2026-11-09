@@ -4,11 +4,13 @@ use cubecl::Device;
 use cubeql::{
     Filter, FilterMode, IndexQueryOptions, Metric, PreparedFilter, SearchHit, VectorIndex,
 };
-use cubeql_embeddings::{EmbeddedQuery, EmbeddingConfig, EmbeddingProvider, embed_query};
+use cubeql_embeddings::{
+    BundleProvider, EmbeddedQuery, EmbeddingConfig, EmbeddingProvider, VectorBundle, embed_query,
+};
 
 use crate::{
-    BuildOptions, BuildResult, CodeError, CodeIndex, EMBEDDING_CONFIG, build_repository_batched,
-    invalid,
+    BuildOptions, BuildResult, CodeError, CodeIndex, EMBEDDING_CONFIG, RepositoryPlan,
+    build_prepared_repository_batched, invalid, prepare_repository,
 };
 
 /// Only unmatched documents are sent to the provider, in ordered batches. The provider's
@@ -20,6 +22,17 @@ pub fn build_repository_with_provider(
     provider: &mut dyn EmbeddingProvider,
     batch_size: usize,
 ) -> Result<BuildResult, CodeError> {
+    let plan = prepare_repository(root, options)?;
+    build_prepared_with_provider(plan, previous, provider, batch_size)
+}
+
+pub fn build_prepared_with_provider(
+    plan: RepositoryPlan,
+    previous: Option<&CodeIndex>,
+    provider: &mut dyn EmbeddingProvider,
+    batch_size: usize,
+) -> Result<BuildResult, CodeError> {
+    let options = plan.options();
     let config = provider.config().clone();
     config.validate()?;
     if options.dimensions != config.dimensions || options.embedding_id != config.fingerprint()? {
@@ -33,19 +46,34 @@ pub fn build_repository_with_provider(
         })?;
         config.ensure_compatible(old)?;
     }
-    let mut result =
-        build_repository_batched(root.as_ref(), options, previous, batch_size, |texts| {
-            let vectors = provider.embed_documents(texts)?;
-            config.ensure_compatible(provider.config())?;
-            config.validate_vectors(&vectors, texts.len())?;
-            Ok(vectors)
-        })?;
+    provider.validate_document_inputs(&plan.pending_inputs(previous)?)?;
+    let mut result = build_prepared_repository_batched(plan, previous, batch_size, |inputs| {
+        let vectors = provider.embed_documents_with_ids(inputs)?;
+        config.ensure_compatible(provider.config())?;
+        config.validate_vectors(&vectors, inputs.len())?;
+        Ok(vectors)
+    })?;
     result.index.batch.schema_metadata_mut().insert(
         EMBEDDING_CONFIG,
         serde_json::to_string(&config).map_err(cubeql_embeddings::EmbeddingError::from)?,
     );
     result.index.embedding_config = Some(config);
     Ok(result)
+}
+
+/// Validate all pending source identities before importing even one vector. Reused rows
+/// come from the previous snapshot; the supplied bundle contains only new/changed inputs.
+pub fn build_repository_from_vectors(
+    root: impl AsRef<Path>,
+    options: &BuildOptions,
+    previous: Option<&CodeIndex>,
+    bundle: VectorBundle,
+    batch_size: usize,
+) -> Result<BuildResult, CodeError> {
+    let plan = prepare_repository(root, options)?;
+    bundle.ensure_documents(&plan.pending_inputs(previous)?)?;
+    let mut provider = BundleProvider::new(bundle);
+    build_prepared_with_provider(plan, previous, &mut provider, batch_size)
 }
 
 /// Application-level guard around the generic vector engine. It binds source metadata,

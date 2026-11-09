@@ -6,6 +6,9 @@ use std::collections::{BTreeMap, HashMap};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+mod bundle;
+pub use bundle::{BundleProvider, EmbeddingInput, EmbeddingInputs, VectorBundle};
+
 #[cfg(feature = "minilm")]
 mod minilm;
 #[cfg(feature = "minilm")]
@@ -134,8 +137,46 @@ impl EmbeddingConfig {
 /// Implementations return vectors in input order and must not silently drop failed inputs.
 pub trait EmbeddingProvider {
     fn config(&self) -> &EmbeddingConfig;
+    /// Describes the work measured by embedding timers; never confuse replay with inference.
+    fn execution_kind(&self) -> &'static str {
+        "provider-encoding"
+    }
+    /// Live encoders do not consume IDs; imported providers need native IDs preserved.
+    fn requires_identified_inputs(&self) -> bool {
+        false
+    }
     fn embed_documents(&mut self, documents: &[&str]) -> Result<Vec<Vec<f32>>, EmbeddingError>;
     fn embed_query(&mut self, query: &str) -> Result<Vec<f32>, EmbeddingError>;
+
+    /// Imported providers can reject missing, extra or reordered rows before encoding.
+    fn validate_document_inputs(&self, documents: &[EmbeddingInput]) -> Result<(), EmbeddingError> {
+        documents.iter().try_for_each(EmbeddingInput::validate)
+    }
+
+    fn validate_query_inputs(&self, queries: &[EmbeddingInput]) -> Result<(), EmbeddingError> {
+        queries.iter().try_for_each(EmbeddingInput::validate)
+    }
+
+    /// ID-aware import path. Existing live encoders still receive exact text in input order.
+    fn embed_documents_with_ids(
+        &mut self,
+        documents: &[EmbeddingInput],
+    ) -> Result<Vec<Vec<f32>>, EmbeddingError> {
+        for input in documents {
+            input.validate()?;
+        }
+        self.embed_documents(
+            &documents
+                .iter()
+                .map(|d| d.text.as_str())
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    fn embed_query_with_id(&mut self, query: &EmbeddingInput) -> Result<Vec<f32>, EmbeddingError> {
+        query.validate()?;
+        self.embed_query(&query.text)
+    }
 }
 
 /// A query vector tagged with its full vector-space contract. It can also wrap precomputed data.
@@ -169,6 +210,18 @@ pub fn embed_query(
     EmbeddedQuery::new(config, vector)
 }
 
+pub fn embed_identified_query(
+    provider: &mut dyn EmbeddingProvider,
+    input: &EmbeddingInput,
+) -> Result<EmbeddedQuery, EmbeddingError> {
+    input.validate()?;
+    let config = provider.config().clone();
+    config.validate()?;
+    let vector = provider.embed_query_with_id(input)?;
+    config.ensure_compatible(provider.config())?;
+    EmbeddedQuery::new(config, vector)
+}
+
 /// Offline deterministic fixtures or vectors produced by another embedding system.
 pub struct PrecomputedProvider {
     config: EmbeddingConfig,
@@ -197,6 +250,10 @@ impl PrecomputedProvider {
 impl EmbeddingProvider for PrecomputedProvider {
     fn config(&self) -> &EmbeddingConfig {
         &self.config
+    }
+
+    fn execution_kind(&self) -> &'static str {
+        "precomputed-vector-lookup"
     }
     fn embed_documents(&mut self, documents: &[&str]) -> Result<Vec<Vec<f32>>, EmbeddingError> {
         documents

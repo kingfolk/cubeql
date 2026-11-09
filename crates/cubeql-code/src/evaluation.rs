@@ -7,7 +7,7 @@ use std::{
 
 use cubecl::Device;
 use cubeql::{Metric, SearchHit};
-use cubeql_embeddings::{EmbeddingProvider, embed_query};
+use cubeql_embeddings::{EmbeddingInput, EmbeddingProvider, embed_identified_query, embed_query};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -285,6 +285,7 @@ pub struct EvaluationReport {
     pub options: EvaluationOptions,
     pub rrf_rank_constant: usize,
     pub embedding_total_ms: f64,
+    pub embedding_execution: String,
     pub variants: Vec<VariantReport>,
 }
 
@@ -356,11 +357,25 @@ pub fn evaluate(
         ));
     }
     let relevant = dataset.resolve(&code)?;
+    let inputs = dataset
+        .queries
+        .iter()
+        .map(|case| EmbeddingInput::new(&case.id, &case.text))
+        .collect::<Vec<_>>();
+    let identified = provider.requires_identified_inputs();
+    if identified {
+        provider.validate_query_inputs(&inputs)?;
+    }
     let mut queries = Vec::new();
     let mut embedding_total_ms = 0.0;
-    for case in &dataset.queries {
+    for input in &inputs {
         let start = Instant::now();
-        let query = embed_query(provider, &case.text)?;
+        let query = if identified {
+            embed_identified_query(provider, input)?
+        } else {
+            // Preserve existing live-provider behavior, including arbitrary evaluation IDs.
+            embed_query(provider, &input.text)?
+        };
         config.ensure_compatible(query.config())?;
         let ms = elapsed_ms(start);
         embedding_total_ms += ms;
@@ -450,6 +465,7 @@ pub fn evaluate(
         options,
         rrf_rank_constant: RRF_CONSTANT as usize,
         embedding_total_ms,
+        embedding_execution: provider.execution_kind().into(),
         variants,
     })
 }

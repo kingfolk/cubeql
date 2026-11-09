@@ -49,8 +49,9 @@ The reference limits batches to 32 inputs; the CLI defaults to 8.
 The model is a **general English sentence model**, not a code-specialized encoder or a multilingual
 code-search solution. Natural-language/code smoke tests validate a few documented examples, not
 repository-wide relevance. Long functions are still indexed whole but only their first 256 tokens
-contribute to the vector. Model-specific chunking, code-oriented models, hybrid exact search and
-a labeled retrieval benchmark remain follow-up work.
+contribute to the vector. This MiniLM reference does not perform model-specific chunking.
+Code-model imports now use the [external vector workflow](precomputed-vectors.md); current
+hybrid retrieval and labeled evaluation are documented separately below.
 
 Sources: [model card and pooling recipe](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2),
 [pinned model files](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/tree/1110a243fdf4706b3f48f1d95db1a4f5529b4d41),
@@ -93,7 +94,9 @@ uploading vectors. There is no fallback to token hashing if model loading fails.
 output contains file path, inclusive line range, symbol and cosine score, not a relevance
 probability. `query` is now an alias of `search`, with metadata filters and JSON output.
 See [code-search-evaluation.md](code-search-evaluation.md) for update/inspect/search and the
-labeled FP32/FP16 evaluator. The CLI supports the built-in hash and MiniLM providers only.
+labeled FP32/FP16 evaluator. The CLI also supports ID/content-bound external vector bundles
+for CodeRankEmbed and other local encoders: see [precomputed vectors](precomputed-vectors.md)
+for preparation, Python encoding, persistent indexing, new queries and incremental updates.
 
 On Apple hardware, choose native Metal for **retrieval**, while MiniLM inference remains on CPU:
 
