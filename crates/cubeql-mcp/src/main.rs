@@ -11,8 +11,11 @@ struct Cli {
     /// Immutable Arrow code snapshot. Restart to load a new snapshot.
     index: PathBuf,
     /// Existing pinned MiniLM directory; no automatic downloads.
-    #[arg(long)]
+    #[arg(long, conflicts_with_all = ["encoder_config", "text_only"])]
     model_dir: Option<PathBuf>,
+    /// Explicit resident local encoder launch profile; no automatic model downloads.
+    #[arg(long, conflicts_with_all = ["model_dir", "text_only"])]
+    encoder_config: Option<PathBuf>,
     /// Load neither a model nor a device; only lexical/symbol strategies are supported.
     #[arg(long)]
     text_only: bool,
@@ -30,6 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server = CodeServer::start(ServerOptions {
         index: args.index,
         model_dir: args.model_dir,
+        encoder_config: args.encoder_config,
         text_only: args.text_only,
         workspace_root: args.workspace_root,
         search_strategy: args.search_strategy,

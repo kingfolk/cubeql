@@ -42,6 +42,47 @@ The two lines illustrate separate clients; a long-lived application normally ret
 provider rather than launching a process for each query. No shell interpolation is used.
 The launch profile runs a trusted user-selected executable; it is not a process sandbox.
 
+## CLI and persistent MCP search
+
+Save the launch profile above as `/absolute/encoder.json`, then build and query a snapshot:
+
+```sh
+cargo build -p cubeql-code -p cubeql-mcp --release
+target/release/cubeql-code index crates/cubeql-code/tests/fixtures/semantic-demo \
+  --embedding process --encoder-config /absolute/encoder.json \
+  --output /tmp/code-resident.arrow --format json
+
+target/release/cubeql-code search /tmp/code-resident.arrow \
+  "Where are configuration settings saved?" \
+  --encoder-config /absolute/encoder.json --format json
+
+target/release/cubeql-mcp /tmp/code-resident.arrow \
+  --encoder-config /absolute/encoder.json
+```
+
+Each CLI invocation owns a separate encoder lifetime. The MCP server retains one provider
+and vector index across its client's `search_code` calls. In an MCP client configuration,
+pass the snapshot path and `--encoder-config` as separate args; see
+[the MCP guide](mcp-code-search.md). Perform `initialize`, `tools/list`, then search and
+`read_code` using the returned snapshot/chunk handles. Stdout remains MCP JSON-RPC only.
+
+The same profile also works with `update`, `evaluate` and `benchmark run`; new indexing and
+benchmark runs require `--embedding process`. Saved snapshots select their own vector-space
+contract, so querying/updating needs only `--encoder-config`. Existing imported snapshots
+can use a matching live provider without document re-encoding. Omit it for lexical/symbol
+CLI searches; MCP offers explicit `--text-only` for a completely model-free session.
+
+`--encoder-config` conflicts with `--model-dir` and `--vectors`, and with MCP `--text-only`.
+It never silently selects a different model. Model inference runs on the profile's device;
+CubeCL vector scoring uses the binary's CPU/Metal/CUDA/HIP/WGPU features independently.
+No `local-embeddings` Rust feature is required for the external process provider.
+
+CLI search reports startup as `model_load_ms`, query inference as `embedding_ms`, and
+upload/retrieval separately. MCP's ready trace adds `provider_startup_ms` and
+`embedding_execution`; responses report `embedding_ms` and `retrieval_ms` per search.
+Startup includes process launch, artifact verification and model loading, so it is not a
+pure model-load timer. Repeated MCP searches exclude this startup work.
+
 ## Protocol and failure behavior
 
 A strict JSONL ready frame declares protocol version 1, full embedding config and model load
@@ -88,3 +129,12 @@ query texts ranked `load_config` and `save_config` first respectively. Peak RSS 
 1.48 GiB at both the first and final requests, with 8.64 seconds total wall time including
 startup. These are integration observations from a tiny fixture, not a throughput benchmark,
 independent quality samples, or a production memory guarantee. No paid model calls were used.
+
+The CLI/MCP layer was also checked with the real CodeRank model over a persisted Arrow
+snapshot containing the three frozen offline document vectors. A real stdio client discovered
+all three tools, then asked two new natural-language questions (loading settings from disk and
+persisting them to the filesystem). Across eight alternating searches and eight source reads,
+all top results matched the intended functions, and one worker loaded the model once. Sampled
+peak RSS remained about 1.50 GiB. Warm query encoding was about 43–45 ms; first-query work was
+higher. This tiny CPU fixture establishes wiring and reuse only, not repository recall,
+production latency/memory bounds or voluntary use by a coding agent.

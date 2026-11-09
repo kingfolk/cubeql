@@ -16,7 +16,8 @@ use cubeql_code::{
 };
 use cubeql_embeddings::{
     BundleProvider, EmbeddingConfig, EmbeddingError, EmbeddingInput, EmbeddingInputs,
-    EmbeddingProvider, HashProvider, VectorBundle, embed_identified_query, embed_query,
+    EmbeddingProvider, EncoderProcessConfig, HashProvider, ProcessProvider, VectorBundle,
+    embed_identified_query, embed_query,
 };
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -36,6 +37,7 @@ enum ProviderKind {
     Hash,
     Minilm,
     Precomputed,
+    Process,
 }
 
 #[derive(Clone, Copy, Default, ValueEnum)]
@@ -100,11 +102,14 @@ enum Command {
         /// Hash is an offline lexical fixture, not semantic search.
         #[arg(long, value_enum, default_value = "hash")]
         embedding: ProviderKind,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
         /// Import an offline ID/content-bound vector bundle; never performs inference.
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
         vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         /// Hash defaults to 128; MiniLM has a fixed width of 384.
         #[arg(long)]
         dimensions: Option<usize>,
@@ -128,11 +133,14 @@ enum Command {
         /// Override the saved root if the repository was moved.
         #[arg(long)]
         root: Option<PathBuf>,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
         /// Import an offline ID/content-bound vector bundle; never performs inference.
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
         vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long, default_value_t = 8)]
         batch_size: usize,
         #[command(flatten)]
@@ -152,11 +160,14 @@ enum Command {
         /// Disambiguate identical query text associated with multiple imported IDs.
         #[arg(long, requires = "vectors")]
         query_id: Option<String>,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
         /// Import an offline ID/content-bound vector bundle; never performs inference.
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
         vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long, default_value_t = 5)]
         top_k: usize,
         #[arg(long, value_enum, default_value = "semantic")]
@@ -181,11 +192,14 @@ enum Command {
     Evaluate {
         index: PathBuf,
         queries: PathBuf,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
         /// Import an offline ID/content-bound vector bundle; never performs inference.
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
         vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long, default_value_t = 50)]
         candidate_k: usize,
         #[arg(long, default_value_t = 3)]
@@ -263,11 +277,14 @@ enum BenchmarkCommand {
         output: PathBuf,
         #[arg(long, value_enum, default_value = "hash")]
         embedding: ProviderKind,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
         /// Import an offline ID/content-bound vector bundle; never performs inference.
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
         vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long)]
         dimensions: Option<usize>,
         #[arg(long, default_value_t = 8)]
@@ -296,11 +313,28 @@ fn provider(
     dimensions: Option<usize>,
     directory: Option<&Path>,
     vectors: Option<&Path>,
+    encoder_config: Option<&Path>,
 ) -> Result<Box<dyn EmbeddingProvider>> {
     if vectors.is_some() && !matches!(kind, ProviderKind::Precomputed) {
         return Err("--vectors requires --embedding precomputed".into());
     }
+    if encoder_config.is_some() && !matches!(kind, ProviderKind::Process) {
+        return Err("--encoder-config requires --embedding process".into());
+    }
     match kind {
+        ProviderKind::Process => {
+            if directory.is_some() || vectors.is_some() {
+                return Err("--encoder-config conflicts with --model-dir and --vectors".into());
+            }
+            let options = EncoderProcessConfig::load(
+                encoder_config.ok_or("process requires --encoder-config")?,
+            )?;
+            let provider = ProcessProvider::spawn(&options, None)?;
+            if dimensions.is_some_and(|d| d != provider.config().dimensions) {
+                return Err("--dimensions disagrees with encoder configuration".into());
+            }
+            Ok(Box::new(provider))
+        }
         ProviderKind::Precomputed => {
             if directory.is_some() {
                 return Err("--model-dir cannot be used with imported vectors".into());
@@ -341,16 +375,25 @@ fn saved_provider(
     code: &CodeIndex,
     directory: Option<&Path>,
     vectors: Option<&Path>,
+    encoder_config: Option<&Path>,
 ) -> Result<Box<dyn EmbeddingProvider>> {
     let config = code
         .embedding_config()
         .ok_or("legacy index has no provider contract; rebuild with index")?;
+    if let Some(path) = encoder_config {
+        if directory.is_some() || vectors.is_some() {
+            return Err("--encoder-config conflicts with --model-dir and --vectors".into());
+        }
+        let options = EncoderProcessConfig::load(path)?;
+        return Ok(Box::new(ProcessProvider::spawn(&options, Some(config))?));
+    }
     if let Some(path) = vectors {
         let provider = provider(
             ProviderKind::Precomputed,
             Some(config.dimensions),
             directory,
             Some(path),
+            None,
         )?;
         config.ensure_compatible(provider.config())?;
         return Ok(provider);
@@ -367,7 +410,7 @@ fn saved_provider(
             return Ok(Box::new(ImportedOnly(config.clone())));
         }
     };
-    let provider = provider(kind, Some(config.dimensions), directory, None)?;
+    let provider = provider(kind, Some(config.dimensions), directory, None, None)?;
     config.ensure_compatible(provider.config())?;
     Ok(provider)
 }
@@ -381,10 +424,10 @@ impl EmbeddingProvider for ImportedOnly {
         &mut self,
         _: &[&str],
     ) -> std::result::Result<Vec<Vec<f32>>, EmbeddingError> {
-        Err(EmbeddingError::Invalid("new source needs external embeddings: run vectors prepare, encode, then update --vectors".into()))
+        Err(EmbeddingError::Invalid("new source needs external embeddings: supply --encoder-config, or run vectors prepare, encode, then update --vectors".into()))
     }
     fn embed_query(&mut self, _: &str) -> std::result::Result<Vec<f32>, EmbeddingError> {
-        Err(EmbeddingError::Invalid("this CLI does not implement live inference for this model; external query embedding required: run vectors query, encode with the same model configuration, then search --vectors".into()))
+        Err(EmbeddingError::Invalid("this CLI does not implement a built-in encoder for this model; external query embedding required: supply --encoder-config, or run vectors query, encode with the same model configuration, then search --vectors".into()))
     }
 }
 
@@ -516,6 +559,7 @@ fn main() -> Result<()> {
                 embedding,
                 model_dir,
                 vectors,
+                encoder_config,
                 dimensions,
                 batch_size,
                 top_k,
@@ -537,9 +581,10 @@ fn main() -> Result<()> {
                         &output.join("request.json"),
                         &serde_json::json!({
                             "options": &options,
-                            "embedding": match embedding { ProviderKind::Hash => "hash", ProviderKind::Minilm => "minilm", ProviderKind::Precomputed => "precomputed" },
+                            "embedding": match embedding { ProviderKind::Hash => "hash", ProviderKind::Minilm => "minilm", ProviderKind::Precomputed => "precomputed", ProviderKind::Process => "process" },
                             "model_dir": &model_dir,
                             "vectors": &vectors,
+                            "encoder_config": &encoder_config,
                             "dimensions": dimensions,
                             "split": &split,
                             "engine_revision": engine_revision.as_deref()
@@ -551,6 +596,7 @@ fn main() -> Result<()> {
                         dimensions,
                         model_dir.as_deref(),
                         vectors.as_deref(),
+                        encoder_config.as_deref(),
                     )?;
                     let model_load_ms = elapsed_ms(start);
                     // Capture binary/model provenance before a potentially long encoding run,
@@ -602,6 +648,7 @@ fn main() -> Result<()> {
             embedding,
             model_dir,
             vectors,
+            encoder_config,
             dimensions,
             batch_size,
             fallback_lines,
@@ -627,6 +674,7 @@ fn main() -> Result<()> {
                 dimensions,
                 model_dir.as_deref(),
                 vectors.as_deref(),
+                encoder_config.as_deref(),
             )?;
             let options = BuildOptions {
                 fallback_lines,
@@ -649,6 +697,7 @@ fn main() -> Result<()> {
             root,
             model_dir,
             vectors,
+            encoder_config,
             batch_size,
             display,
         } => {
@@ -657,7 +706,12 @@ fn main() -> Result<()> {
             let root = root
                 .or_else(|| previous.root().map(PathBuf::from))
                 .ok_or("snapshot has no saved root; supply --root")?;
-            let mut provider = saved_provider(&previous, model_dir.as_deref(), vectors.as_deref())?;
+            let mut provider = saved_provider(
+                &previous,
+                model_dir.as_deref(),
+                vectors.as_deref(),
+                encoder_config.as_deref(),
+            )?;
             let result = build_repository_with_provider(
                 root,
                 &previous.build_options()?,
@@ -705,6 +759,7 @@ fn main() -> Result<()> {
             query_id,
             model_dir,
             vectors,
+            encoder_config,
             top_k,
             strategy,
             candidate_k,
@@ -737,6 +792,7 @@ fn main() -> Result<()> {
                     &code,
                     model_dir.as_deref(),
                     vectors.as_deref(),
+                    encoder_config.as_deref(),
                 )?)
             } else {
                 None
@@ -835,6 +891,7 @@ fn main() -> Result<()> {
             queries,
             model_dir,
             vectors,
+            encoder_config,
             candidate_k,
             repeats,
             compare_fp16,
@@ -846,7 +903,12 @@ fn main() -> Result<()> {
             let dataset: QuerySet = serde_json::from_reader(std::fs::File::open(queries)?)?;
             dataset.resolve(&code)?;
             let start = Instant::now();
-            let mut provider = saved_provider(&code, model_dir.as_deref(), vectors.as_deref())?;
+            let mut provider = saved_provider(
+                &code,
+                model_dir.as_deref(),
+                vectors.as_deref(),
+                encoder_config.as_deref(),
+            )?;
             let model_load_ms = elapsed_ms(start);
             let report = evaluate(
                 code,

@@ -87,6 +87,10 @@ encoder separately and use `EmbeddedQuery` or the provider API in a resident ser
 must find exactly one query; duplicate query text never silently picks a row. Imported
 query text and ID must both match, and the full saved model contract must be compatible.
 
+For repeated live queries, use a matching [resident encoder](resident-encoder.md) with
+`search --encoder-config` or a persistent MCP server. This reuses the saved document vectors
+and encodes arbitrary new query text, without preparing another query-only bundle.
+
 ## Incremental updates
 
 For a real repository, export only chunks whose source has no reusable previous vector:

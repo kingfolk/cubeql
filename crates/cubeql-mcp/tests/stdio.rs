@@ -84,7 +84,20 @@ impl Client {
         workspace_root: Option<&Path>,
         strategy: Option<&str>,
     ) -> Self {
+        Self::start_with_encoder(index, text_only, model_dir, workspace_root, strategy, None)
+    }
+    fn start_with_encoder(
+        index: &Path,
+        text_only: bool,
+        model_dir: Option<&Path>,
+        workspace_root: Option<&Path>,
+        strategy: Option<&str>,
+        encoder_config: Option<&Path>,
+    ) -> Self {
         let mut command = Command::new(env!("CARGO_BIN_EXE_cubeql-mcp"));
+        if let Some(config) = encoder_config {
+            command.arg("--encoder-config").arg(config);
+        }
         command.arg(index);
         if text_only {
             command.arg("--text-only");
@@ -732,4 +745,93 @@ fn local_minilm_search_and_read_work_over_stdio() {
             .count(),
         1
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn resident_process_encodes_two_queries_and_preserves_snapshot_reads() {
+    let (dir, code) = fixture(VectorPrecision::Fp32, true);
+    let mut hash = HashProvider::new(32).unwrap();
+    let queries = ["needle_api", "something_else"];
+    let vectors: Vec<_> = queries
+        .iter()
+        .map(|q| hash.embed_query(q).unwrap())
+        .collect();
+    fs::write(
+        dir.path().join("model.json"),
+        serde_json::to_vec(&json!({
+            "config":code.embedding_config().unwrap(),"vectors":vectors
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    fs::write(dir.path().join("encoder.py"),r#"import json,sys,os
+from pathlib import Path
+root=Path(sys.argv[1]); model=json.loads((root/'model.json').read_text())
+with (root/'requests.log').open('a') as f:f.write('load '+str(os.getpid())+'\n')
+print(json.dumps({'protocol_version':1,'event':'ready','config':model['config'],'model_load_ms':0.1}),flush=True)
+for line in sys.stdin:
+ q=json.loads(line)
+ with (root/'requests.log').open('a') as f:f.write(str(q['id'])+' '+q['role']+'\n')
+ vector=model['vectors'][0 if 'needle' in q['texts'][0] else 1]
+ print(json.dumps({'protocol_version':1,'id':q['id'],'vectors':[vector],'encoding_ms':0.1}),flush=True)
+"#).unwrap();
+    let config = dir.path().join("process.json");
+    fs::write(&config,serde_json::to_vec(&json!({"format_version":1,"command":"/usr/bin/python3",
+        "args":[dir.path().join("encoder.py"),dir.path()],"startup_timeout_ms":5000,"request_timeout_ms":2000})).unwrap()).unwrap();
+    let mut client = Client::start_with_encoder(
+        &dir.path().join("code.arrow"),
+        false,
+        None,
+        None,
+        None,
+        Some(&config),
+    );
+    let catalog = client.request("tools/list", json!({}));
+    assert_eq!(catalog["result"]["tools"].as_array().unwrap().len(), 3);
+    for (query, symbol) in [
+        ("needle_api", "load_config"),
+        ("something_else", "unrelated"),
+    ] {
+        let found = client.success(
+            "search_code",
+            json!({"query":query,"strategy":"semantic","top_k":1}),
+        );
+        assert_eq!(found["hits"][0]["symbol"], symbol);
+        let read = client.success(
+            "read_code",
+            json!({"snapshot_id":found["snapshot_id"],"chunk_id":found["hits"][0]["chunk_id"]}),
+        );
+        assert!(read["text"].as_str().unwrap().contains(symbol));
+    }
+    let diagnostics = client.close();
+    assert!(diagnostics.contains("resident-process-encoding"));
+    let log = fs::read_to_string(dir.path().join("requests.log")).unwrap();
+    assert_eq!(log.lines().filter(|l| l.starts_with("load ")).count(), 1);
+    assert_eq!(log.lines().filter(|l| l.ends_with(" query")).count(), 2);
+    // Altering the full profile is rejected at startup rather than searching another space.
+    let mut model: Value =
+        serde_json::from_slice(&fs::read(dir.path().join("model.json")).unwrap()).unwrap();
+    model["config"]["query_prefix"] = json!("wrong: ");
+    fs::write(
+        dir.path().join("model.json"),
+        serde_json::to_vec(&model).unwrap(),
+    )
+    .unwrap();
+    let bad = Command::new(env!("CARGO_BIN_EXE_cubeql-mcp"))
+        .arg(dir.path().join("code.arrow"))
+        .arg("--encoder-config")
+        .arg(&config)
+        .output()
+        .unwrap();
+    assert!(!bad.status.success());
+    assert!(bad.stdout.is_empty());
+    let bad = Command::new(env!("CARGO_BIN_EXE_cubeql-mcp"))
+        .arg(dir.path().join("code.arrow"))
+        .arg("--encoder-config")
+        .arg(&config)
+        .arg("--text-only")
+        .output()
+        .unwrap();
+    assert!(!bad.status.success());
 }

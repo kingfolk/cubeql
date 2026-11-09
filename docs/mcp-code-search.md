@@ -64,6 +64,21 @@ The full saved embedding configuration must match the loaded model; there is no 
 to hash vectors. Startup never downloads models. Unsupported providers fail startup unless
 `--text-only` is selected, which does not instantiate a provider at all.
 
+For an existing CodeRank/Jina snapshot, configure a matching resident local encoder:
+
+```bash
+target/release/cubeql-mcp /absolute/code.arrow --encoder-config /absolute/encoder.json
+```
+
+See [resident-encoder.md](resident-encoder.md) for the launch JSON and an end-to-end example.
+This process provider handles arbitrary new query text, loads once per server session, and
+checks the complete saved model contract before serving tools. It requires neither the
+MiniLM Rust feature nor a precomputed query list. `--encoder-config`, `--model-dir` and
+`--text-only` are mutually exclusive. Startup failures or query failures are surfaced;
+there is no hash fallback or automatic encoder restart. The ready trace records
+`provider_startup_ms` and `embedding_execution`; search responses separate query encoding
+from retrieval. This optional process adapter currently requires POSIX process groups.
+
 CPU is the default backend. For native Metal, build with:
 
 ```bash
