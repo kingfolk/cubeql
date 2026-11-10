@@ -1,0 +1,161 @@
+{
+  "document_input_count": 8765,
+  "query_input_count": 3765,
+  "source_head": "a4b7abe1437c0cf7066b852bf5c9b7a84da7b060",
+  "source_dirty": true,
+  "binary_sha256": "cac31d12ee303e846346305f497ab8468038a234191d25383469be928f2157b1",
+  "retrieval_backend": "Cpu(CpuDevice)",
+  "embedding_execution": "precomputed-vector-lookup",
+  "timings": {
+    "model_load_successful_attempt_seconds": 4.439567500026897,
+    "document_inference_seconds_including_reused_batches": 3023.315746831475,
+    "query_inference_seconds_including_reused_batches": 3147.1646795081906,
+    "document_rows_reused_on_successful_attempt": 8765,
+    "document_vector_lookup_ms": 37.627709,
+    "query_vector_lookup_ms": 65.801478,
+    "index_setup_upload_ms": 13.510209,
+    "retrieval_ms_sum": 23300.255124,
+    "retrieval_ms_mean": 6.188646779282869
+  },
+  "scores": {
+    "cubeql": {
+      "judged_queries": 3765,
+      "unjudged_queries_excluded": 0,
+      "candidate_window": 100,
+      "candidate_window_source": "completed-run-report",
+      "actual_returned_range": [
+        100,
+        100
+      ],
+      "cutoffs": [
+        1,
+        5,
+        10,
+        100
+      ],
+      "native_coir": {
+        "ndcg": {
+          "NDCG@1": 0.73811,
+          "NDCG@5": 0.82642,
+          "NDCG@10": 0.83864,
+          "NDCG@100": 0.85006
+        },
+        "map": {
+          "MAP@1": 0.73811,
+          "MAP@5": 0.80286,
+          "MAP@10": 0.80802,
+          "MAP@100": 0.81047
+        },
+        "recall": {
+          "Recall@1": 0.73811,
+          "Recall@5": 0.89615,
+          "Recall@10": 0.93333,
+          "Recall@100": 0.98566
+        },
+        "precision": {
+          "P@1": 0.73811,
+          "P@5": 0.17923,
+          "P@10": 0.09333,
+          "P@100": 0.00986
+        },
+        "mrr": {
+          "MRR@1": 0.73865,
+          "MRR@5": 0.80303,
+          "MRR@10": 0.8082,
+          "MRR@100": 0.81064
+        }
+      },
+      "direct_pytrec_unrounded": {
+        "recip_rank": 0.810465302008205,
+        "recall_1": 0.7381142098273572,
+        "recall_5": 0.8961487383798141,
+        "recall_10": 0.9333333333333333,
+        "recall_100": 0.9856573705179282,
+        "ndcg_cut_1": 0.7381142098273572,
+        "ndcg_cut_5": 0.82641728521566,
+        "ndcg_cut_10": 0.8386415771817237,
+        "ndcg_cut_100": 0.8500634404746567
+      },
+      "pytrec_reciprocal_rank_window": "exported candidate window, after explicit self-ID filtering",
+      "mrr_tie_policy": "native stable JSON score sort and pytrec document-ID tie sort are both retained",
+      "ignore_identical_ids": true,
+      "judgments_modified": false,
+      "paid_model_calls": 0
+    },
+    "numpy": {
+      "judged_queries": 3765,
+      "unjudged_queries_excluded": 0,
+      "candidate_window": 100,
+      "candidate_window_source": "caller-supplied",
+      "actual_returned_range": [
+        100,
+        100
+      ],
+      "cutoffs": [
+        1,
+        5,
+        10,
+        100
+      ],
+      "native_coir": {
+        "ndcg": {
+          "NDCG@1": 0.73811,
+          "NDCG@5": 0.82642,
+          "NDCG@10": 0.83864,
+          "NDCG@100": 0.85006
+        },
+        "map": {
+          "MAP@1": 0.73811,
+          "MAP@5": 0.80286,
+          "MAP@10": 0.80802,
+          "MAP@100": 0.81047
+        },
+        "recall": {
+          "Recall@1": 0.73811,
+          "Recall@5": 0.89615,
+          "Recall@10": 0.93333,
+          "Recall@100": 0.98566
+        },
+        "precision": {
+          "P@1": 0.73811,
+          "P@5": 0.17923,
+          "P@10": 0.09333,
+          "P@100": 0.00986
+        },
+        "mrr": {
+          "MRR@1": 0.73865,
+          "MRR@5": 0.80303,
+          "MRR@10": 0.8082,
+          "MRR@100": 0.81064
+        }
+      },
+      "direct_pytrec_unrounded": {
+        "recip_rank": 0.810465302008205,
+        "recall_1": 0.7381142098273572,
+        "recall_5": 0.8961487383798141,
+        "recall_10": 0.9333333333333333,
+        "recall_100": 0.9856573705179282,
+        "ndcg_cut_1": 0.7381142098273572,
+        "ndcg_cut_5": 0.82641728521566,
+        "ndcg_cut_10": 0.8386415771817237,
+        "ndcg_cut_100": 0.8500634404746567
+      },
+      "pytrec_reciprocal_rank_window": "exported candidate window, after explicit self-ID filtering",
+      "mrr_tie_policy": "native stable JSON score sort and pytrec document-ID tie sort are both retained",
+      "ignore_identical_ids": true,
+      "judgments_modified": false,
+      "paid_model_calls": 0
+    }
+  },
+  "parity_summary": {
+    "queries": 3765,
+    "top10_order_identical": 3765,
+    "topk_order_identical": 3742,
+    "topk_set_identical": 3765,
+    "max_returned_score_error": 1.7498032837126587e-06,
+    "reference_seconds": 3.5294941670726985,
+    "tolerance_is_diagnostic": "rank mismatches are retained; none are removed or perturbed"
+  },
+  "max_reference_gap_in_reordered_positions": 6.682767967891579e-07,
+  "paid_model_calls": 0
+}

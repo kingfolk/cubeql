@@ -6,13 +6,40 @@ from pathlib import Path
 import time
 
 from common import capture, failure, provenance, read_json, seal, sha256, start_directory, write_json
-from data import load_dataset
+from data import document_text, load_dataset
 
 
 def load_vectors(dataset: Path, path: Path):
     import numpy as np
     docs, queries, _, hashes = load_dataset(dataset)
     manifest = read_json(path)
+    if "dtype" in manifest:
+        # RQ1 production bundles bind text/IDs directly, without embedding labels or
+        # tying reusable document vectors to an experiment's relevance judgments.
+        if set(manifest) != {"format_version", "dtype", "config", "inputs", "documents", "queries"} or manifest["dtype"] != "float32_le":
+            raise ValueError("unsupported production vector bundle")
+        entry = manifest["inputs"]
+        if set(entry) != {"file", "sha256"} or not entry["file"] or Path(entry["file"]).name != entry["file"] or "\\" in entry["file"]:
+            raise ValueError("inputs filename must be one path component")
+        import hashlib
+        import blake3
+        from common import decode_json
+        raw = (path.parent / entry["file"]).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
+            raise ValueError("input manifest checksum mismatch")
+        inputs = decode_json(raw)
+        if set(inputs) != {"format_version", "documents", "queries"} or type(inputs["format_version"]) is not int or inputs["format_version"] != 1:
+            raise ValueError("invalid production embedding inputs")
+        for role, expected in [("documents", [(d["_id"], document_text(d)) for d in docs]),
+                               ("queries", [(q["_id"], q["text"]) for q in queries])]:
+            records = inputs[role]
+            if len(records) != len(expected):
+                raise ValueError("production input coverage differs from dataset")
+            for record, (identifier, text) in zip(records, expected):
+                if set(record) != {"id", "text", "content_hash"} or record["id"] != identifier or record["text"] != text or record["content_hash"] != blake3.blake3(text.encode()).hexdigest():
+                    raise ValueError("production input content, ID or order differs from dataset")
+        manifest = {**manifest, "dataset_sha256": hashes,
+                    "document_ids": [d["_id"] for d in docs], "query_ids": [q["_id"] for q in queries]}
     if type(manifest["format_version"]) is not int or manifest["format_version"] != 1 or manifest["dataset_sha256"] != hashes:
         raise ValueError("vector manifest does not bind the current dataset")
     if manifest["document_ids"] != [d["_id"] for d in docs] or manifest["query_ids"] != [q["_id"] for q in queries]:
@@ -54,6 +81,7 @@ def exhaustive(dataset: Path, vectors: Path, output: Path, top_k: int, compare_r
     if top_k < 1:
         raise ValueError("top_k must be positive")
     request = {"operation": "reference-cosine", "vectors_manifest_sha256": sha256(vectors),
+        "dataset_sha256": manifest["dataset_sha256"],
         "top_k": top_k, "arithmetic": "float64 exhaustive cosine on saved FP32 inputs",
         "compare_report_sha256": sha256(compare_report) if compare_report else None,
         "recipe_sha256": provenance()["recipe_sha256"]}

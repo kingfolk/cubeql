@@ -6,7 +6,9 @@ use std::{
 };
 
 use cubecl::Device;
-use cubeql_embeddings::{EmbeddedQuery, EmbeddingConfig, EmbeddingError, EmbeddingProvider};
+use cubeql_embeddings::{
+    EmbeddedQuery, EmbeddingConfig, EmbeddingError, EmbeddingInput, EmbeddingProvider,
+};
 use serde::Serialize;
 
 use crate::{
@@ -63,6 +65,7 @@ pub struct HybridEvaluationReport {
     pub options: EvaluationOptions,
     pub rrf_rank_constant: usize,
     pub embedding_total_ms: f64,
+    pub embedding_execution: String,
     pub variants: Vec<HybridVariantReport>,
 }
 
@@ -73,6 +76,20 @@ struct CaptureQueries<'a> {
 impl EmbeddingProvider for CaptureQueries<'_> {
     fn config(&self) -> &EmbeddingConfig {
         self.provider.config()
+    }
+    fn requires_identified_inputs(&self) -> bool {
+        self.provider.requires_identified_inputs()
+    }
+    fn execution_kind(&self) -> &'static str {
+        self.provider.execution_kind()
+    }
+    fn validate_query_inputs(&self, inputs: &[EmbeddingInput]) -> Result<(), EmbeddingError> {
+        self.provider.validate_query_inputs(inputs)
+    }
+    fn embed_query_with_id(&mut self, input: &EmbeddingInput) -> Result<Vec<f32>, EmbeddingError> {
+        let vector = self.provider.embed_query_with_id(input)?;
+        self.vectors.push(vector.clone());
+        Ok(vector)
     }
     fn embed_documents(&mut self, _: &[&str]) -> Result<Vec<Vec<f32>>, EmbeddingError> {
         Err(EmbeddingError::Invalid(
@@ -205,6 +222,7 @@ pub fn evaluate(
         options,
         rrf_rank_constant: baseline.rrf_rank_constant,
         embedding_total_ms: baseline.embedding_total_ms,
+        embedding_execution: baseline.embedding_execution,
         variants,
     })
 }

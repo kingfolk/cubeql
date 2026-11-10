@@ -1,0 +1,219 @@
+{
+  "status": "complete",
+  "source_head": "a4b7abe1437c0cf7066b852bf5c9b7a84da7b060",
+  "source_dirty": true,
+  "binary_sha256": "cac31d12ee303e846346305f497ab8468038a234191d25383469be928f2157b1",
+  "rustc_verbose_version": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: aarch64-apple-darwin\nrelease: 1.99.0\nLLVM version: 23.1.1",
+  "cargo_version": "cargo 1.99.0 (5f94df478 2026-08-27)",
+  "source_snapshot_files": [
+    "README.md",
+    "tools/requirements-jina.txt",
+    "tools/encode_vectors.py",
+    "tools/requirements-code-embeddings.txt",
+    "docs/precomputed-vectors.md",
+    "docs/embedding-providers.md",
+    "tools/specs/coderank.json",
+    "tools/specs/jina-code-embeddings-0.5b.json",
+    "tools/tests/test_encode_vectors.py",
+    "tools/tests/test_reference_bundle.py",
+    "crates/cubeql-code/Cargo.toml",
+    "crates/cubeql-embeddings/Cargo.toml",
+    "crates/cubeql-code/tests/vector_workflow.rs",
+    "crates/cubeql-code/src/evaluation.rs",
+    "crates/cubeql-code/src/benchmark.rs",
+    "crates/cubeql-code/src/lib.rs",
+    "crates/cubeql-code/src/provider.rs",
+    "crates/cubeql-code/src/main.rs",
+    "crates/cubeql-code/src/hybrid_evaluation.rs",
+    "crates/cubeql-embeddings/tests/bundle.rs",
+    "crates/cubeql-embeddings/src/lib.rs",
+    "crates/cubeql-embeddings/src/bundle.rs",
+    "benchmarks/external/requirements.txt",
+    "benchmarks/external/reference.py",
+    "Cargo.lock"
+  ],
+  "scores": {
+    "cubeql": {
+      "judged_queries": 3765,
+      "unjudged_queries_excluded": 0,
+      "candidate_window": 100,
+      "candidate_window_source": "completed-run-report",
+      "actual_returned_range": [
+        100,
+        100
+      ],
+      "cutoffs": [
+        1,
+        5,
+        10,
+        100
+      ],
+      "native_coir": {
+        "ndcg": {
+          "NDCG@1": 0.73811,
+          "NDCG@5": 0.82642,
+          "NDCG@10": 0.83864,
+          "NDCG@100": 0.85006
+        },
+        "map": {
+          "MAP@1": 0.73811,
+          "MAP@5": 0.80286,
+          "MAP@10": 0.80802,
+          "MAP@100": 0.81047
+        },
+        "recall": {
+          "Recall@1": 0.73811,
+          "Recall@5": 0.89615,
+          "Recall@10": 0.93333,
+          "Recall@100": 0.98566
+        },
+        "precision": {
+          "P@1": 0.73811,
+          "P@5": 0.17923,
+          "P@10": 0.09333,
+          "P@100": 0.00986
+        },
+        "mrr": {
+          "MRR@1": 0.73865,
+          "MRR@5": 0.80303,
+          "MRR@10": 0.8082,
+          "MRR@100": 0.81064
+        }
+      },
+      "direct_pytrec_unrounded": {
+        "recip_rank": 0.810465302008205,
+        "recall_1": 0.7381142098273572,
+        "recall_5": 0.8961487383798141,
+        "recall_10": 0.9333333333333333,
+        "recall_100": 0.9856573705179282,
+        "ndcg_cut_1": 0.7381142098273572,
+        "ndcg_cut_5": 0.82641728521566,
+        "ndcg_cut_10": 0.8386415771817237,
+        "ndcg_cut_100": 0.8500634404746567
+      },
+      "pytrec_reciprocal_rank_window": "exported candidate window, after explicit self-ID filtering",
+      "mrr_tie_policy": "native stable JSON score sort and pytrec document-ID tie sort are both retained",
+      "ignore_identical_ids": true,
+      "judgments_modified": false,
+      "paid_model_calls": 0
+    },
+    "numpy": {
+      "judged_queries": 3765,
+      "unjudged_queries_excluded": 0,
+      "candidate_window": 100,
+      "candidate_window_source": "caller-supplied",
+      "actual_returned_range": [
+        100,
+        100
+      ],
+      "cutoffs": [
+        1,
+        5,
+        10,
+        100
+      ],
+      "native_coir": {
+        "ndcg": {
+          "NDCG@1": 0.73811,
+          "NDCG@5": 0.82642,
+          "NDCG@10": 0.83864,
+          "NDCG@100": 0.85006
+        },
+        "map": {
+          "MAP@1": 0.73811,
+          "MAP@5": 0.80286,
+          "MAP@10": 0.80802,
+          "MAP@100": 0.81047
+        },
+        "recall": {
+          "Recall@1": 0.73811,
+          "Recall@5": 0.89615,
+          "Recall@10": 0.93333,
+          "Recall@100": 0.98566
+        },
+        "precision": {
+          "P@1": 0.73811,
+          "P@5": 0.17923,
+          "P@10": 0.09333,
+          "P@100": 0.00986
+        },
+        "mrr": {
+          "MRR@1": 0.73865,
+          "MRR@5": 0.80303,
+          "MRR@10": 0.8082,
+          "MRR@100": 0.81064
+        }
+      },
+      "direct_pytrec_unrounded": {
+        "recip_rank": 0.810465302008205,
+        "recall_1": 0.7381142098273572,
+        "recall_5": 0.8961487383798141,
+        "recall_10": 0.9333333333333333,
+        "recall_100": 0.9856573705179282,
+        "ndcg_cut_1": 0.7381142098273572,
+        "ndcg_cut_5": 0.82641728521566,
+        "ndcg_cut_10": 0.8386415771817237,
+        "ndcg_cut_100": 0.8500634404746567
+      },
+      "pytrec_reciprocal_rank_window": "exported candidate window, after explicit self-ID filtering",
+      "mrr_tie_policy": "native stable JSON score sort and pytrec document-ID tie sort are both retained",
+      "ignore_identical_ids": true,
+      "judgments_modified": false,
+      "paid_model_calls": 0
+    }
+  },
+  "parity_summary": {
+    "queries": 3765,
+    "top10_order_identical": 3765,
+    "topk_order_identical": 3742,
+    "topk_set_identical": 3765,
+    "max_returned_score_error": 1.7498032837126587e-06,
+    "reference_seconds": 3.5294941670726985,
+    "tolerance_is_diagnostic": "rank mismatches are retained; none are removed or perturbed"
+  },
+  "aggregate_native_ndcg_equal": true,
+  "aggregate_native_mrr_equal": true,
+  "encoding": {
+    "status": "complete",
+    "model_load_seconds": 4.439567500026897,
+    "timings": {
+      "documents": {
+        "inference_seconds_including_reused_batches": 3023.315746831475,
+        "rows_encoded_this_attempt": 0,
+        "rows_reused": 8765,
+        "count": 8765,
+        "current_attempt_wall_seconds": 0.7434072501491755,
+        "beyond_context": 70,
+        "median_tokens": 116.0,
+        "maximum_tokens": 289006
+      },
+      "queries": {
+        "inference_seconds_including_reused_batches": 3147.1646795081906,
+        "rows_encoded_this_attempt": 121,
+        "rows_reused": 3644,
+        "count": 3765,
+        "current_attempt_wall_seconds": 113.37528525013477,
+        "beyond_context": 72,
+        "median_tokens": 468.0,
+        "maximum_tokens": 1852
+      }
+    },
+    "paid_model_calls": 0
+  },
+  "encoding_completion_file": "encoding-0003.json",
+  "encoding_failures": [
+    {
+      "status": "failed",
+      "error": "MPS backend out of memory (MPS allocated: 13.58 GB, other allocations: 4.49 GB, max allowed: 18.13 GB). Tried to allocate 101.12 MB on private pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).",
+      "error_type": "RuntimeError",
+      "recorded_utc": "2026-11-03T02:15:02.136749+00:00"
+    },
+    {
+      "status": "failed",
+      "error": "MPS backend out of memory (MPS allocated: 13.57 GB, other allocations: 4.52 GB, max allowed: 18.13 GB). Tried to allocate 97.21 MB on private pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).",
+      "error_type": "RuntimeError",
+      "recorded_utc": "2026-11-03T13:50:20.115512+00:00"
+    }
+  ],
+  "paid_model_calls": 0
+}

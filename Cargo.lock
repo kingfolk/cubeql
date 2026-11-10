@@ -1676,6 +1676,7 @@ dependencies = [
  "candle-core",
  "candle-nn",
  "candle-transformers",
+ "libc",
  "serde",
  "serde_json",
  "sha2",

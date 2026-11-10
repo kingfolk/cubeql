@@ -13,7 +13,9 @@ use arrow_array::{ArrayRef, FixedSizeListArray, Float32Array, RecordBatch, Strin
 use arrow_schema::{DataType, Field, Schema};
 use cubecl::Device;
 use cubeql::{IndexOptions, IndexQueryOptions, Metric, VectorIndex, write_ipc_batch};
-use cubeql_embeddings::{EmbeddingConfig, EmbeddingProvider, embed_query};
+use cubeql_embeddings::{
+    EmbeddingConfig, EmbeddingInput, EmbeddingInputs, EmbeddingProvider, embed_identified_query,
+};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{CodeError, PersistenceError, invalid, reporting::elapsed_ms};
@@ -162,6 +164,22 @@ impl Dataset {
         })
     }
 
+    pub fn embedding_inputs(&self) -> EmbeddingInputs {
+        EmbeddingInputs {
+            format_version: 1,
+            documents: self
+                .documents
+                .iter()
+                .map(|d| EmbeddingInput::new(&d.id, d.embedding_text()))
+                .collect(),
+            queries: self
+                .queries
+                .iter()
+                .map(|q| EmbeddingInput::new(&q.id, &q.text))
+                .collect(),
+        }
+    }
+
     pub fn documents(&self) -> &[Document] {
         &self.documents
     }
@@ -274,6 +292,7 @@ pub struct RunReport {
     pub dataset: DatasetSummary,
     pub embedding: EmbeddingConfig,
     pub embedding_is_hash_fixture: bool,
+    pub embedding_execution: String,
     pub backend: String,
     pub precision: &'static str,
     pub metric: &'static str,
@@ -368,17 +387,19 @@ pub fn run(
     options.validate()?;
     let config = provider.config().clone();
     config.validate()?;
+    let expected = dataset.embedding_inputs();
+    provider.validate_document_inputs(&expected.documents)?;
+    provider.validate_query_inputs(&expected.queries)?;
     let mut values = Vec::new();
     let start = Instant::now();
     for documents in dataset.documents.chunks(options.batch_size) {
-        let texts = documents
+        let inputs = documents
             .iter()
-            .map(Document::embedding_text)
+            .map(|d| EmbeddingInput::new(&d.id, d.embedding_text()))
             .collect::<Vec<_>>();
-        let refs = texts.iter().map(String::as_str).collect::<Vec<_>>();
-        let vectors = provider.embed_documents(&refs)?;
+        let vectors = provider.embed_documents_with_ids(&inputs)?;
         config.ensure_compatible(provider.config())?;
-        config.validate_vectors(&vectors, texts.len())?;
+        config.validate_vectors(&vectors, inputs.len())?;
         values.extend(vectors.into_iter().flatten());
     }
     let document_embedding_ms = elapsed_ms(start);
@@ -428,7 +449,8 @@ pub fn run(
     let mut rankings = Vec::with_capacity(dataset.queries.len());
     for query in &dataset.queries {
         let start = Instant::now();
-        let vector = embed_query(provider, &query.text)?;
+        let vector =
+            embed_identified_query(provider, &EmbeddingInput::new(&query.id, &query.text))?;
         config.ensure_compatible(vector.config())?;
         let embedding_ms = elapsed_ms(start);
         let start = Instant::now();
@@ -466,6 +488,7 @@ pub fn run(
             status: "complete",
             dataset: dataset.summary.clone(),
             embedding_is_hash_fixture: config.model == "cubeql-hash-tokens",
+            embedding_execution: provider.execution_kind().into(),
             embedding: config,
             backend: format!("{device:?}"),
             precision: "fp32",

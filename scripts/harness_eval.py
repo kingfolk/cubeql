@@ -26,6 +26,7 @@ import time
 import tomllib
 
 ARMS = ("baseline", "lexical", "hybrid")
+PLAN_VERSION = 3
 MAX_LOG = 32 * 1024 * 1024
 SKIP_DIRS = {".git", ".codex", ".agents", "evals"}
 GRADER = "path-aware-rust-aliases-v2"
@@ -73,6 +74,76 @@ def write_json(path, value):
 def digest(path):
     with path.open("rb") as source:
         return hashlib.file_digest(source, "sha256").hexdigest()
+
+
+def encoder_profile(config_path, artifacts=()):
+    """Validate the resident-worker config and fingerprint every declared launch input."""
+    original = config_path.resolve()
+    raw = read_json(original)
+    require(isinstance(raw, dict) and {"format_version", "command"} <= set(raw)
+            and set(raw) <= {"format_version", "command", "args", "startup_timeout_ms", "request_timeout_ms"},
+            "encoder config has unknown or missing fields")
+    require(type(raw["format_version"]) is int and raw["format_version"] == 1,
+            "encoder config format_version must be 1")
+    require(isinstance(raw["command"], str) and Path(raw["command"]).is_absolute(),
+            "encoder command must be an absolute executable path")
+    # Keep the launch path: resolving a venv's Python symlink changes sys.prefix
+    # and can discard the environment containing the pinned model dependencies.
+    command = Path(raw["command"])
+    require(command.is_file() and os.access(command, os.X_OK), "encoder command must be an executable file")
+    raw.setdefault("args", [])
+    require(isinstance(raw["args"], list) and all(isinstance(v, str) for v in raw["args"]),
+            "encoder args must be an array of strings")
+    for key, default in (("startup_timeout_ms", 120000), ("request_timeout_ms", 30000)):
+        value = raw.get(key, default)
+        require(type(value) is int and 1 <= value <= 600000, f"{key} must be 1..=600000")
+        raw[key] = value
+    require(not any(k not in ("format_version", "command", "args", "startup_timeout_ms", "request_timeout_ms")
+                    for k in raw), "encoder config has unknown fields")
+    raw["command"] = str(command)
+    inputs = {str(command): "command"}
+    normalized_args = []
+    path_value_flags = {"--model-dir", "--config-file", "--config-path", "--model-path",
+                        "--spec-file", "--tokenizer-dir", "--worker-file"}
+    for index, value in enumerate(raw["args"]):
+        # Only inspect syntactically explicit paths (or values following known path flags).
+        # Bare tokens such as `coderank` are enums even if a same-named local directory exists.
+        explicit_path = (Path(value).is_absolute() or value.startswith(("./", "../"))
+                         or "/" in value or "\\" in value or bool(Path(value).suffix)
+                         or (index > 0 and raw["args"][index - 1] in path_value_flags))
+        candidate = Path(value)
+        if not candidate.is_absolute():
+            candidate = (original.parent / candidate)
+        if explicit_path and candidate.exists():
+            resolved = candidate.resolve()
+            require((resolved.is_file() or resolved.is_dir()) and not candidate.is_symlink(),
+                    "encoder path args must name regular files or directories")
+            if resolved.is_file():
+                inputs[str(resolved)] = "argument"
+            normalized_args.append(str(resolved))
+        else:
+            normalized_args.append(value)
+    raw["args"] = normalized_args
+    for item in artifacts:
+        path = Path(item).resolve()
+        require(path.is_file() and not Path(item).is_symlink(), f"encoder artifact must be a regular file: {item}")
+        inputs[str(path)] = "declared_artifact"
+    return {"source_path": str(original), "source_sha256": digest(original), "config": raw,
+            "inputs": [{"path": path, "kind": kind, "sha256": digest(Path(path))}
+                       for path, kind in sorted(inputs.items())]}
+
+
+def verify_encoder_profile(plan):
+    profile = plan.get("encoder_profile")
+    require(isinstance(profile, dict), "missing frozen encoder profile")
+    require(digest(Path(profile["source_path"])) == profile["source_sha256"],
+            "original encoder config changed; prepare a new plan")
+    for item in profile["inputs"]:
+        require(digest(Path(item["path"])) == item["sha256"],
+                f"encoder launch input changed: {Path(item['path']).name}; prepare a new plan")
+    frozen = plan.get("encoder_config_copy")
+    require(isinstance(frozen, str) and digest(Path(frozen)) == plan["encoder_config_sha256"],
+            "frozen encoder config copy changed")
 
 
 def fingerprint(root):
@@ -219,6 +290,15 @@ def prepare(args):
     require(positive(args.repeats) and args.repeats <= 20, "repeats must be 1..=20")
     require(positive(args.timeout) and args.timeout <= 3600, "timeout must be 1..=3600 seconds")
     require(args.model.strip() and not args.model.startswith("-"), "explicit model ID required")
+    encoder = None
+    artifacts = getattr(args, "encoder_artifact", None) or []
+    if args.embedding == "process":
+        require(getattr(args, "encoder_config", None) is not None and args.model_dir is None,
+                "--embedding process requires --encoder-config and excludes --model-dir")
+        encoder = encoder_profile(args.encoder_config, artifacts)
+    else:
+        require(getattr(args, "encoder_config", None) is None and not artifacts,
+                "--encoder-config/--encoder-artifact require --embedding process")
     if args.embedding == "minilm":
         require(args.model_dir is not None and args.model_dir.is_dir(), "existing --model-dir required")
     code, mcp = executable(args.cubeql_code), executable(args.cubeql_mcp)
@@ -227,6 +307,12 @@ def prepare(args):
     # No overwrite, no checkout/reset/clean of the user's working directory.
     args.output.mkdir(mode=0o700, parents=True, exist_ok=False)
     output = args.output.resolve()
+    frozen_config = None
+    if encoder:
+        frozen_config = output / "encoder-config.json"
+        with frozen_config.open("x", encoding="utf-8") as target:
+            json.dump(encoder["config"], target, ensure_ascii=False, indent=2)
+            target.write("\n")
     source = output / "source"
     source.mkdir()
     try:
@@ -240,6 +326,8 @@ def prepare(args):
                "--output", str(output / "snapshot.arrow"), "--format", "json"]
     if args.embedding == "minilm":
         command += ["--model-dir", str(args.model_dir.resolve())]
+    elif args.embedding == "process":
+        command += ["--encoder-config", str(frozen_config)]
     build = json.loads(checked(command))
     index_seconds = time.monotonic() - start
     # Resolve labels against the actual snapshot, including exact function line ranges, outside
@@ -262,13 +350,17 @@ def prepare(args):
                 trials.append({"id": f"{task['id']}-{repeat}-{arm}", "task_id": task["id"],
                                "repeat": repeat, "arm": arm})
     resolve_labels(tasks, source)
-    plan = {"version": 2, "harness": "codex-exec-jsonl", "model": args.model,
+    plan = {"version": PLAN_VERSION, "harness": "codex-exec-jsonl", "model": args.model,
             "grader": GRADER, "audit_sha256": digest(AUDIT_SCRIPT),
             "runner_sha256": digest(Path(__file__)),
             "reasoning_effort": args.reasoning_effort, "timeout_seconds": args.timeout,
             "commit": commit, "source_sha256": source_hash, "omitted_paths": omitted,
             "snapshot_sha256": digest(output / "snapshot.arrow"), "embedding": args.embedding,
             "model_dir": str(args.model_dir.resolve()) if args.embedding == "minilm" else None,
+            "encoder_profile": ({"source_path": encoder["source_path"], "source_sha256": encoder["source_sha256"],
+                                 "inputs": encoder["inputs"]} if encoder else None),
+            "encoder_config_copy": str(frozen_config) if encoder else None,
+            "encoder_config_sha256": digest(frozen_config) if encoder else None,
             "mcp_executable": mcp, "mcp_sha256": digest(Path(mcp)),
             "dataset": tasks, "trials": trials, "index_seconds": index_seconds,
             "snapshot_info": build["snapshot"],
@@ -303,6 +395,8 @@ def mcp_command(plan, arm, workspace, prepared):
         args += ["--text-only"]
     elif plan["embedding"] == "minilm":
         args += ["--model-dir", plan["model_dir"]]
+    elif plan["embedding"] == "process":
+        args += ["--encoder-config", plan["encoder_config_copy"]]
     return args
 
 
@@ -356,6 +450,8 @@ def validate_artifacts(plan, root):
     require(digest(root / "snapshot.arrow") == plan["snapshot_sha256"], "prepared snapshot changed")
     require(digest(Path(plan["mcp_executable"])) == plan["mcp_sha256"], "MCP binary changed; prepare a new plan")
     require(read_json(root / "answer-schema.json") == ANSWER_SCHEMA, "answer schema changed")
+    if plan["embedding"] == "process":
+        verify_encoder_profile(plan)
 
 
 def probe(plan, root, directory):
@@ -549,7 +645,7 @@ def run(args):
     root = args.plan.resolve().parent
     require(args.plan.name == "plan.json", "execute the prepared plan.json, not another artifact")
     plan = load_plan(args.plan)
-    require(plan["version"] == 2, "legacy plans are report/regrade-only; prepare a new v2 experiment")
+    require(plan["version"] == PLAN_VERSION, "legacy plans are report/regrade-only; prepare a new current-version experiment")
     require(plan["grader"] == GRADER and plan["audit_sha256"] == digest(AUDIT_SCRIPT)
             and plan["runner_sha256"] == digest(Path(__file__)), "runner changed; prepare a new experiment")
     validate_artifacts(plan, root)
@@ -617,10 +713,13 @@ def run(args):
 
 def load_plan(path):
     plan = read_json(path)
-    require(plan["version"] in (1, 2) and plan["harness"] == "codex-exec-jsonl", "unsupported plan")
+    require(plan["version"] in (1, 2, PLAN_VERSION) and plan["harness"] == "codex-exec-jsonl", "unsupported plan")
     require(isinstance(plan["model"], str) and plan["model"].strip() and not plan["model"].startswith("-"), "invalid model")
     require(plan["reasoning_effort"] in ("low", "medium", "high") and positive(plan["timeout_seconds"])
-            and plan["timeout_seconds"] <= 3600 and plan["embedding"] in ("hash", "minilm"), "invalid execution settings")
+            and plan["timeout_seconds"] <= 3600 and plan["embedding"] in ("hash", "minilm", "process"), "invalid execution settings")
+    require(plan["version"] in (1, 2, PLAN_VERSION) and
+            (plan["embedding"] != "process" or plan["version"] == PLAN_VERSION),
+            "plan version/embedding mismatch")
     require(Path(plan["mcp_executable"]).is_absolute(), "MCP executable path must be absolute")
     ids = set()
     tasks = {task["id"] for task in plan["dataset"]["tasks"]}
@@ -725,8 +824,10 @@ def main():
     prep.add_argument("--output", type=Path, required=True)
     prep.add_argument("--cubeql-code", required=True)
     prep.add_argument("--cubeql-mcp", required=True)
-    prep.add_argument("--embedding", choices=("minilm", "hash"), default="minilm")
+    prep.add_argument("--embedding", choices=("minilm", "hash", "process"), default="minilm")
     prep.add_argument("--model-dir", type=Path)
+    prep.add_argument("--encoder-config", type=Path)
+    prep.add_argument("--encoder-artifact", type=Path, action="append", default=[])
     prep.add_argument("--model", required=True, help="explicit Codex model ID, never selected automatically")
     prep.add_argument("--reasoning-effort", choices=("low", "medium", "high"), default="medium")
     prep.add_argument("--repeats", type=int, default=1)

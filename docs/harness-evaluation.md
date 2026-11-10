@@ -17,6 +17,10 @@ optional `--search-strategy` guard to make experiment arms enforceable rather th
 | lexical | available | search/read/check | lexical only, text-only initialization |
 | hybrid | available | search/read/check | hybrid only, embedding provider + device |
 
+The hybrid arm can use MiniLM or a resident process encoder. The lexical arm always starts
+CubeQL in text-only mode and never starts the encoder. New plans use v3; v1/v2 plans remain
+readable for reports and offline regrading, while only the current plan version can start runs.
+
 The model may choose whether to call CubeQL. A configured but unused server is not counted as
 retrieval adoption. The guard rejects a mismatching strategy with `strategy_restricted`; it does
 not silently rewrite the query. The same prompt template, model ID, reasoning effort, source,
@@ -70,7 +74,7 @@ Preparation:
 4. Resolves every annotated path/qualified symbol to an exact saved chunk and line range with
    host-only symbol search. Missing/ambiguous labels fail preparation rather than grading guesses.
 5. Saves a source fingerprint, snapshot/MCP/runner/audit-script SHA-256, model settings,
-   private labels and symbol aliases, schema and a three-arm schedule in v2 `plan.json`.
+   private labels and symbol aliases, schema and a three-arm schedule in v3 `plan.json`.
 
 An existing output directory is never overwritten. A failed preparation can leave partial output;
 preserve/inspect it and choose a new directory. The example labels target functions in the pinned
@@ -81,6 +85,44 @@ smoke tasks are not a representative held-out benchmark.
 There is no automatic download, checkout/reset of your working tree, or modification of your
 Codex configuration/authentication. The runner reads no auth files itself; Codex uses its existing
 authentication when explicitly executed.
+
+### Resident process encoder
+
+See [resident-encoder.md](resident-encoder.md) for the supported launch profile and CLI/MCP workflow.
+For a locally installed resident worker, use `--embedding process --encoder-config` and optionally
+repeat `--encoder-artifact` for extra launch dependencies such as imported helper modules or a
+worker specification file:
+
+```bash
+python3 scripts/harness_eval.py prepare \
+  --repo /absolute/path/to/cubeql --revision YOUR_COMMIT \
+  --tasks evals/code-discovery.json --output /tmp/cubeql-process-experiment \
+  --cubeql-code /absolute/path/to/cubeql-code --cubeql-mcp /absolute/path/to/cubeql-mcp \
+  --embedding process --encoder-config /absolute/path/to/encoder-config.json \
+  --encoder-artifact /absolute/path/to/encode_vectors.py \
+  --model YOUR_MODEL_ID --reasoning-effort medium
+```
+
+The config is strict JSON with `format_version: 1`, an absolute direct `command` executable, an
+`args` string array, and optional `startup_timeout_ms`/`request_timeout_ms` (defaults 120000/30000,
+each bounded to 1..600000). No shell is involved. The interpreter launch path is preserved (including a virtual environment's Python symlink), so resolving executable hashes does not change its `sys.prefix`.
+Preparation saves a normalized config copy and
+hashes the original config, executable, existing explicit file-valued args, and every declared
+artifact. Those fingerprints are checked before preflight and run. Explicit file or directory args
+are normalized to absolute paths in the saved copy; directories such as `--model-dir` are passed
+through but are not recursively hashed. Bare enum values such as `coderank` remain opaque even if
+a same-named directory exists beside the config. Model directory contents and pinned model identity
+are validated by the worker's artifact contract, not by this harness. Process indexing uses that frozen config;
+hybrid MCP uses the same frozen config, while lexical remains text-only. No encoder/model is
+started by the runner outside the CubeQL indexing/preflight/run commands.
+
+The harness cannot infer all runtime dependencies of an executable, dynamic libraries, Python
+environment, imported modules, model weights, tokenizer assets, or environment-dependent files.
+Declare known helper/spec files (for the bundled worker: `encode_vectors.py`, its model spec JSON
+and the pinned requirements file; optionally `pyvenv.cfg`) with `--encoder-artifact`; file-valued config args are discovered
+automatically. This is a launch-input audit, not a hermetic runtime or supply-chain guarantee.
+Keep worker/model packages and artifacts pinned and available offline; this task performs no
+download or model/account configuration.
 
 ## 2. Inspect, then explicitly execute
 
@@ -121,7 +163,7 @@ still is **not** proof of model attention or adoption; search events are counted
 A CLI using cached catalogs without `tools/list` will fail this audit conservatively rather
 than silently be counted as a validated augmented arm.
 
-New runs require v2 plans. v1 plans are report/regrade-only, and changed runner/audit scripts
+New runs require current v3 plans. v1/v2 plans are report/regrade-only, and changed runner/audit scripts
 require a new plan. Do not mix newly graded/executed trials into old experiment directories.
 
 Each trial gets a new temporary source copy and Git index, outside the artifact directory, with

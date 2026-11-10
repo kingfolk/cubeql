@@ -9,7 +9,10 @@ mod provider;
 pub mod reporting;
 pub mod retrieval;
 
-pub use provider::{CodeSearchIndex, PreparedCodeSearch, build_repository_with_provider};
+pub use provider::{
+    CodeSearchIndex, PreparedCodeSearch, build_prepared_with_provider,
+    build_repository_from_vectors, build_repository_with_provider,
+};
 
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},
@@ -25,7 +28,7 @@ use arrow_array::{
 };
 use arrow_schema::{DataType, Field, Schema};
 use cubeql::{IndexOptions, PersistenceError, read_ipc_batch, write_ipc_batch};
-use cubeql_embeddings::{EmbeddingConfig, EmbeddingError};
+use cubeql_embeddings::{EmbeddingConfig, EmbeddingError, EmbeddingInput};
 use half::f16;
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
@@ -442,7 +445,7 @@ pub fn build_repository(
     mut embed: impl FnMut(&str) -> Result<Vec<f32>, CodeError>,
 ) -> Result<BuildResult, CodeError> {
     build_repository_batched(root.as_ref(), options, previous, 1, |texts| {
-        texts.iter().map(|text| embed(text)).collect()
+        texts.iter().map(|input| embed(&input.text)).collect()
     })
 }
 
@@ -451,8 +454,18 @@ fn build_repository_batched(
     options: &BuildOptions,
     previous: Option<&CodeIndex>,
     batch_size: usize,
-    mut embed: impl FnMut(&[&str]) -> Result<Vec<Vec<f32>>, CodeError>,
+    mut embed: impl FnMut(&[EmbeddingInput]) -> Result<Vec<Vec<f32>>, CodeError>,
 ) -> Result<BuildResult, CodeError> {
+    validate_build(options, previous, batch_size)?;
+    let plan = prepare_repository(root, options)?;
+    build_prepared_repository_batched(plan, previous, batch_size, &mut embed)
+}
+
+fn validate_build(
+    options: &BuildOptions,
+    previous: Option<&CodeIndex>,
+    batch_size: usize,
+) -> Result<(), CodeError> {
     if options.dimensions == 0
         || options.dimensions > i32::MAX as usize
         || options.fallback_lines == 0
@@ -475,7 +488,68 @@ fn build_repository_batched(
             "previous index has incompatible embedding or chunking configuration",
         ));
     }
-    let root = root.canonicalize()?;
+    Ok(())
+}
+
+/// A single captured source scan used both for vector preparation and index construction.
+/// Inputs carry source identity rather than transient device row numbers.
+pub struct RepositoryPlan {
+    root: std::path::PathBuf,
+    options: BuildOptions,
+    chunks: Vec<CodeChunk>,
+    file_hashes: BTreeMap<String, String>,
+    report: BuildReport,
+}
+
+impl RepositoryPlan {
+    pub fn chunks(&self) -> &[CodeChunk] {
+        &self.chunks
+    }
+    pub fn options(&self) -> &BuildOptions {
+        &self.options
+    }
+    /// Only source units without a reusable vector need external encoding.
+    pub fn pending_inputs(
+        &self,
+        previous: Option<&CodeIndex>,
+    ) -> Result<Vec<EmbeddingInput>, CodeError> {
+        validate_build(&self.options, previous, 1)?;
+        Ok(self
+            .chunks
+            .iter()
+            .zip(reusable_rows(&self.chunks, previous))
+            .filter(|(_, old)| old.is_none())
+            .map(|(chunk, _)| chunk_input(chunk))
+            .collect())
+    }
+}
+
+/// Stable within the exact source/chunking identity; a line shift changes an exported ID,
+/// while incremental reuse can still reuse unchanged source without needing that new ID.
+pub fn chunk_input(chunk: &CodeChunk) -> EmbeddingInput {
+    let identity = serde_json::to_vec(&(
+        CHUNKER_VERSION,
+        &chunk.path,
+        &chunk.language,
+        &chunk.kind,
+        &chunk.symbol,
+        chunk.start_line,
+        chunk.end_line,
+        &chunk.content_hash,
+    ))
+    .expect("serializing source identity cannot fail");
+    EmbeddingInput::new(
+        format!("code:{}", blake3::hash(&identity).to_hex()),
+        chunk.source.clone(),
+    )
+}
+
+pub fn prepare_repository(
+    root: impl AsRef<Path>,
+    options: &BuildOptions,
+) -> Result<RepositoryPlan, CodeError> {
+    validate_build(options, None, 1)?;
+    let root = root.as_ref().canonicalize()?;
     if !root.is_dir() {
         return Err(invalid("repository root must be a directory"));
     }
@@ -548,28 +622,55 @@ fn build_repository_batched(
         }
         chunks.append(&mut file_chunks);
     }
-    // Match exact source first, independent of line shifts and traversal row numbers. A queue
-    // consumes duplicate old chunks one at a time, so removal/change accounting stays accurate.
+    Ok(RepositoryPlan {
+        root,
+        options: options.clone(),
+        chunks,
+        file_hashes,
+        report,
+    })
+}
+
+fn reusable_rows(chunks: &[CodeChunk], previous: Option<&CodeIndex>) -> Vec<Option<usize>> {
     let mut cache: HashMap<(&str, &str), VecDeque<usize>> = HashMap::new();
     if let Some(old) = previous {
-        for (row, c) in old.chunks.iter().enumerate() {
+        for (row, chunk) in old.chunks.iter().enumerate() {
             cache
-                .entry((&c.path, &c.content_hash))
+                .entry((&chunk.path, &chunk.content_hash))
                 .or_default()
                 .push_back(row);
         }
     }
+    chunks
+        .iter()
+        .map(|chunk| {
+            cache
+                .get_mut(&(chunk.path.as_str(), chunk.content_hash.as_str()))
+                .and_then(VecDeque::pop_front)
+        })
+        .collect()
+}
+
+fn build_prepared_repository_batched(
+    plan: RepositoryPlan,
+    previous: Option<&CodeIndex>,
+    batch_size: usize,
+    mut embed: impl FnMut(&[EmbeddingInput]) -> Result<Vec<Vec<f32>>, CodeError>,
+) -> Result<BuildResult, CodeError> {
+    let RepositoryPlan {
+        root,
+        options,
+        chunks,
+        file_hashes,
+        mut report,
+    } = plan;
+    let options = &options;
+    validate_build(options, previous, batch_size)?;
+    let reused_rows = reusable_rows(&chunks, previous);
     let mut used = vec![false; previous.map_or(0, |p| p.chunks.len())];
-    let mut reused_rows = Vec::with_capacity(chunks.len());
-    for chunk in &chunks {
-        let row = cache
-            .get_mut(&(chunk.path.as_str(), chunk.content_hash.as_str()))
-            .and_then(VecDeque::pop_front);
-        if let Some(row) = row {
-            used[row] = true;
-            report.reused += 1;
-        }
-        reused_rows.push(row);
+    for row in reused_rows.iter().flatten() {
+        used[*row] = true;
+        report.reused += 1;
     }
     let mut remaining: HashMap<(&str, &str, &str), usize> = HashMap::new();
     if let Some(old) = previous {
@@ -599,7 +700,7 @@ fn build_repository_batched(
     for positions in pending.chunks(batch_size) {
         let texts = positions
             .iter()
-            .map(|row| chunks[*row].source.as_str())
+            .map(|row| chunk_input(&chunks[*row]))
             .collect::<Vec<_>>();
         let batch = embed(&texts)?;
         if batch.len() != positions.len() {

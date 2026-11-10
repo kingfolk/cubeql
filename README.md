@@ -47,6 +47,13 @@ JSONL and qrels TSV, preserves document IDs and units, and exports native JSON/T
 for an external evaluator. See [docs/external-benchmarks.md](docs/external-benchmarks.md) for
 the format, offline smoke example, provenance and scoring boundaries.
 
+The [external embedding workflow](docs/precomputed-vectors.md) adds supported CLI/library
+imports of ID/content-bound vector bundles, pinned CodeRankEmbed encoding, query-only
+bundles and incremental reuse. Model inference remains separate from the retrieval engine;
+an optional Jina reference has its own environment and noncommercial model terms.
+The [RQ1 validation report](benchmarks/external/reports/rq1-coir-apps-jina-2026-11-03-a4b7abe/README.md)
+records the complete APPS run, numerical control and local resource limits.
+
 The [portable benchmark recipe](benchmarks/external/README.md) adds pinned CoIR APPS
 preparation, resumable CodeRankEmbed encoding, an ID-checked vector replay example,
 independent cosine checks and native scoring. Its historical ranking bundle can be audited

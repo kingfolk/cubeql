@@ -12,7 +12,9 @@ use cubeql_code::{
     reporting::CodeFilter,
     retrieval::{RetrievalOptions, SearchStrategy, SnapshotTextIndex},
 };
-use cubeql_embeddings::{EmbeddingProvider, HashProvider, embed_query};
+use cubeql_embeddings::{
+    EmbeddingProvider, EncoderProcessConfig, HashProvider, ProcessProvider, embed_query,
+};
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
@@ -25,6 +27,8 @@ use crate::contract::{
 pub struct ServerOptions {
     pub index: PathBuf,
     pub model_dir: Option<PathBuf>,
+    /// Explicit resident encoder launch profile; incompatible snapshots fail before search.
+    pub encoder_config: Option<PathBuf>,
     /// Load only host text/symbol adapters; semantic/hybrid requests then return an explicit error.
     pub text_only: bool,
     /// Explicit authority for live freshness checks. Never use the index's saved root implicitly.
@@ -87,7 +91,7 @@ impl Worker {
             };
             // Construct every non-Send model/device value inside its owning thread.
             let initialized = initialize(&options);
-            let (id, code, mut provider) = match initialized {
+            let (id, code, mut provider, provider_startup_ms) = match initialized {
                 Ok(value) => value,
                 Err(error) => {
                     let _ = ready.send(Err(error));
@@ -120,6 +124,8 @@ impl Worker {
                 "workspace_checks":workspace.is_some(),
                 "search_strategy":options.search_strategy,
                 "embedding_model":code.embedding_config().map(|c| c.model.as_str()),
+                "embedding_execution":provider.as_ref().map(|p| p.execution_kind()),
+                "provider_startup_ms":provider_startup_ms,
                 "startup_ms":startup_start.elapsed().as_secs_f64()*1000.0})
             );
             if ready.send(Ok(())).is_err() {
@@ -162,6 +168,7 @@ impl Worker {
                     "freshness":result.as_ref().ok().and_then(|v| v.get("status")),
                     "returned_chunk_ids":result.as_ref().ok().and_then(|v| v.get("hits")).and_then(Value::as_array)
                         .map(|hits| hits.iter().map(|h| h["chunk_id"].clone()).collect::<Vec<_>>()),
+                    "embedding_execution":provider.as_ref().map(|p| p.execution_kind()),
                     "error":result.as_ref().err().map(|e| e.code)})
                 );
                 let _ = job.reply.send(result);
@@ -206,32 +213,51 @@ impl Worker {
     }
 }
 
-type Initialized = (String, CodeIndex, Option<Box<dyn EmbeddingProvider>>);
+type Initialized = (String, CodeIndex, Option<Box<dyn EmbeddingProvider>>, f64);
 fn initialize(options: &ServerOptions) -> Result<Initialized, ToolFailure> {
-    if options.text_only && options.model_dir.is_some() {
+    if (options.text_only && (options.model_dir.is_some() || options.encoder_config.is_some()))
+        || (options.model_dir.is_some() && options.encoder_config.is_some())
+    {
         return Err(ToolFailure::invalid(
-            "--model-dir cannot be used with --text-only",
+            "--encoder-config, --model-dir and --text-only are mutually exclusive",
         ));
     }
     // Hash and parse the same bytes, rather than opening the path twice across a replacement.
     let bytes = std::fs::read(&options.index).map_err(failed)?;
     let id = format!("blake3:{}", blake3::hash(&bytes).to_hex());
     let code = CodeIndex::read_ipc(Cursor::new(bytes)).map_err(failed)?;
+    let provider_start = Instant::now();
     let provider = if options.text_only {
         None
     } else {
-        Some(saved_provider(&code, options.model_dir.as_deref())?)
+        Some(saved_provider(
+            &code,
+            options.model_dir.as_deref(),
+            options.encoder_config.as_deref(),
+        )?)
     };
-    Ok((id, code, provider))
+    let provider_startup_ms = if options.text_only {
+        0.0
+    } else {
+        provider_start.elapsed().as_secs_f64() * 1000.0
+    };
+    Ok((id, code, provider, provider_startup_ms))
 }
 
 fn saved_provider(
     code: &CodeIndex,
     directory: Option<&Path>,
+    encoder_config: Option<&Path>,
 ) -> Result<Box<dyn EmbeddingProvider>, ToolFailure> {
     let config = code.embedding_config().ok_or_else(|| {
         ToolFailure::invalid("semantic search requires a provider-aware snapshot")
     })?;
+    if let Some(path) = encoder_config {
+        let options = EncoderProcessConfig::load(path).map_err(failed)?;
+        return Ok(Box::new(
+            ProcessProvider::spawn(&options, Some(config)).map_err(failed)?,
+        ));
+    }
     let provider: Box<dyn EmbeddingProvider> = match config.model.as_str() {
         "cubeql-hash-tokens" => {
             if directory.is_some() {
@@ -265,7 +291,7 @@ fn saved_provider(
         }
         _ => {
             return Err(ToolFailure::invalid(
-                "unsupported embedding provider; use --text-only for lexical/symbol search",
+                "unsupported embedding provider; supply --encoder-config for a compatible resident encoder, or use --text-only for lexical/symbol search",
             ));
         }
     };

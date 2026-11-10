@@ -10,10 +10,15 @@ use cubeql_code::{
     build_repository_with_provider,
     evaluation::{EvaluationOptions, QuerySet},
     hybrid_evaluation::evaluate,
+    prepare_repository,
     reporting::{CodeFilter, RetrievalResponse, SearchTimings, SnapshotInfo, elapsed_ms},
     retrieval::{RetrievalOptions, SearchStrategy, SnapshotTextIndex, materialize_hits},
 };
-use cubeql_embeddings::{EmbeddingProvider, HashProvider, embed_query};
+use cubeql_embeddings::{
+    BundleProvider, EmbeddingConfig, EmbeddingError, EmbeddingInput, EmbeddingInputs,
+    EmbeddingProvider, EncoderProcessConfig, HashProvider, ProcessProvider, VectorBundle,
+    embed_identified_query, embed_query,
+};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -31,6 +36,8 @@ struct Cli {
 enum ProviderKind {
     Hash,
     Minilm,
+    Precomputed,
+    Process,
 }
 
 #[derive(Clone, Copy, Default, ValueEnum)]
@@ -80,6 +87,11 @@ struct Output {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Export exact source/query inputs for an external local encoder.
+    Vectors {
+        #[command(subcommand)]
+        command: VectorCommand,
+    },
     /// Index source files. Existing output files are never overwritten.
     Index {
         root: PathBuf,
@@ -90,8 +102,14 @@ enum Command {
         /// Hash is an offline lexical fixture, not semantic search.
         #[arg(long, value_enum, default_value = "hash")]
         embedding: ProviderKind,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
+        /// Import an offline ID/content-bound vector bundle; never performs inference.
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
+        vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         /// Hash defaults to 128; MiniLM has a fixed width of 384.
         #[arg(long)]
         dimensions: Option<usize>,
@@ -115,8 +133,14 @@ enum Command {
         /// Override the saved root if the repository was moved.
         #[arg(long)]
         root: Option<PathBuf>,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
+        /// Import an offline ID/content-bound vector bundle; never performs inference.
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
+        vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long, default_value_t = 8)]
         batch_size: usize,
         #[command(flatten)]
@@ -133,8 +157,17 @@ enum Command {
     Search {
         index: PathBuf,
         text: String,
-        #[arg(long)]
+        /// Disambiguate identical query text associated with multiple imported IDs.
+        #[arg(long, requires = "vectors")]
+        query_id: Option<String>,
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
+        /// Import an offline ID/content-bound vector bundle; never performs inference.
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
+        vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long, default_value_t = 5)]
         top_k: usize,
         #[arg(long, value_enum, default_value = "semantic")]
@@ -159,8 +192,14 @@ enum Command {
     Evaluate {
         index: PathBuf,
         queries: PathBuf,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
+        /// Import an offline ID/content-bound vector bundle; never performs inference.
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
+        vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long, default_value_t = 50)]
         candidate_k: usize,
         #[arg(long, default_value_t = 3)]
@@ -183,7 +222,45 @@ enum Command {
 }
 
 #[derive(Subcommand)]
+enum VectorCommand {
+    /// Export new/changed repository chunks and optional JSONL queries. No model is loaded.
+    Prepare {
+        root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        previous: Option<PathBuf>,
+        #[arg(long)]
+        queries: Option<PathBuf>,
+        #[arg(long, conflicts_with = "queries")]
+        query: Option<String>,
+        #[arg(long, default_value = "query")]
+        query_id: String,
+        #[arg(long)]
+        fallback_lines: Option<usize>,
+        #[arg(long)]
+        max_file_bytes: Option<u64>,
+    },
+    /// Export a query-only input JSON; model inference runs separately.
+    Query {
+        text: String,
+        #[arg(long, default_value = "query")]
+        id: String,
+        #[arg(long)]
+        output: PathBuf,
+    },
+}
+
+#[derive(Subcommand)]
 enum BenchmarkCommand {
+    /// Export canonical document/query inputs for external encoding; qrels are not included.
+    Prepare {
+        dataset: PathBuf,
+        #[arg(long, default_value = "test")]
+        split: String,
+        #[arg(long)]
+        output: PathBuf,
+    },
     /// Validate all IDs/judgments and fingerprint inputs without loading a model or device.
     Validate {
         dataset: PathBuf,
@@ -200,8 +277,14 @@ enum BenchmarkCommand {
         output: PathBuf,
         #[arg(long, value_enum, default_value = "hash")]
         embedding: ProviderKind,
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["encoder_config", "vectors"])]
         model_dir: Option<PathBuf>,
+        /// Import an offline ID/content-bound vector bundle; never performs inference.
+        #[arg(long, conflicts_with_all = ["encoder_config", "model_dir"])]
+        vectors: Option<PathBuf>,
+        /// Launch an explicitly configured resident local encoder; never downloads models.
+        #[arg(long, conflicts_with_all = ["vectors", "model_dir"])]
+        encoder_config: Option<PathBuf>,
         #[arg(long)]
         dimensions: Option<usize>,
         #[arg(long, default_value_t = 8)]
@@ -229,8 +312,39 @@ fn provider(
     kind: ProviderKind,
     dimensions: Option<usize>,
     directory: Option<&Path>,
+    vectors: Option<&Path>,
+    encoder_config: Option<&Path>,
 ) -> Result<Box<dyn EmbeddingProvider>> {
+    if vectors.is_some() && !matches!(kind, ProviderKind::Precomputed) {
+        return Err("--vectors requires --embedding precomputed".into());
+    }
+    if encoder_config.is_some() && !matches!(kind, ProviderKind::Process) {
+        return Err("--encoder-config requires --embedding process".into());
+    }
     match kind {
+        ProviderKind::Process => {
+            if directory.is_some() || vectors.is_some() {
+                return Err("--encoder-config conflicts with --model-dir and --vectors".into());
+            }
+            let options = EncoderProcessConfig::load(
+                encoder_config.ok_or("process requires --encoder-config")?,
+            )?;
+            let provider = ProcessProvider::spawn(&options, None)?;
+            if dimensions.is_some_and(|d| d != provider.config().dimensions) {
+                return Err("--dimensions disagrees with encoder configuration".into());
+            }
+            Ok(Box::new(provider))
+        }
+        ProviderKind::Precomputed => {
+            if directory.is_some() {
+                return Err("--model-dir cannot be used with imported vectors".into());
+            }
+            let bundle = VectorBundle::load(vectors.ok_or("precomputed requires --vectors")?)?;
+            if dimensions.is_some_and(|d| d != bundle.config().dimensions) {
+                return Err("--dimensions disagrees with vector bundle".into());
+            }
+            Ok(Box::new(BundleProvider::new(bundle)))
+        }
         ProviderKind::Hash => {
             if directory.is_some() {
                 return Err("--model-dir is only used with MiniLM".into());
@@ -260,23 +374,73 @@ fn provider(
 fn saved_provider(
     code: &CodeIndex,
     directory: Option<&Path>,
+    vectors: Option<&Path>,
+    encoder_config: Option<&Path>,
 ) -> Result<Box<dyn EmbeddingProvider>> {
     let config = code
         .embedding_config()
         .ok_or("legacy index has no provider contract; rebuild with index")?;
+    if let Some(path) = encoder_config {
+        if directory.is_some() || vectors.is_some() {
+            return Err("--encoder-config conflicts with --model-dir and --vectors".into());
+        }
+        let options = EncoderProcessConfig::load(path)?;
+        return Ok(Box::new(ProcessProvider::spawn(&options, Some(config))?));
+    }
+    if let Some(path) = vectors {
+        let provider = provider(
+            ProviderKind::Precomputed,
+            Some(config.dimensions),
+            directory,
+            Some(path),
+            None,
+        )?;
+        config.ensure_compatible(provider.config())?;
+        return Ok(provider);
+    }
     let kind = match config.model.as_str() {
         "cubeql-hash-tokens" => ProviderKind::Hash,
         "sentence-transformers/all-MiniLM-L6-v2" => ProviderKind::Minilm,
         _ => {
-            return Err(
-                "this CLI does not implement the index's embedding provider; use the library"
-                    .into(),
-            );
+            if directory.is_some() {
+                return Err("external models require --vectors rather than --model-dir".into());
+            }
+            // A no-op/removal-only update needs no new embeddings. Any attempted inference
+            // still fails explicitly; unknown models never fall back to token hashing.
+            return Ok(Box::new(ImportedOnly(config.clone())));
         }
     };
-    let provider = provider(kind, Some(config.dimensions), directory)?;
+    let provider = provider(kind, Some(config.dimensions), directory, None, None)?;
     config.ensure_compatible(provider.config())?;
     Ok(provider)
+}
+
+struct ImportedOnly(EmbeddingConfig);
+impl EmbeddingProvider for ImportedOnly {
+    fn config(&self) -> &EmbeddingConfig {
+        &self.0
+    }
+    fn embed_documents(
+        &mut self,
+        _: &[&str],
+    ) -> std::result::Result<Vec<Vec<f32>>, EmbeddingError> {
+        Err(EmbeddingError::Invalid("new source needs external embeddings: supply --encoder-config, or run vectors prepare, encode, then update --vectors".into()))
+    }
+    fn embed_query(&mut self, _: &str) -> std::result::Result<Vec<f32>, EmbeddingError> {
+        Err(EmbeddingError::Invalid("this CLI does not implement a built-in encoder for this model; external query embedding required: supply --encoder-config, or run vectors query, encode with the same model configuration, then search --vectors".into()))
+    }
+}
+
+fn write_inputs(output: &Path, inputs: &EmbeddingInputs) -> Result<()> {
+    inputs.validate()?;
+    benchmark::write_json(output, inputs)?;
+    println!(
+        "documents={} queries={} output={}",
+        inputs.documents.len(),
+        inputs.queries.len(),
+        output.display()
+    );
+    Ok(())
 }
 
 fn new_output(path: &Path) -> Result<()> {
@@ -323,7 +487,67 @@ fn print_build(result: BuildResult, output: &Path, format: OutputFormat) -> Resu
 
 fn main() -> Result<()> {
     match Cli::parse().command {
+        Command::Vectors { command } => match command {
+            VectorCommand::Query { text, id, output } => write_inputs(
+                &output,
+                &EmbeddingInputs {
+                    format_version: 1,
+                    documents: Vec::new(),
+                    queries: vec![EmbeddingInput::new(id, text)],
+                },
+            )?,
+            VectorCommand::Prepare {
+                root,
+                output,
+                previous,
+                queries,
+                query,
+                query_id,
+                fallback_lines,
+                max_file_bytes,
+            } => {
+                let previous = previous.map(CodeIndex::load_ipc).transpose()?;
+                let mut options = previous
+                    .as_ref()
+                    .map(CodeIndex::build_options)
+                    .transpose()?
+                    .unwrap_or_default();
+                if let Some(lines) = fallback_lines {
+                    options.fallback_lines = lines;
+                }
+                if let Some(bytes) = max_file_bytes {
+                    options.max_file_bytes = bytes;
+                }
+                let plan = prepare_repository(root, &options)?;
+                let mut query_inputs = Vec::new();
+                if let Some(path) = queries {
+                    use std::io::BufRead;
+                    for line in std::io::BufReader::new(std::fs::File::open(path)?).lines() {
+                        let query: benchmark::Query = serde_json::from_str(&line?)?;
+                        query_inputs.push(EmbeddingInput::new(query.id, query.text));
+                    }
+                }
+                if let Some(text) = query {
+                    query_inputs.push(EmbeddingInput::new(query_id, text));
+                }
+                write_inputs(
+                    &output,
+                    &EmbeddingInputs {
+                        format_version: 1,
+                        documents: plan.pending_inputs(previous.as_ref())?,
+                        queries: query_inputs,
+                    },
+                )?;
+            }
+        },
         Command::Benchmark { command } => match command {
+            BenchmarkCommand::Prepare {
+                dataset,
+                split,
+                output,
+            } => {
+                write_inputs(&output, &Dataset::load(dataset, &split)?.embedding_inputs())?;
+            }
             BenchmarkCommand::Validate { dataset, split } => {
                 let dataset = Dataset::load(dataset, &split)?;
                 println!("{}", serde_json::to_string_pretty(dataset.summary())?);
@@ -334,6 +558,8 @@ fn main() -> Result<()> {
                 output,
                 embedding,
                 model_dir,
+                vectors,
+                encoder_config,
                 dimensions,
                 batch_size,
                 top_k,
@@ -355,15 +581,23 @@ fn main() -> Result<()> {
                         &output.join("request.json"),
                         &serde_json::json!({
                             "options": &options,
-                            "embedding": match embedding { ProviderKind::Hash => "hash", ProviderKind::Minilm => "minilm" },
+                            "embedding": match embedding { ProviderKind::Hash => "hash", ProviderKind::Minilm => "minilm", ProviderKind::Precomputed => "precomputed", ProviderKind::Process => "process" },
                             "model_dir": &model_dir,
+                            "vectors": &vectors,
+                            "encoder_config": &encoder_config,
                             "dimensions": dimensions,
                             "split": &split,
                             "engine_revision": engine_revision.as_deref()
                         }),
                     )?;
                     let start = Instant::now();
-                    let mut provider = provider(embedding, dimensions, model_dir.as_deref())?;
+                    let mut provider = provider(
+                        embedding,
+                        dimensions,
+                        model_dir.as_deref(),
+                        vectors.as_deref(),
+                        encoder_config.as_deref(),
+                    )?;
                     let model_load_ms = elapsed_ms(start);
                     // Capture binary/model provenance before a potentially long encoding run,
                     // and retain it even if document/query inference subsequently fails.
@@ -413,6 +647,8 @@ fn main() -> Result<()> {
             previous,
             embedding,
             model_dir,
+            vectors,
+            encoder_config,
             dimensions,
             batch_size,
             fallback_lines,
@@ -433,7 +669,13 @@ fn main() -> Result<()> {
             {
                 return Err("changing precision with --previous is not supported; rebuild without --previous".into());
             }
-            let mut provider = provider(embedding, dimensions, model_dir.as_deref())?;
+            let mut provider = provider(
+                embedding,
+                dimensions,
+                model_dir.as_deref(),
+                vectors.as_deref(),
+                encoder_config.as_deref(),
+            )?;
             let options = BuildOptions {
                 fallback_lines,
                 max_file_bytes,
@@ -454,6 +696,8 @@ fn main() -> Result<()> {
             output,
             root,
             model_dir,
+            vectors,
+            encoder_config,
             batch_size,
             display,
         } => {
@@ -462,7 +706,12 @@ fn main() -> Result<()> {
             let root = root
                 .or_else(|| previous.root().map(PathBuf::from))
                 .ok_or("snapshot has no saved root; supply --root")?;
-            let mut provider = saved_provider(&previous, model_dir.as_deref())?;
+            let mut provider = saved_provider(
+                &previous,
+                model_dir.as_deref(),
+                vectors.as_deref(),
+                encoder_config.as_deref(),
+            )?;
             let result = build_repository_with_provider(
                 root,
                 &previous.build_options()?,
@@ -507,7 +756,10 @@ fn main() -> Result<()> {
         Command::Search {
             index,
             text,
+            query_id,
             model_dir,
+            vectors,
+            encoder_config,
             top_k,
             strategy,
             candidate_k,
@@ -536,7 +788,12 @@ fn main() -> Result<()> {
             let start = Instant::now();
             let needs_semantic = strategy.needs_embedding() && top_k > 0;
             let mut provider = if needs_semantic {
-                Some(saved_provider(&code, model_dir.as_deref())?)
+                Some(saved_provider(
+                    &code,
+                    model_dir.as_deref(),
+                    vectors.as_deref(),
+                    encoder_config.as_deref(),
+                )?)
             } else {
                 None
             };
@@ -548,7 +805,10 @@ fn main() -> Result<()> {
             let start = Instant::now();
             let query = provider
                 .as_mut()
-                .map(|p| embed_query(p.as_mut(), &text))
+                .map(|p| match &query_id {
+                    Some(id) => embed_identified_query(p.as_mut(), &EmbeddingInput::new(id, &text)),
+                    None => embed_query(p.as_mut(), &text),
+                })
                 .transpose()?;
             timings.embedding_ms = if needs_semantic {
                 elapsed_ms(start)
@@ -630,6 +890,8 @@ fn main() -> Result<()> {
             index,
             queries,
             model_dir,
+            vectors,
+            encoder_config,
             candidate_k,
             repeats,
             compare_fp16,
@@ -641,7 +903,12 @@ fn main() -> Result<()> {
             let dataset: QuerySet = serde_json::from_reader(std::fs::File::open(queries)?)?;
             dataset.resolve(&code)?;
             let start = Instant::now();
-            let mut provider = saved_provider(&code, model_dir.as_deref())?;
+            let mut provider = saved_provider(
+                &code,
+                model_dir.as_deref(),
+                vectors.as_deref(),
+                encoder_config.as_deref(),
+            )?;
             let model_load_ms = elapsed_ms(start);
             let report = evaluate(
                 code,
