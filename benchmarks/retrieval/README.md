@@ -42,3 +42,8 @@ python3 -B benchmarks/retrieval/cubecl-2026-10-29-77b2d6af8514/verify.py
 source-span anchors and scores native tool rankings with complete query coverage, explicit
 failures and paired changes. Its synthetic fixture checks the interchange/scoring pipeline;
 it does not add a peer-quality result to the table above.
+
+The [multi-repository fixture](fixtures/multi-repository/spec.json) exercises version 2 plans
+with colliding relative source paths and unequal query counts. It is a development smoke
+fixture. Reports keep query-weighted and repository-weighted means distinct; neither is a new
+held-out validation or peer-product result.

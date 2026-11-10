@@ -1,0 +1,4 @@
+{
+  "alpha": "benchmarks/retrieval/fixtures/multi-repository/alpha",
+  "beta": "benchmarks/retrieval/fixtures/multi-repository/beta"
+}
