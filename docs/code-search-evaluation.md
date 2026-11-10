@@ -236,3 +236,8 @@ Rust evaluator, its symbol labels, report versions or search defaults.
 Version 2 plans can bind multiple source roots in one frozen specification. The report retains
 query means and adds equal-repository means, with per-repository paired changes. Existing
 version 1 plans and result interchange remain supported. See the linked guide for `--roots`.
+
+The [native baseline workflow](repository-baseline-workflow.md) freezes and executes named
+embedding profiles against the original symbol-label JSON, including language filters.
+It retains each condition's native six-strategy reports and explicit failures without
+rewriting the preserved CubeCL development labels.
