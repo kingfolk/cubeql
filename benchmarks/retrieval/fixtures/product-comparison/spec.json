@@ -1,0 +1,26 @@
+{
+  "format_version": 1,
+  "name": "product-comparison-smoke-v1",
+  "split": "development",
+  "repositories": [{"id": "smoke", "revision": "synthetic-fixture-v1"}],
+  "queries": [
+    {
+      "id": "config", "repository": "smoke", "category": "identifier",
+      "text": "load_config", "filter": {},
+      "anchors": [{"id": "reader", "path": "config.rs", "start_line": 1, "end_line": 3}]
+    },
+    {
+      "id": "ranking", "repository": "smoke", "category": "identifier",
+      "text": "rank_hits", "filter": {},
+      "anchors": [{"id": "sort", "path": "search.rs", "start_line": 1, "end_line": 3}]
+    },
+    {
+      "id": "both", "repository": "smoke", "category": "cross_file",
+      "text": "Find the configuration reader and the hit sorter", "filter": {},
+      "anchors": [
+        {"id": "reader", "path": "config.rs", "start_line": 1, "end_line": 3},
+        {"id": "sort", "path": "search.rs", "start_line": 1, "end_line": 3}
+      ]
+    }
+  ]
+}

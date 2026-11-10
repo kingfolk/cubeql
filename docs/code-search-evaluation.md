@@ -225,3 +225,10 @@ cargo test --workspace --no-default-features --features metal
 Tests cover metric arithmetic, missing results, RRF ranks/ties, invalid labels, FP16 IPC and
 incremental reuse, filtered row mapping against scalar cosine, provider guards, shared query
 encoding across precisions and CLI JSON/no-overwrite behavior. Default tests need no model files.
+
+## Compare native tools on frozen source anchors
+
+The [repository product evaluator](repository-product-evaluation.md) adds a separate offline
+interchange format for RQ2: source-span anchors, native ordered hits, complete failure coverage,
+Recall@10/50/100, all-required evidence@10 and paired changes. It does not alter the existing
+Rust evaluator, its symbol labels, report versions or search defaults.

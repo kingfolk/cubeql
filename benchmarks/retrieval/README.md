@@ -35,3 +35,10 @@ machine-specific orchestration scripts. Verify it without loading a model:
 ```sh
 python3 -B benchmarks/retrieval/cubecl-2026-10-29-77b2d6af8514/verify.py
 ```
+
+## Frozen product comparison inputs
+
+[Repository product evaluation](../../docs/repository-product-evaluation.md) freezes reviewed
+source-span anchors and scores native tool rankings with complete query coverage, explicit
+failures and paired changes. Its synthetic fixture checks the interchange/scoring pipeline;
+it does not add a peer-quality result to the table above.
