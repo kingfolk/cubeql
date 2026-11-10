@@ -1,0 +1,31 @@
+{
+  "format_version": 2,
+  "name": "multi-repository-development-smoke-v2",
+  "split": "development",
+  "repositories": [
+    {"id": "alpha", "revision": "synthetic-alpha-v1"},
+    {"id": "beta", "revision": "synthetic-beta-v1"}
+  ],
+  "queries": [
+    {
+      "id": "alpha-reader", "repository": "alpha", "category": "identifier",
+      "text": "load_config", "filter": {"path_prefix": "src/"},
+      "anchors": [{"id": "implementation", "path": "src/lib.rs", "start_line": 1, "end_line": 3}]
+    },
+    {
+      "id": "alpha-sorter", "repository": "alpha", "category": "identifier",
+      "text": "rank_hits", "filter": {"path_prefix": "src/"},
+      "anchors": [{"id": "implementation", "path": "src/lib.rs", "start_line": 5, "end_line": 7}]
+    },
+    {
+      "id": "alpha-port", "repository": "alpha", "category": "identifier",
+      "text": "server_port", "filter": {"path_prefix": "src/"},
+      "anchors": [{"id": "implementation", "path": "src/lib.rs", "start_line": 9, "end_line": 11}]
+    },
+    {
+      "id": "beta-writer", "repository": "beta", "category": "behavioral",
+      "text": "Persist application settings on disk", "filter": {"path_prefix": "src/"},
+      "anchors": [{"id": "implementation", "path": "src/lib.rs", "start_line": 1, "end_line": 3}]
+    }
+  ]
+}

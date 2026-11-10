@@ -1,6 +1,7 @@
-"""Offline, bounded repository retrieval evaluation (RQ2 format version 1).
+"""Offline, bounded repository retrieval evaluation (RQ2 format versions 1 and 2).
 
-Version 1 freezes one repository per plan. Chunk hits are evaluated in their
+Version 1 freezes one repository per plan; version 2 freezes several distinct
+repository roots with repository-scoped paths. Chunk hits are evaluated in their
 native units: an anchor is found only when one hit contains its whole span.
 """
 from __future__ import annotations
@@ -77,17 +78,22 @@ def _unique(items, where):
 
 def _validate_spec(spec):
     _object(spec, ("format_version", "name", "split", "repositories", "queries"), where="spec")
-    if type(spec["format_version"]) is not int or spec["format_version"] != 1:
-        raise EvaluationError("spec.format_version must be 1")
+    version = spec["format_version"]
+    if type(version) is not int or version not in (1, 2):
+        raise EvaluationError("spec.format_version must be 1 or 2")
     _string(spec["name"], "spec.name")
     if spec["split"] not in ("development", "validation"):
         raise EvaluationError("spec.split must be development or validation")
     repos = spec["repositories"]
-    if not isinstance(repos, list) or len(repos) != 1:
-        raise EvaluationError("version 1 supports exactly one repository per spec")
-    _object(repos[0], ("id", "revision"), where="repository")
-    _string(repos[0]["id"], "repository.id")
-    _string(repos[0]["revision"], "repository.revision")
+    if not isinstance(repos, list) or not repos or (version == 1 and len(repos) != 1):
+        raise EvaluationError("version 1 supports exactly one repository per spec" if version == 1 else "spec.repositories must be a nonempty array")
+    repo_ids = []
+    for i, repo in enumerate(repos):
+        _object(repo, ("id", "revision"), where=f"repository[{i}]")
+        _string(repo["id"], "repository.id")
+        _string(repo["revision"], "repository.revision")
+        repo_ids.append(repo["id"])
+    _unique(repo_ids, "repository IDs")
     qs = spec["queries"]
     if not isinstance(qs, list) or not qs:
         raise EvaluationError("spec.queries must be a nonempty array")
@@ -99,8 +105,10 @@ def _validate_spec(spec):
         _object(q, ("id", "repository", "category", "text", "filter", "anchors"), where=f"query[{qi}]")
         for k in ("id", "repository", "category", "text"):
             _string(q[k], f"query[{qi}].{k}")
-        if q["repository"] != repos[0]["id"]:
+        if version == 1 and q["repository"] != repo_ids[0]:
             raise EvaluationError(f"query[{qi}].repository does not name the single repository")
+        if version == 2 and q["repository"] not in repo_ids:
+            raise EvaluationError(f"query[{qi}].repository does not name a declared repository")
         f = q["filter"]
         _object(f, (), ("path_prefix",), f"query[{qi}].filter")
         if "path_prefix" in f:
@@ -126,76 +134,114 @@ def _validate_spec(spec):
                 raise EvaluationError("anchor.end_line must be >= start_line")
             if "path_prefix" in f and not path.startswith(f["path_prefix"]):
                 raise EvaluationError("anchor path is outside query path_prefix")
+    if version == 2 and {q["repository"] for q in qs} != set(repo_ids):
+        raise EvaluationError("every declared repository must have at least one query")
 
 
 def freeze(spec, root):
     """Validate spec and snapshot every regular file under root into a plan."""
     _validate_spec(spec)
-    root_path = Path(root).resolve(strict=True)
-    if not root_path.is_dir():
-        raise EvaluationError("root must be a directory")
+    version = spec["format_version"]
+    if version == 1:
+        if isinstance(root, dict):
+            raise EvaluationError("version 1 root must be a path")
+        roots = {spec["repositories"][0]["id"]: root}
+    else:
+        if not isinstance(root, dict):
+            raise EvaluationError("version 2 roots must be a repository-to-path object")
+        repo_ids = {r["id"] for r in spec["repositories"]}
+        if set(root) != repo_ids:
+            raise EvaluationError("roots must name exactly the declared repositories")
+        for repo_id, path in root.items():
+            _string(repo_id, "root repository id")
+            if not isinstance(path, (str, Path)) or not str(path).strip():
+                raise EvaluationError(f"root for {repo_id} must be a nonempty path")
+        roots = root
+    root_paths = {}
+    for repo in spec["repositories"]:
+        repo_id = repo["id"]
+        try:
+            root_path = Path(roots[repo_id]).resolve(strict=True)
+        except OSError as e:
+            raise EvaluationError(f"root for {repo_id} cannot be resolved: {e}") from e
+        if not root_path.is_dir():
+            raise EvaluationError(f"root for {repo_id} must be a directory")
+        root_paths[repo_id] = root_path
+    if version == 2:
+        identities = {(p.stat().st_dev, p.stat().st_ino) for p in root_paths.values()}
+        if len(identities) != len(root_paths):
+            raise EvaluationError("repository roots must resolve to distinct directories")
     files = []
     def walk_error(error):
         raise EvaluationError(f"cannot inventory repository: {error}") from error
-    for current, dirs, names in os.walk(root_path, followlinks=False, onerror=walk_error):
-        dirs[:] = sorted(d for d in dirs if d != ".git" and not (Path(current) / d).is_symlink())
-        for name in sorted(names):
-            p = Path(current) / name
-            rel = p.relative_to(root_path).as_posix()
-            if rel == ".git" or rel.startswith(".git/"):
-                continue
-            if p.is_symlink():
-                raise EvaluationError(f"symlink file entry is not allowed: {rel}")
-            if not p.is_file():
-                continue
-            data = p.read_bytes()
-            files.append({"repository": spec["repositories"][0]["id"], "path": rel,
-                          "sha256": hashlib.sha256(data).hexdigest(),
-                          "line_count": data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)})
-    index = {f["path"]: f for f in files}
+    for repo in spec["repositories"]:
+        repo_id = repo["id"]
+        root_path = root_paths[repo_id]
+        for current, dirs, names in os.walk(root_path, followlinks=False, onerror=walk_error):
+            dirs[:] = sorted(d for d in dirs if d != ".git" and not (Path(current) / d).is_symlink())
+            for name in sorted(names):
+                p = Path(current) / name
+                rel = p.relative_to(root_path).as_posix()
+                if rel == ".git" or rel.startswith(".git/"):
+                    continue
+                if p.is_symlink():
+                    raise EvaluationError(f"symlink file entry is not allowed: {rel}")
+                if not p.is_file():
+                    continue
+                data = p.read_bytes()
+                files.append({"repository": repo_id, "path": rel,
+                              "sha256": hashlib.sha256(data).hexdigest(),
+                              "line_count": data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)})
+    index = {(f["repository"], f["path"]): f for f in files}
     for q in spec["queries"]:
         for a in q["anchors"]:
-            entry = index.get(a["path"])
+            repo_id = q["repository"]
+            entry = index.get((repo_id, a["path"]))
             if entry is None:
                 raise EvaluationError(f"anchor file does not exist: {a['path']}")
             try:
-                (root_path / a["path"]).read_bytes().decode("utf-8")
+                (root_paths[repo_id] / a["path"]).read_bytes().decode("utf-8")
             except UnicodeDecodeError as e:
                 raise EvaluationError(f"anchor file is not UTF-8: {a['path']}") from e
             if a["end_line"] > entry["line_count"]:
                 raise EvaluationError(f"anchor exceeds file line count: {a['path']}")
-    plan = {"format_version": 1, "spec": spec, "spec_sha256": _digest(spec), "files": files}
+    plan = {"format_version": version, "spec": spec, "spec_sha256": _digest(spec), "files": files}
     plan["fingerprint"] = _digest(plan)
     return plan
 
 
 def _verify_plan(plan):
     _object(plan, ("format_version", "spec", "spec_sha256", "files", "fingerprint"), where="plan")
-    if type(plan["format_version"]) is not int or plan["format_version"] != 1:
-        raise EvaluationError("plan.format_version must be 1")
+    if type(plan["format_version"]) is not int or plan["format_version"] not in (1, 2):
+        raise EvaluationError("plan.format_version must be 1 or 2")
     _validate_spec(plan["spec"])
+    if plan["format_version"] != plan["spec"]["format_version"]:
+        raise EvaluationError("plan/spec format_version mismatch")
     if plan["spec_sha256"] != _digest(plan["spec"]):
         raise EvaluationError("plan spec digest mismatch")
     if not isinstance(plan["files"], list):
         raise EvaluationError("plan.files must be an array")
-    repo = plan["spec"]["repositories"][0]["id"]
+    repo_ids = {r["id"] for r in plan["spec"]["repositories"]}
     file_index = {}
     for i, f in enumerate(plan["files"]):
         _object(f, ("repository", "path", "sha256", "line_count"), where=f"plan.files[{i}]")
-        if f["repository"] != repo:
-            raise EvaluationError("file repository mismatch")
+        _string(f["repository"], "file.repository")
+        if f["repository"] not in repo_ids:
+            raise EvaluationError("unknown file repository")
         path = _relpath(f["path"], "file.path")
         if path == ".git" or path.startswith(".git/"):
             raise EvaluationError("plan cannot inventory .git")
         if not isinstance(f["sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", f["sha256"]):
             raise EvaluationError("file sha256 must be lowercase hex SHA-256")
         _integer(f["line_count"], "file.line_count", minimum=0)
-        if path in file_index:
-            raise EvaluationError("duplicate file path")
-        file_index[path] = f
+        key = (f["repository"], path) if plan["format_version"] == 2 else path
+        if key in file_index:
+            raise EvaluationError("duplicate repository/path pair" if plan["format_version"] == 2 else "duplicate file path")
+        file_index[key] = f
     for q in plan["spec"]["queries"]:
         for a in q["anchors"]:
-            if a["path"] not in file_index or a["end_line"] > file_index[a["path"]]["line_count"]:
+            key = (q["repository"], a["path"]) if plan["format_version"] == 2 else a["path"]
+            if key not in file_index or a["end_line"] > file_index[key]["line_count"]:
                 raise EvaluationError("anchor exceeds frozen file inventory")
     unsigned = {k: v for k, v in plan.items() if k != "fingerprint"}
     if not isinstance(plan["fingerprint"], str) or plan["fingerprint"] != _digest(unsigned):
@@ -263,7 +309,8 @@ def _run_scores(run, spec, file_index, fingerprint):
             _integer(h["end_line"], "hit.end_line")
             if h["end_line"] < h["start_line"]:
                 raise EvaluationError("hit.end_line must be >= start_line")
-            f = file_index.get(path)
+            file_key = (q["repository"], path) if spec["format_version"] == 2 else path
+            f = file_index.get(file_key)
             if f is None or h["end_line"] > f["line_count"]:
                 raise EvaluationError("hit path or range outside frozen inventory")
             if filt and not path.startswith(filt):
@@ -298,6 +345,17 @@ def _aggregate(records):
             "mrr": sum(r["reciprocal_rank"] for r in records) / n if n else None}
 
 
+def _repository_macro(repo_scores):
+    """Equal-weight mean across repository-level query macros."""
+    n = len(repo_scores)
+    metrics = ("coverage", "recall_at_10", "recall_at_50", "recall_at_100", "all_required_at_10", "mrr")
+    result = {key: (sum(r[key] for r in repo_scores.values()) / n
+                    if n and all(r[key] is not None for r in repo_scores.values()) else None)
+              for key in metrics}
+    result.update(repository_count=n, query_count=sum(r["query_count"] for r in repo_scores.values()))
+    return result
+
+
 def score(plan, runs):
     """Verify frozen plan, score exact-coverage runs, and compare paired queries."""
     file_index = _verify_plan(plan)
@@ -318,11 +376,14 @@ def score(plan, runs):
         for r in records:
             categories.setdefault(r["category"], []).append(r)
             repos.setdefault(r["repository"], []).append(r)
-        run_reports.append({"name": run["name"], "run_sha256": _digest(run), "tool": run["tool"],
+        run_report = {"name": run["name"], "run_sha256": _digest(run), "tool": run["tool"],
                             "configuration": run["configuration"], "candidate_k": run["candidate_k"],
                             "queries": qs, "overall": _aggregate(records),
                             "by_category": {k: _aggregate(v) for k, v in sorted(categories.items())},
-                            "by_repository": {k: _aggregate(v) for k, v in sorted(repos.items())}, "raw_run": run})
+                            "by_repository": {k: _aggregate(v) for k, v in sorted(repos.items())}, "raw_run": run}
+        if spec["format_version"] == 2:
+            run_report["repository_macro"] = _repository_macro(run_report["by_repository"])
+        run_reports.append(run_report)
     baseline = run_reports[0]
     paired = []
     for candidate in run_reports[1:]:
@@ -336,10 +397,32 @@ def score(plan, runs):
             deltas[qid] = {"recall_at_10": cr - br,
                            "all_required_at_10": c["all_required_at_10"] - b["all_required_at_10"] if b["all_required_at_10"] is not None and c["all_required_at_10"] is not None else None,
                            "mrr": c["reciprocal_rank"] - b["reciprocal_rank"] if candidate["candidate_k"] == baseline["candidate_k"] else None}
-        paired.append({"baseline": baseline["name"], "candidate": candidate["name"], "per_query": deltas,
-                       "recall_at_10_outcomes": outcomes,
-                       "macro_delta": {m: candidate["overall"][m] - baseline["overall"][m] if candidate["overall"][m] is not None and baseline["overall"][m] is not None and (m != "mrr" or candidate["candidate_k"] == baseline["candidate_k"]) else None for m in ("recall_at_10", "all_required_at_10", "mrr")}})
-    return {"format_version": 1, "plan_fingerprint": plan["fingerprint"], "spec_sha256": plan["spec_sha256"],
+        paired_report = {"baseline": baseline["name"], "candidate": candidate["name"], "per_query": deltas,
+                         "recall_at_10_outcomes": outcomes,
+                         "macro_delta": {m: candidate["overall"][m] - baseline["overall"][m] if candidate["overall"][m] is not None and baseline["overall"][m] is not None and (m != "mrr" or candidate["candidate_k"] == baseline["candidate_k"]) else None for m in ("recall_at_10", "all_required_at_10", "mrr")}}
+        if spec["format_version"] == 2:
+            repo_deltas = {}
+            for repo_id in sorted(baseline["by_repository"]):
+                base_repo = baseline["by_repository"][repo_id]
+                cand_repo = candidate["by_repository"][repo_id]
+                repo_outcomes = {"wins": 0, "ties": 0, "losses": 0}
+                for q in spec["queries"]:
+                    if q["repository"] != repo_id:
+                        continue
+                    br = baseline["queries"][q["id"]]["recall_at"]["10"]
+                    cr = candidate["queries"][q["id"]]["recall_at"]["10"]
+                    repo_outcomes["wins" if cr > br else "losses" if cr < br else "ties"] += 1
+                repo_deltas[repo_id] = {"macro_delta": {
+                    m: cand_repo[m] - base_repo[m] if cand_repo[m] is not None and base_repo[m] is not None and (m != "mrr" or candidate["candidate_k"] == baseline["candidate_k"]) else None
+                    for m in ("recall_at_10", "all_required_at_10", "mrr")},
+                    "recall_at_10_outcomes": repo_outcomes}
+            paired_report["by_repository"] = repo_deltas
+            paired_report["repository_macro_delta"] = {
+                m: candidate["repository_macro"][m] - baseline["repository_macro"][m]
+                if candidate["repository_macro"][m] is not None and baseline["repository_macro"][m] is not None and (m != "mrr" or candidate["candidate_k"] == baseline["candidate_k"]) else None
+                for m in ("recall_at_10", "all_required_at_10", "mrr")}
+        paired.append(paired_report)
+    report = {"format_version": plan["format_version"], "plan_fingerprint": plan["fingerprint"], "spec_sha256": plan["spec_sha256"],
             "runs": run_reports, "paired_comparisons": paired,
             "method": {"anchor_match": "one hit must fully contain one inclusive anchor span; hit unions are not combined",
                        "macro": "unweighted query mean; failures count as zero in retrieval metrics",
@@ -347,6 +430,9 @@ def score(plan, runs):
                        "limitations": ["This offline repository comparison does not establish adoption, market fit, or product superiority.",
                                        "Scores depend on the declared queries, anchors, repository revision, and native hit units.",
                                        "No nDCG is reported because overlapping anchors and chunk units make graded relevance ambiguous."]}}
+    if spec["format_version"] == 2:
+        report["method"]["repository_macro"] = "unweighted mean of repository-level query macros; each repository has equal weight"
+    return report
 
 
 def _load(path):
@@ -378,13 +464,27 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     fp = sub.add_parser("freeze")
-    fp.add_argument("--spec", required=True); fp.add_argument("--root", required=True); fp.add_argument("--output", required=True)
+    fp.add_argument("--spec", required=True)
+    roots_group = fp.add_mutually_exclusive_group(required=True)
+    roots_group.add_argument("--root")
+    roots_group.add_argument("--roots")
+    fp.add_argument("--output", required=True)
     sp = sub.add_parser("score")
     sp.add_argument("--plan", required=True); sp.add_argument("--run", required=True, action="append"); sp.add_argument("--output", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "freeze":
-            result = freeze(_load(args.spec), args.root)
+            loaded_spec = _load(args.spec)
+            if args.roots:
+                root_map = _load(args.roots)
+                if not isinstance(root_map, dict):
+                    raise EvaluationError("roots JSON must be an object")
+                for repo_id, path in root_map.items():
+                    _string(repo_id, "root repository id")
+                    _string(path, f"root for {repo_id}")
+                result = freeze(loaded_spec, root_map)
+            else:
+                result = freeze(loaded_spec, args.root)
         else:
             result = score(_load(args.plan), [_load(p) for p in args.run])
         _write_new(args.output, result)

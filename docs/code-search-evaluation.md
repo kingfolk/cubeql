@@ -232,3 +232,7 @@ The [repository product evaluator](repository-product-evaluation.md) adds a sepa
 interchange format for RQ2: source-span anchors, native ordered hits, complete failure coverage,
 Recall@10/50/100, all-required evidence@10 and paired changes. It does not alter the existing
 Rust evaluator, its symbol labels, report versions or search defaults.
+
+Version 2 plans can bind multiple source roots in one frozen specification. The report retains
+query means and adds equal-repository means, with per-repository paired changes. Existing
+version 1 plans and result interchange remain supported. See the linked guide for `--roots`.

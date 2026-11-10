@@ -42,6 +42,28 @@ def make_run(plan, name="baseline", candidate_k=10, results=None):
             "candidate_k": candidate_k, "results": results}
 
 
+def make_v2_spec(alpha_count=3):
+    repos = [{"id": "alpha", "revision": "a"}, {"id": "beta", "revision": "b"}]
+    queries = []
+    for repo_id, count in (("alpha", alpha_count), ("beta", 1)):
+        for i in range(count):
+            queries.append({"id": f"{repo_id}-{i}", "repository": repo_id, "category": "api",
+                            "text": "find symbol", "filter": {},
+                            "anchors": [{"id": "same-anchor", "path": "src/lib.rs", "start_line": 1, "end_line": 1}]})
+    return {"format_version": 2, "name": "multi", "split": "development", "repositories": repos, "queries": queries}
+
+
+def make_v2_run(plan, name="baseline", successes=(), candidate_k=10):
+    results = []
+    for q in plan["spec"]["queries"]:
+        if q["id"] in successes:
+            results.append({"query_id": q["id"], "status": "ok",
+                            "hits": [{"path": "src/lib.rs", "start_line": 1, "end_line": 1}]})
+        else:
+            results.append({"query_id": q["id"], "status": "failed", "error": "fixture miss", "hits": []})
+    return make_run(plan, name=name, candidate_k=candidate_k, results=results)
+
+
 class RepositoryEvalTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -233,6 +255,142 @@ class RepositoryEvalTests(unittest.TestCase):
         bad["repositories"].append({"id": "other", "revision": "x"})
         with self.assertRaises(ev.EvaluationError):
             ev.freeze(bad, self.root)
+
+    def _v2_roots(self):
+        alpha, beta = Path(self.tmp.name) / "alpha", Path(self.tmp.name) / "beta"
+        alpha.mkdir(); beta.mkdir()
+        (alpha / "src").mkdir(); (beta / "src").mkdir()
+        (alpha / "src/lib.rs").write_text("alpha\n", encoding="utf-8")
+        (beta / "src/lib.rs").write_text("beta\n", encoding="utf-8")
+        return {"alpha": alpha, "beta": beta}
+
+    def test_v2_same_paths_and_anchor_ids_are_repository_scoped(self):
+        roots = self._v2_roots()
+        plan = ev.freeze(make_v2_spec(), roots)
+        entries = {(f["repository"], f["path"]): f for f in plan["files"]}
+        self.assertEqual(entries[("alpha", "src/lib.rs")]["sha256"], ev.hashlib.sha256(b"alpha\n").hexdigest())
+        self.assertEqual(entries[("beta", "src/lib.rs")]["sha256"], ev.hashlib.sha256(b"beta\n").hexdigest())
+        self.assertEqual(plan["files"], sorted(plan["files"], key=lambda f: (0 if f["repository"] == "alpha" else 1, f["path"])))
+
+    def test_v2_repository_macro_equal_weights_and_query_macro(self):
+        roots = self._v2_roots()
+        plan = ev.freeze(make_v2_spec(), roots)
+        success_ids = {q["id"] for q in plan["spec"]["queries"] if q["repository"] == "alpha"}
+        report = ev.score(plan, [make_v2_run(plan, successes=success_ids)])
+        run = report["runs"][0]
+        self.assertEqual(report["format_version"], 2)
+        self.assertEqual(run["overall"]["recall_at_10"], 0.75)
+        self.assertEqual(run["overall"]["coverage"], 0.75)
+        self.assertEqual(run["repository_macro"]["recall_at_10"], 0.5)
+        self.assertEqual(run["repository_macro"]["coverage"], 0.5)
+        self.assertEqual(run["repository_macro"]["repository_count"], 2)
+        self.assertEqual(run["repository_macro"]["query_count"], 4)
+
+    def test_v2_paired_repository_gains_regressions_and_null_mrr(self):
+        roots = self._v2_roots()
+        plan = ev.freeze(make_v2_spec(), roots)
+        alpha_ids = {q["id"] for q in plan["spec"]["queries"] if q["repository"] == "alpha"}
+        base = make_v2_run(plan, "base", successes=alpha_ids)
+        candidate_successes = {"alpha-0", "alpha-1", "beta-0"}
+        candidate = make_v2_run(plan, "candidate", successes=candidate_successes, candidate_k=20)
+        paired = ev.score(plan, [base, candidate])["paired_comparisons"][0]
+        self.assertEqual(paired["by_repository"]["alpha"]["recall_at_10_outcomes"],
+                         {"wins": 0, "ties": 2, "losses": 1})
+        self.assertEqual(paired["by_repository"]["beta"]["recall_at_10_outcomes"],
+                         {"wins": 1, "ties": 0, "losses": 0})
+        self.assertAlmostEqual(paired["by_repository"]["alpha"]["macro_delta"]["recall_at_10"], -1 / 3)
+        self.assertEqual(paired["by_repository"]["beta"]["macro_delta"]["recall_at_10"], 1.0)
+        self.assertAlmostEqual(paired["repository_macro_delta"]["recall_at_10"], 1 / 3)
+        self.assertAlmostEqual(paired["repository_macro_delta"]["all_required_at_10"], 1 / 3)
+        self.assertEqual(paired["macro_delta"]["recall_at_10"], 0.0)
+        self.assertEqual(paired["macro_delta"]["all_required_at_10"], 0.0)
+        self.assertIsNone(paired["by_repository"]["alpha"]["macro_delta"]["mrr"])
+        self.assertIsNone(paired["repository_macro_delta"]["mrr"])
+
+    def test_v2_rejects_missing_extra_duplicate_empty_and_unknown_repositories(self):
+        roots = self._v2_roots()
+        spec = make_v2_spec()
+        for bad_roots in ({"alpha": roots["alpha"]}, {**roots, "extra": roots["alpha"]}):
+            with self.subTest(roots=bad_roots), self.assertRaises(ev.EvaluationError):
+                ev.freeze(spec, bad_roots)
+        for mutate in (
+            lambda s: s.update(repositories=[]),
+            lambda s: s["repositories"].append(copy.deepcopy(s["repositories"][0])),
+            lambda s: s["queries"].pop(),
+            lambda s: s["queries"][0].update(repository="unknown"),
+        ):
+            bad = copy.deepcopy(spec); mutate(bad)
+            with self.subTest(mutation=mutate), self.assertRaises(ev.EvaluationError):
+                ev.freeze(bad, roots)
+
+    def test_v2_rejects_two_root_aliases_for_same_checkout(self):
+        roots = self._v2_roots()
+        with self.assertRaises(ev.EvaluationError):
+            ev.freeze(make_v2_spec(), {"alpha": roots["alpha"], "beta": roots["alpha"] / ".." / "alpha"})
+
+    def test_v2_anchor_range_is_checked_only_against_its_own_repository(self):
+        roots = self._v2_roots()
+        (roots["alpha"] / "src/lib.rs").write_text("one\ntwo\nthree\n", encoding="utf-8")
+        spec = make_v2_spec()
+        beta_query = next(q for q in spec["queries"] if q["repository"] == "beta")
+        beta_query["anchors"][0]["end_line"] = 2
+        with self.assertRaisesRegex(ev.EvaluationError, "exceeds file line count"):
+            ev.freeze(spec, roots)
+
+    def test_v2_hit_range_is_checked_only_against_its_own_repository(self):
+        roots = self._v2_roots()
+        (roots["alpha"] / "src/lib.rs").write_text("one\ntwo\nthree\n", encoding="utf-8")
+        plan = ev.freeze(make_v2_spec(), roots)
+        run = make_v2_run(plan)
+        beta_result = next(r for r in run["results"] if r["query_id"] == "beta-0")
+        beta_result.pop("error")
+        beta_result.update(status="ok", hits=[{"path": "src/lib.rs", "start_line": 1, "end_line": 2}])
+        with self.assertRaisesRegex(ev.EvaluationError, "outside frozen inventory"):
+            ev.score(plan, [run])
+
+    def test_v2_plan_schema_rejects_repo_membership_tampering_after_rehash(self):
+        roots = self._v2_roots()
+        plan = ev.freeze(make_v2_spec(), roots)
+        bad = copy.deepcopy(plan)
+        bad["files"][0]["repository"] = "not-declared"
+        unsigned = {k: v for k, v in bad.items() if k != "fingerprint"}
+        bad["fingerprint"] = ev._digest(unsigned)
+        with self.assertRaisesRegex(ev.EvaluationError, "unknown file repository"):
+            ev._verify_plan(bad)
+        bad = copy.deepcopy(plan)
+        bad["files"][1]["repository"] = bad["files"][0]["repository"]
+        bad["files"][1]["path"] = bad["files"][0]["path"]
+        unsigned = {k: v for k, v in bad.items() if k != "fingerprint"}
+        bad["fingerprint"] = ev._digest(unsigned)
+        with self.assertRaisesRegex(ev.EvaluationError, "duplicate repository/path"):
+            ev._verify_plan(bad)
+
+    def test_v2_cli_roundtrip_and_strict_roots_json(self):
+        roots = self._v2_roots()
+        folder = Path(self.tmp.name)
+        spec_path, roots_path = folder / "spec2.json", folder / "roots.json"
+        plan_path, run_path, output = folder / "plan2.json", folder / "run2.json", folder / "report2.json"
+        spec = make_v2_spec()
+        spec_path.write_text(json.dumps(spec), encoding="utf-8")
+        roots_path.write_text(json.dumps({k: str(v) for k, v in roots.items()}), encoding="utf-8")
+        self.assertEqual(ev.main(["freeze", "--spec", str(spec_path), "--roots", str(roots_path), "--output", str(plan_path)]), 0)
+        plan = ev._load(plan_path)
+        self.assertNotIn("roots", plan)
+        run_path.write_text(json.dumps(make_v2_run(plan, successes={q["id"] for q in spec["queries"] if q["repository"] == "alpha"})), encoding="utf-8")
+        self.assertEqual(ev.main(["score", "--plan", str(plan_path), "--run", str(run_path), "--output", str(output)]), 0)
+        self.assertEqual(ev._load(output)["runs"][0]["repository_macro"]["recall_at_10"], 0.5)
+        roots_path.write_text('{"alpha": "x", "alpha": "y"}', encoding="utf-8")
+        with patch("sys.stderr"):
+            self.assertEqual(ev.main(["freeze", "--spec", str(spec_path), "--roots", str(roots_path), "--output", str(folder / "bad.json")]), 2)
+
+    def test_v1_frozen_plan_keeps_original_shape(self):
+        # Golden digests captured from the shipped v1 implementation (e5f8074).
+        self.assertEqual(set(self.plan), {"format_version", "spec", "spec_sha256", "files", "fingerprint"})
+        self.assertEqual(self.plan["format_version"], 1)
+        self.assertTrue(all(set(f) == {"repository", "path", "sha256", "line_count"} for f in self.plan["files"]))
+        self.assertEqual(ev._digest(self.plan), "001d677852db87358b1068446b311f9f1a20cc3138f1e02408d073dea35b8672")
+        self.assertEqual(ev._digest(ev.score(self.plan, [make_run(self.plan)])),
+                         "e1c0031b1be94f16dbaff8e8f572378558e778ac9a28164b8889cc8e634500ad")
 
 
 if __name__ == "__main__":

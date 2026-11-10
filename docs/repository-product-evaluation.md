@@ -16,7 +16,8 @@ python3 tools/repository_eval.py freeze \
 
 Outputs are create-new files. Choose a fresh path for each experiment. The checked-in example
 is a synthetic development smoke fixture, not an independently reviewed validation set.
-Version 1 supports **one repository per plan**. Keep query labels and output files outside
+Version 1 supports **one repository per plan**; version 2 freezes multiple repositories
+under one query specification. Keep query labels and output files outside
 the source root. Freeze a deliberately prepared source-only checkout: the manifest inventories
 regular files recursively, excluding `.git`, rather than applying CubeQL's parser/ignore rules.
 Symlink directories are skipped and symlink files are rejected. Line numbers count LF-delimited
@@ -117,7 +118,9 @@ several hits for the same anchor earn no additional recall credit.
   Compare MRR only across equal windows. Paired Recall@10 is comparable across exported
   windows of at least ten; the configuration still needs a fair budget interpretation.
 
-Aggregates are unweighted query means. This is anchor recall, not nDCG, coding-task success,
+The `overall` and category aggregates are unweighted query means. Version 2 also reports
+`repository_macro`, an equal-weight mean of the per-repository query means (see below).
+This is anchor recall, not nDCG, coding-task success,
 or the percentage of useful source lines returned. Large native chunks can cover more anchors
 and cost more context: span scoring alone does not establish fair context budgets. Preserve
 source sizes and compare common-unit conditions before attributing quality gains to ranking.
@@ -127,3 +130,68 @@ This infrastructure does not complete RQ2: independently reviewed repository val
 strong-model runs, independent peer rankings, failure analysis and separate engine controls
 remain necessary. Keep the preserved CubeCL development labels unchanged and freeze a separate
 validation set before tuning. No new default or 80% validation-target claim follows from this fixture.
+
+## Freeze several repositories in a version 2 plan
+
+Use a spec with `format_version: 2` and a nonempty `repositories` list of distinct IDs and
+declared revisions. Each query names exactly one of these IDs; each declared repository must
+have at least one query. Query IDs remain globally unique. Anchor IDs are local to a query.
+Paths are local to that query's repository: two repositories may both contain `src/lib.rs`
+without sharing labels or file identities. A query cannot span repositories; a cross-file
+query still collects evidence from files within its named repository.
+
+Pass a JSON root map with exactly one source directory per declared repository:
+
+```json
+{"alpha": "/source/alpha", "beta": "/source/beta"}
+```
+
+```sh
+python3 tools/repository_eval.py freeze \
+  --spec benchmarks/retrieval/fixtures/multi-repository/spec.json \
+  --roots benchmarks/retrieval/fixtures/multi-repository/roots.json \
+  --output /tmp/multi-repository-plan.json
+```
+
+The checked-in map resolves relative to the **process working directory**, so run that
+example from the repository root. Real experiments can use absolute roots. Source directories
+are not saved in the portable plan. Identical resolved roots (including aliases through a
+symlink) are rejected. Missing/extra root IDs, unknown repository references, repositories
+without queries, or duplicate repository IDs fail before a plan is written. Inventory and
+anchor validation use each repository's own bytes and line counts. Freeze immutable source
+checkouts without concurrent writers; several inventories are sequential observations,
+not an atomic cross-repository filesystem snapshot.
+
+Use `--root` for a v1 spec, or `--roots` for a v2 spec; these options are mutually exclusive.
+Version 2 permits a single repository too, using a one-entry map. Existing v1 plans, digests,
+reports and commands retain their original behavior. Plan and spec versions must agree.
+
+The native run interchange remains `format_version: 1`, including for a v2 plan. Each run
+must provide exactly one result for every query across **all** repositories. Its globally
+unique `query_id` supplies the repository context, so hit paths have no separate repository
+field. Never pool hits from other repositories into that query's ranking. Record any
+repository-specific snapshots/model settings under the run's free-form `configuration`.
+All runs being compared must bind the same whole-plan fingerprint; results from independently
+frozen plans cannot be concatenated and scored as a paired trial.
+
+Scoring commands are unchanged. For v2 plans, the report's `format_version` is 2 and each run
+contains both:
+
+| Report field | Averaging rule |
+| --- | --- |
+| `overall` | Every query has equal weight across the entire plan |
+| `by_repository` | Query mean within each repository, with its counts and failure coverage |
+| `repository_macro` | Every repository has equal weight, using its query mean |
+
+For example, if alpha has three queries with Recall@10 = 1 and beta has one with Recall@10 = 0,
+`overall.recall_at_10` is **0.75**, while `repository_macro.recall_at_10` is **0.50**.
+The latter also averages coverage equally by repository; raw status counts remain in `overall`
+and `by_repository`. Failures still score zero, and unavailable Recall@50/100 remains null.
+Freeze the repository/query mixture and primary averaging rule before interpreting validation
+targets. Neither averaging rule establishes repository independence or absence of training exposure.
+
+Each v2 paired comparison adds `by_repository`, containing query wins/ties/losses and mean
+metric changes within each repository, plus `repository_macro_delta` for equal-repository
+changes. Existing global query changes remain in `macro_delta`. Paired MRR deltas are null
+at every level when candidate windows differ. This is descriptive paired arithmetic, without
+a significance test or confidence-interval claim.
