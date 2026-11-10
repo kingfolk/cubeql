@@ -195,3 +195,10 @@ metric changes within each repository, plus `repository_macro_delta` for equal-r
 changes. Existing global query changes remain in `macro_delta`. Paired MRR deltas are null
 at every level when candidate windows differ. This is descriptive paired arithmetic, without
 a significance test or confidence-interval claim.
+
+## Collect native CubeQL results automatically
+
+The [repository collector](repository-collection.md) builds new snapshots from frozen source
+roots, executes the same queries and filters, retains native responses and failed queries,
+and writes scoring runs directly. Fresh CLI invocation timings are explicitly separated
+from resident-service measurements.
