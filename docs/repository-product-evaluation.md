@@ -202,3 +202,10 @@ The [repository collector](repository-collection.md) builds new snapshots from f
 roots, executes the same queries and filters, retains native responses and failed queries,
 and writes scoring runs directly. Fresh CLI invocation timings are explicitly separated
 from resident-service measurements.
+
+## Import independently captured peer output
+
+The [offline Semble adapter](repository-peer-import.md) validates native result JSON against
+the same frozen plan and retains original payloads, query/filter declarations and provenance.
+It can produce paired reports with collected CubeQL runs. Importer fixtures are format checks;
+actual native peer execution and source/model/budget attestation remain separate work.
