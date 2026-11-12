@@ -47,3 +47,6 @@ The [multi-repository fixture](fixtures/multi-repository/spec.json) exercises ve
 with colliding relative source paths and unequal query counts. It is a development smoke
 fixture. Reports keep query-weighted and repository-weighted means distinct; neither is a new
 held-out validation or peer-product result.
+
+[Native CubeQL collection](../../docs/repository-collection.md) automates new snapshot builds,
+query execution and frozen-plan scoring while preserving raw diagnostics and complete coverage.
