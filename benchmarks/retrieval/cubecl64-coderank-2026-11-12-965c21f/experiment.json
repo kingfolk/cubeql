@@ -1,0 +1,127 @@
+{
+  "format_version": 1,
+  "recorded_checkout_revision": "965c21f9f42d012a3a98beb82e5f99a0faa49ea7",
+  "binary_build_revision_independently_attested": false,
+  "binary_sha256": "e3e526bd6dee7d417bf8a0b2aba0e5095a7085bffe6e102c9b24c7c2d5f53c85",
+  "recipe_fingerprint": "daa69ad6fbb9cb5434ac2d6efc6bec58f011f6b3c1c8a3bef963d1872dc2e508",
+  "queries_sha256": "8c2d3eb7da1560a98f4d9ee844cfa842f53c3f9a1109affa71fed9cfad49c091",
+  "corpus_revision": "5037c0639ce3b1205392bdbe43dcf25e2ea09e29",
+  "source_file_count": 1175,
+  "native_options": {
+    "candidate_k": 100,
+    "compare_fp16": false,
+    "repeats": 3
+  },
+  "native_snapshot": {
+    "arrow_array_memory_bytes": 1488448472,
+    "chunks": 27289,
+    "corpus_fingerprint": "3ad4afd5220b95c3987c463f6ebe009c1c5adab2ccac8bc256da69bf8d7176cb",
+    "dimensions": 768,
+    "embedding": {
+      "artifacts": {
+        "1_Pooling/config.json": "d02ebf56344d20f773449b15d0c10ee9a86a9178f3b3c9bfecb8b87d4350ce38",
+        "README.md": "69a6d76a2b533dd0f293b5d1b33a5b433201af38cf48c887b8ec795b641849a0",
+        "config.json": "5ff856a41d0f53ef2d74520627d464bd75c2efd8f26f381bd528654895c29b6c",
+        "config_sentence_transformers.json": "06bc4c2dc7098e98669beb67cf21dc1373e44a77c7eecdf70aad6585d87190cf",
+        "configuration_hf_nomic_bert.py": "8632792e922e62ab1a6feaab15baf406e223c0547a21de23ab4f520b2b36d674",
+        "model.safetensors": "827529bcd58aef0d9082e66eeff7e7d53a02f62bd005f841a26b3d3e2fb17ebe",
+        "modeling_hf_nomic_bert.py": "502ccfb9c2d5dac976109ac2f04dc3125d8540329e5d4af92bc587d6dc65edcd",
+        "modules.json": "8f4b264b80206c830bebbdcae377e137925650a433b689343a63bdc9b3145460",
+        "sentence_bert_config.json": "d8ecbf1eb946d17aec64c83e6614e5ec1b19b62498cf72a4ed4ec882c86af07e",
+        "special_tokens_map.json": "5d5b662e421ea9fac075174bb0688ee0d9431699900b90662acd44b2a350503a",
+        "tokenizer.json": "91f1def9b9391fdabe028cd3f3fcc4efd34e5d1f08c3bf2de513ebb5911a1854",
+        "tokenizer_config.json": "7809f768ee3614618b3f1b91dcbfab4f6a9d4b79fb1ad5d17feb65a7c1bb5b7a",
+        "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+      },
+      "dimensions": 768,
+      "document_prefix": "",
+      "implementation": "rq1-coderank-st-cpu-fp32-cls-v1[blake3=1.0.8;numpy=2.2.6;safetensors=0.8.0;sentence-transformers=4.1.0;tokenizers=0.21.4;torch=2.7.1;transformers=4.51.3;threads=4;seed=20261102]",
+      "max_tokens": 256,
+      "model": "nomic-ai/CodeRankEmbed",
+      "normalization": "l2",
+      "pooling": "cls",
+      "query_prefix": "Represent this query for searching relevant code: ",
+      "revision": "3c4b60807d71f79b43f3c4363786d9493691f8b1"
+    },
+    "embedding_id": "cubeql-embedding-v1:e06ad4c37ebd2d31c4213bae6a068a2b5ee80a4ab6ab4343773818304b09fe36",
+    "fallback_lines": 80,
+    "files": 1127,
+    "ipc_bytes": 99489234,
+    "max_file_bytes": 2097152,
+    "precision": "fp32",
+    "root": "/Users/devilhill/Documents/ChatGPT/cubeql/rq2-live-stack/cubecl-source-5037c0639ce3",
+    "source_text_bytes": 8075854,
+    "vector_storage_bytes": 83831808
+  },
+  "raw_native_report_member": "run/profile-000-evaluate.stdout",
+  "model_files": [
+    {
+      "files": {
+        "/Users/devilhill/Documents/ChatGPT/cubeql/rq2-live-stack/prepared64/coderank.json": "2b9874ba97b54763b2a8fadaae55c0612d80cb9f40998a0d8982f41b8986e976",
+        "/Users/devilhill/Documents/ChatGPT/cubeql/public-benchmarks/coir-apps-coderank-2026-11-01-89c431e/.venv/bin/python": "d59f5251bce588951dc870bde45f0cd93de39327b1ed2431a8d26bfb567aac10",
+        "/Users/devilhill/Codes/cubeql/tools/serve_encoder.py": "f28b0a176856fe6554ef26bc0b734f3bc422a6a533f51178d8d57405e30cc697"
+      },
+      "directories": {
+        "/Users/devilhill/Documents/ChatGPT/cubeql/public-benchmarks/coir-apps-coderank-2026-11-01-89c431e/model": {
+          "1_Pooling/config.json": {
+            "sha256": "d02ebf56344d20f773449b15d0c10ee9a86a9178f3b3c9bfecb8b87d4350ce38",
+            "line_count": 10
+          },
+          "README.md": {
+            "sha256": "69a6d76a2b533dd0f293b5d1b33a5b433201af38cf48c887b8ec795b641849a0",
+            "line_count": 69
+          },
+          "config.json": {
+            "sha256": "5ff856a41d0f53ef2d74520627d464bd75c2efd8f26f381bd528654895c29b6c",
+            "line_count": 57
+          },
+          "config_sentence_transformers.json": {
+            "sha256": "06bc4c2dc7098e98669beb67cf21dc1373e44a77c7eecdf70aad6585d87190cf",
+            "line_count": 11
+          },
+          "configuration_hf_nomic_bert.py": {
+            "sha256": "8632792e922e62ab1a6feaab15baf406e223c0547a21de23ab4f520b2b36d674",
+            "line_count": 56
+          },
+          "model.safetensors": {
+            "sha256": "827529bcd58aef0d9082e66eeff7e7d53a02f62bd005f841a26b3d3e2fb17ebe",
+            "line_count": 1741995
+          },
+          "modeling_hf_nomic_bert.py": {
+            "sha256": "502ccfb9c2d5dac976109ac2f04dc3125d8540329e5d4af92bc587d6dc65edcd",
+            "line_count": 1218
+          },
+          "modules.json": {
+            "sha256": "8f4b264b80206c830bebbdcae377e137925650a433b689343a63bdc9b3145460",
+            "line_count": 14
+          },
+          "sentence_bert_config.json": {
+            "sha256": "d8ecbf1eb946d17aec64c83e6614e5ec1b19b62498cf72a4ed4ec882c86af07e",
+            "line_count": 8
+          },
+          "special_tokens_map.json": {
+            "sha256": "5d5b662e421ea9fac075174bb0688ee0d9431699900b90662acd44b2a350503a",
+            "line_count": 37
+          },
+          "tokenizer.json": {
+            "sha256": "91f1def9b9391fdabe028cd3f3fcc4efd34e5d1f08c3bf2de513ebb5911a1854",
+            "line_count": 30684
+          },
+          "tokenizer_config.json": {
+            "sha256": "7809f768ee3614618b3f1b91dcbfab4f6a9d4b79fb1ad5d17feb65a7c1bb5b7a",
+            "line_count": 63
+          },
+          "vocab.txt": {
+            "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+            "line_count": 30522
+          }
+        }
+      }
+    }
+  ],
+  "snapshot_excluded_from_publication": true,
+  "snapshot_sha256": "b162e27c1155c4c3983bffd226e77f5e3a75610e47eb76ce447e16338d7a40bb",
+  "paid_api_or_agent_calls": 0,
+  "query_role": "Original AI-authored positive symbol-label development set; independent human review pending.",
+  "runtime_lock_boundary": "pip freeze observed after execution; transitive environment is not a hermetic build attestation."
+}

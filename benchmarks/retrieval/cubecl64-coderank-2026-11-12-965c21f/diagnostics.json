@@ -1,0 +1,384 @@
+{
+  "dataset": {
+    "categories": {
+      "behavioral": 16,
+      "conceptual": 16,
+      "cross_file": 16,
+      "identifier": 16
+    },
+    "label_unit": "native (path, symbol)",
+    "name": "cubecl-combined-development-v2",
+    "query_count": 64,
+    "query_ids": [
+      "identifier-trivial-unroll",
+      "identifier-custom-unroll",
+      "identifier-nvrtc",
+      "identifier-cache-namespace",
+      "identifier-launch-dimensions",
+      "identifier-driver-ptx",
+      "identifier-device-waiters",
+      "identifier-mem2reg",
+      "identifier-shared-allocation",
+      "identifier-memory-policy",
+      "concept-elementwise-pieces",
+      "concept-packed-conversion",
+      "concept-zero-initializer",
+      "concept-shader-language-selection",
+      "concept-promote-memory",
+      "concept-shared-single-block",
+      "concept-loaded-kernel-fast-path",
+      "concept-device-loss-callbacks",
+      "concept-inplace-write-attribution",
+      "concept-cast-logical-elements",
+      "behavior-reinterpret-unsplittable",
+      "behavior-extraction-after-split",
+      "behavior-scalar-cast-broadcast",
+      "behavior-shared-limit-unknown",
+      "behavior-old-driver-version",
+      "behavior-compile-error-source",
+      "behavior-register-after-loss",
+      "behavior-environment-cache-reset",
+      "behavior-discarded-launch-state",
+      "behavior-default-ssa-value",
+      "cross-cast-expansion-and-unroll",
+      "cross-unroll-interface-dispatch",
+      "cross-cuda-artifact-and-load",
+      "cross-driver-and-cache-identity",
+      "cross-axis-and-total-launch-limits",
+      "cross-loss-waiter-and-sync",
+      "cross-shared-offsets-and-rewrite",
+      "cross-ssa-merge-frontiers",
+      "cross-pooling-and-shader-visibility",
+      "cross-main-and-auxiliary-pools",
+      "v2-identifier-anchor",
+      "v2-identifier-patience",
+      "v2-identifier-samples",
+      "v2-identifier-swizzle",
+      "v2-identifier-reinterpret-size",
+      "v2-identifier-scale-rounding",
+      "v2-concept-timing-noise",
+      "v2-concept-layout-selection",
+      "v2-concept-positive-scale",
+      "v2-concept-roofline-bound",
+      "v2-concept-traffic-directions",
+      "v2-concept-partial-quant-blocks",
+      "v2-behavior-zero-patience",
+      "v2-behavior-shared-candidate",
+      "v2-behavior-biased-first-timing",
+      "v2-behavior-incompatible-byte-width",
+      "v2-behavior-swizzle-disabled",
+      "v2-behavior-zero-power-scale",
+      "v2-cross-patience-and-noise",
+      "v2-cross-host-device-scale",
+      "v2-cross-layout-and-contiguity",
+      "v2-cross-peak-time-and-threshold",
+      "v2-cross-rounding-bit-grid",
+      "v2-cross-tune-level-anchoring"
+    ]
+  },
+  "format_version": 1,
+  "interpretation_limits": [
+    "This is an original symbol-label development-set observation, not independently reviewed validation quality.",
+    "Warm retrieval repeats are repeated timings and are not independent quality observations.",
+    "The report does not establish a causal diagnosis, equal-work speedup, or agent outcome.",
+    "Recall@10 is checked against the exported top ten; no Top100 anchor recall is inferred from those hits.",
+    "MRR beyond the exported top ten cannot be independently recomputed; reciprocal-rank/rank consistency is checked.",
+    "Native path/symbol labels remain native labels and are not converted to source spans.",
+    "Native latency is intentionally omitted from this quality diagnostic."
+  ],
+  "options": {
+    "candidate_k": 100,
+    "compare_fp16": false,
+    "repeats": 3
+  },
+  "source": {
+    "canonical_sha256": "2b33026afd575eebc531de55d00132876473a18c65bce86737e1713e43d6c343",
+    "raw_bytes_sha256": "818f2e40f07a36890edfccc397d0a21ebdfc9052413d53e21fd38da78e2a7145"
+  },
+  "variants": [
+    {
+      "precision": "fp32",
+      "overall": {
+        "experimental_rrf": {
+          "mrr": 0.4704038029414746,
+          "queries": 64,
+          "recall_at_10": 0.5911458333333333,
+          "recall_at_5": 0.5208333333333333
+        },
+        "hybrid": {
+          "mrr": 0.5456365884620517,
+          "queries": 64,
+          "recall_at_10": 0.7291666666666667,
+          "recall_at_5": 0.6276041666666667
+        },
+        "lexical": {
+          "mrr": 0.3835194997830106,
+          "queries": 64,
+          "recall_at_10": 0.5494791666666666,
+          "recall_at_5": 0.4192708333333333
+        },
+        "literal": {
+          "mrr": 0.25,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25
+        },
+        "semantic": {
+          "mrr": 0.3855037918006547,
+          "queries": 64,
+          "recall_at_10": 0.5598958333333333,
+          "recall_at_5": 0.4739583333333333
+        },
+        "symbol": {
+          "mrr": 0.25046502976190477,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "experimental_rrf": {
+            "mrr": 0.49690355783138296,
+            "queries": 16,
+            "recall_at_10": 0.625,
+            "recall_at_5": 0.625
+          },
+          "hybrid": {
+            "mrr": 0.43412698412698414,
+            "queries": 16,
+            "recall_at_10": 0.84375,
+            "recall_at_5": 0.71875
+          },
+          "lexical": {
+            "mrr": 0.255381488671804,
+            "queries": 16,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.28125
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.49690355783138296,
+            "queries": 16,
+            "recall_at_10": 0.625,
+            "recall_at_5": 0.625
+          },
+          "symbol": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "conceptual": {
+          "experimental_rrf": {
+            "mrr": 0.1379334755157124,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.125
+          },
+          "hybrid": {
+            "mrr": 0.3185886426375557,
+            "queries": 16,
+            "recall_at_10": 0.5625,
+            "recall_at_5": 0.375
+          },
+          "lexical": {
+            "mrr": 0.3278791089409927,
+            "queries": 16,
+            "recall_at_10": 0.5625,
+            "recall_at_5": 0.5
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.1379334755157124,
+            "queries": 16,
+            "recall_at_10": 0.375,
+            "recall_at_5": 0.125
+          },
+          "symbol": {
+            "mrr": 0.0008680555555555555,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "cross_file": {
+          "experimental_rrf": {
+            "mrr": 0.3665698450854701,
+            "queries": 16,
+            "recall_at_10": 0.3645833333333333,
+            "recall_at_5": 0.3333333333333333
+          },
+          "hybrid": {
+            "mrr": 0.4714973937503333,
+            "queries": 16,
+            "recall_at_10": 0.5104166666666666,
+            "recall_at_5": 0.41666666666666663
+          },
+          "lexical": {
+            "mrr": 0.48305173992673994,
+            "queries": 16,
+            "recall_at_10": 0.32291666666666663,
+            "recall_at_5": 0.2708333333333333
+          },
+          "literal": {
+            "mrr": 0.0,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          },
+          "semantic": {
+            "mrr": 0.3665698450854701,
+            "queries": 16,
+            "recall_at_10": 0.3645833333333333,
+            "recall_at_5": 0.3333333333333333
+          },
+          "symbol": {
+            "mrr": 0.000992063492063492,
+            "queries": 16,
+            "recall_at_10": 0.0,
+            "recall_at_5": 0.0
+          }
+        },
+        "identifier": {
+          "experimental_rrf": {
+            "mrr": 0.8802083333333334,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "hybrid": {
+            "mrr": 0.9583333333333334,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "lexical": {
+            "mrr": 0.4677656615925058,
+            "queries": 16,
+            "recall_at_10": 0.8125,
+            "recall_at_5": 0.625
+          },
+          "literal": {
+            "mrr": 1.0,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          },
+          "semantic": {
+            "mrr": 0.5406082887700534,
+            "queries": 16,
+            "recall_at_10": 0.875,
+            "recall_at_5": 0.8125
+          },
+          "symbol": {
+            "mrr": 1.0,
+            "queries": 16,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0
+          }
+        }
+      },
+      "paired_comparisons": [
+        {
+          "baseline": "semantic",
+          "outcome_counts": {
+            "improved": 0,
+            "lost": 10,
+            "recovered": 10,
+            "regressed": 1,
+            "shared_miss": 14,
+            "tied": 29
+          },
+          "outcome_metric": "recall_at_10",
+          "strategy": "lexical"
+        },
+        {
+          "baseline": "semantic",
+          "outcome_counts": {
+            "improved": 0,
+            "lost": 26,
+            "recovered": 2,
+            "regressed": 0,
+            "shared_miss": 22,
+            "tied": 14
+          },
+          "outcome_metric": "recall_at_10",
+          "strategy": "symbol"
+        },
+        {
+          "baseline": "semantic",
+          "outcome_counts": {
+            "improved": 3,
+            "lost": 0,
+            "recovered": 10,
+            "regressed": 1,
+            "shared_miss": 14,
+            "tied": 36
+          },
+          "outcome_metric": "recall_at_10",
+          "strategy": "hybrid"
+        }
+      ],
+      "hybrid_regressions": [
+        {
+          "category": "behavioral",
+          "compared": {
+            "first_relevant_rank": 2,
+            "recall_at_10": 0.5,
+            "recall_at_5": 0.5,
+            "reciprocal_rank": 0.5
+          },
+          "delta": {
+            "recall_at_10": -0.5,
+            "recall_at_5": -0.5,
+            "reciprocal_rank": 0.0
+          },
+          "outcome": "regressed",
+          "query_id": "v2-behavior-biased-first-timing",
+          "semantic": {
+            "first_relevant_rank": 2,
+            "recall_at_10": 1.0,
+            "recall_at_5": 1.0,
+            "reciprocal_rank": 0.5
+          }
+        }
+      ],
+      "incomplete_hybrid_query_ids": [
+        "concept-elementwise-pieces",
+        "concept-packed-conversion",
+        "concept-zero-initializer",
+        "concept-shader-language-selection",
+        "concept-shared-single-block",
+        "behavior-extraction-after-split",
+        "cross-cast-expansion-and-unroll",
+        "cross-unroll-interface-dispatch",
+        "cross-cuda-artifact-and-load",
+        "cross-axis-and-total-launch-limits",
+        "cross-loss-waiter-and-sync",
+        "cross-main-and-auxiliary-pools",
+        "v2-concept-timing-noise",
+        "v2-concept-layout-selection",
+        "v2-behavior-zero-patience",
+        "v2-behavior-biased-first-timing",
+        "v2-cross-patience-and-noise",
+        "v2-cross-layout-and-contiguity",
+        "v2-cross-peak-time-and-threshold",
+        "v2-cross-rounding-bit-grid",
+        "v2-cross-tune-level-anchoring"
+      ]
+    }
+  ],
+  "full_diagnostics_archive_member": "diagnostics/diagnostics.json"
+}

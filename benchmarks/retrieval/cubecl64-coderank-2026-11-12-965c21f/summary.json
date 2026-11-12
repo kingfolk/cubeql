@@ -1,0 +1,260 @@
+{
+  "format_version": 1,
+  "recipe_fingerprint": "daa69ad6fbb9cb5434ac2d6efc6bec58f011f6b3c1c8a3bef963d1872dc2e508",
+  "conditions": [
+    {
+      "name": "CodeRankEmbed-256-CPU",
+      "embedding": "process",
+      "query_count": 64,
+      "status": "ok",
+      "variants": [
+        {
+          "snapshot": {
+            "arrow_array_memory_bytes": 1488448472,
+            "chunks": 27289,
+            "corpus_fingerprint": "3ad4afd5220b95c3987c463f6ebe009c1c5adab2ccac8bc256da69bf8d7176cb",
+            "dimensions": 768,
+            "embedding": {
+              "artifacts": {
+                "1_Pooling/config.json": "d02ebf56344d20f773449b15d0c10ee9a86a9178f3b3c9bfecb8b87d4350ce38",
+                "README.md": "69a6d76a2b533dd0f293b5d1b33a5b433201af38cf48c887b8ec795b641849a0",
+                "config.json": "5ff856a41d0f53ef2d74520627d464bd75c2efd8f26f381bd528654895c29b6c",
+                "config_sentence_transformers.json": "06bc4c2dc7098e98669beb67cf21dc1373e44a77c7eecdf70aad6585d87190cf",
+                "configuration_hf_nomic_bert.py": "8632792e922e62ab1a6feaab15baf406e223c0547a21de23ab4f520b2b36d674",
+                "model.safetensors": "827529bcd58aef0d9082e66eeff7e7d53a02f62bd005f841a26b3d3e2fb17ebe",
+                "modeling_hf_nomic_bert.py": "502ccfb9c2d5dac976109ac2f04dc3125d8540329e5d4af92bc587d6dc65edcd",
+                "modules.json": "8f4b264b80206c830bebbdcae377e137925650a433b689343a63bdc9b3145460",
+                "sentence_bert_config.json": "d8ecbf1eb946d17aec64c83e6614e5ec1b19b62498cf72a4ed4ec882c86af07e",
+                "special_tokens_map.json": "5d5b662e421ea9fac075174bb0688ee0d9431699900b90662acd44b2a350503a",
+                "tokenizer.json": "91f1def9b9391fdabe028cd3f3fcc4efd34e5d1f08c3bf2de513ebb5911a1854",
+                "tokenizer_config.json": "7809f768ee3614618b3f1b91dcbfab4f6a9d4b79fb1ad5d17feb65a7c1bb5b7a",
+                "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+              },
+              "dimensions": 768,
+              "document_prefix": "",
+              "implementation": "rq1-coderank-st-cpu-fp32-cls-v1[blake3=1.0.8;numpy=2.2.6;safetensors=0.8.0;sentence-transformers=4.1.0;tokenizers=0.21.4;torch=2.7.1;transformers=4.51.3;threads=4;seed=20261102]",
+              "max_tokens": 256,
+              "model": "nomic-ai/CodeRankEmbed",
+              "normalization": "l2",
+              "pooling": "cls",
+              "query_prefix": "Represent this query for searching relevant code: ",
+              "revision": "3c4b60807d71f79b43f3c4363786d9493691f8b1"
+            },
+            "embedding_id": "cubeql-embedding-v1:e06ad4c37ebd2d31c4213bae6a068a2b5ee80a4ab6ab4343773818304b09fe36",
+            "fallback_lines": 80,
+            "files": 1127,
+            "ipc_bytes": 99489234,
+            "max_file_bytes": 2097152,
+            "precision": "fp32",
+            "root": "/Users/devilhill/Documents/ChatGPT/cubeql/rq2-live-stack/cubecl-source-5037c0639ce3",
+            "source_text_bytes": 8075854,
+            "vector_storage_bytes": 83831808
+          },
+          "overall": {
+            "experimental_rrf": {
+              "mrr": 0.4704038029414746,
+              "queries": 64,
+              "recall_at_10": 0.5911458333333333,
+              "recall_at_5": 0.5208333333333333
+            },
+            "hybrid": {
+              "mrr": 0.5456365884620517,
+              "queries": 64,
+              "recall_at_10": 0.7291666666666667,
+              "recall_at_5": 0.6276041666666667
+            },
+            "lexical": {
+              "mrr": 0.3835194997830106,
+              "queries": 64,
+              "recall_at_10": 0.5494791666666666,
+              "recall_at_5": 0.4192708333333333
+            },
+            "literal": {
+              "mrr": 0.25,
+              "queries": 64,
+              "recall_at_10": 0.25,
+              "recall_at_5": 0.25
+            },
+            "semantic": {
+              "mrr": 0.3855037918006547,
+              "queries": 64,
+              "recall_at_10": 0.5598958333333333,
+              "recall_at_5": 0.4739583333333333
+            },
+            "symbol": {
+              "mrr": 0.25046502976190477,
+              "queries": 64,
+              "recall_at_10": 0.25,
+              "recall_at_5": 0.25
+            }
+          },
+          "by_category": {
+            "behavioral": {
+              "experimental_rrf": {
+                "mrr": 0.49690355783138296,
+                "queries": 16,
+                "recall_at_10": 0.625,
+                "recall_at_5": 0.625
+              },
+              "hybrid": {
+                "mrr": 0.43412698412698414,
+                "queries": 16,
+                "recall_at_10": 0.84375,
+                "recall_at_5": 0.71875
+              },
+              "lexical": {
+                "mrr": 0.255381488671804,
+                "queries": 16,
+                "recall_at_10": 0.5,
+                "recall_at_5": 0.28125
+              },
+              "literal": {
+                "mrr": 0.0,
+                "queries": 16,
+                "recall_at_10": 0.0,
+                "recall_at_5": 0.0
+              },
+              "semantic": {
+                "mrr": 0.49690355783138296,
+                "queries": 16,
+                "recall_at_10": 0.625,
+                "recall_at_5": 0.625
+              },
+              "symbol": {
+                "mrr": 0.0,
+                "queries": 16,
+                "recall_at_10": 0.0,
+                "recall_at_5": 0.0
+              }
+            },
+            "conceptual": {
+              "experimental_rrf": {
+                "mrr": 0.1379334755157124,
+                "queries": 16,
+                "recall_at_10": 0.375,
+                "recall_at_5": 0.125
+              },
+              "hybrid": {
+                "mrr": 0.3185886426375557,
+                "queries": 16,
+                "recall_at_10": 0.5625,
+                "recall_at_5": 0.375
+              },
+              "lexical": {
+                "mrr": 0.3278791089409927,
+                "queries": 16,
+                "recall_at_10": 0.5625,
+                "recall_at_5": 0.5
+              },
+              "literal": {
+                "mrr": 0.0,
+                "queries": 16,
+                "recall_at_10": 0.0,
+                "recall_at_5": 0.0
+              },
+              "semantic": {
+                "mrr": 0.1379334755157124,
+                "queries": 16,
+                "recall_at_10": 0.375,
+                "recall_at_5": 0.125
+              },
+              "symbol": {
+                "mrr": 0.0008680555555555555,
+                "queries": 16,
+                "recall_at_10": 0.0,
+                "recall_at_5": 0.0
+              }
+            },
+            "cross_file": {
+              "experimental_rrf": {
+                "mrr": 0.3665698450854701,
+                "queries": 16,
+                "recall_at_10": 0.3645833333333333,
+                "recall_at_5": 0.3333333333333333
+              },
+              "hybrid": {
+                "mrr": 0.4714973937503333,
+                "queries": 16,
+                "recall_at_10": 0.5104166666666666,
+                "recall_at_5": 0.41666666666666663
+              },
+              "lexical": {
+                "mrr": 0.48305173992673994,
+                "queries": 16,
+                "recall_at_10": 0.32291666666666663,
+                "recall_at_5": 0.2708333333333333
+              },
+              "literal": {
+                "mrr": 0.0,
+                "queries": 16,
+                "recall_at_10": 0.0,
+                "recall_at_5": 0.0
+              },
+              "semantic": {
+                "mrr": 0.3665698450854701,
+                "queries": 16,
+                "recall_at_10": 0.3645833333333333,
+                "recall_at_5": 0.3333333333333333
+              },
+              "symbol": {
+                "mrr": 0.000992063492063492,
+                "queries": 16,
+                "recall_at_10": 0.0,
+                "recall_at_5": 0.0
+              }
+            },
+            "identifier": {
+              "experimental_rrf": {
+                "mrr": 0.8802083333333334,
+                "queries": 16,
+                "recall_at_10": 1.0,
+                "recall_at_5": 1.0
+              },
+              "hybrid": {
+                "mrr": 0.9583333333333334,
+                "queries": 16,
+                "recall_at_10": 1.0,
+                "recall_at_5": 1.0
+              },
+              "lexical": {
+                "mrr": 0.4677656615925058,
+                "queries": 16,
+                "recall_at_10": 0.8125,
+                "recall_at_5": 0.625
+              },
+              "literal": {
+                "mrr": 1.0,
+                "queries": 16,
+                "recall_at_10": 1.0,
+                "recall_at_5": 1.0
+              },
+              "semantic": {
+                "mrr": 0.5406082887700534,
+                "queries": 16,
+                "recall_at_10": 0.875,
+                "recall_at_5": 0.8125
+              },
+              "symbol": {
+                "mrr": 1.0,
+                "queries": 16,
+                "recall_at_10": 1.0,
+                "recall_at_5": 1.0
+              }
+            }
+          }
+        }
+      ],
+      "native_report": "profile-000-evaluate.stdout",
+      "snapshot_sha256": "b162e27c1155c4c3983bffd226e77f5e3a75610e47eb76ce447e16338d7a40bb"
+    }
+  ],
+  "expected_condition_count": 1,
+  "successful_condition_count": 1,
+  "timing": "Native evaluate retains one provider/query-vector set per condition; raw native phase timers are preserved. CLI wall time includes startup.",
+  "limits": "Original symbol labels and native metric denominators preserved. No average across conditions; failed conditions have no valid quality score.",
+  "runtime": {
+    "platform": "macOS-15.5-arm64-arm-64bit-Mach-O",
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 17.0.0 (clang-1700.6.4.2)]",
+    "logical_cpus": 8
+  }
+}
