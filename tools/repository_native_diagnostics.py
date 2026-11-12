@@ -6,6 +6,7 @@ create-new diagnostic bundle. It never runs the indexer, evaluator, or a model.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import html
 import json
@@ -178,7 +179,7 @@ def _outcome(baseline, challenger):
     return 'tied'
 
 
-def _validate(raw):
+def _validate_display(raw):
     if not isinstance(raw, dict) or type(raw.get('format_version')) is not int or raw['format_version'] != 1:
         raise ev.EvaluationError('invalid native evaluation wrapper format_version')
     wrapper_keys = {'format_version', 'evaluation'}
@@ -309,6 +310,115 @@ def _validate(raw):
             ]}
 
 
+def _window_summary(rows):
+    classes = ('all_locations_in_top10', 'present_below_top10', 'missing_from_exported_window')
+    return {'query_count': len(rows),
+            'recall_at_window': sum(q['recall_at_window'] for q in rows) / len(rows),
+            'all_required_at_window': sum(q['all_required_at_window'] for q in rows) / len(rows),
+            'mrr_at_window': sum(q['reciprocal_rank'] for q in rows) / len(rows),
+            'failure_class_counts': {name: sum(q['failure_class'] == name for q in rows) for name in classes}}
+
+
+def _validate(raw):
+    """Preserve v2 diagnostics exactly; v3 independently checks complete final windows."""
+    report = raw.get('evaluation') if isinstance(raw, dict) else None
+    if not isinstance(report, dict) or type(report.get('format_version')) is not int or report['format_version'] != 3:
+        return _validate_display(raw)
+    # Reuse all existing coverage, display-hit, numeric and aggregate validation.
+    display = copy.deepcopy(raw)
+    display['evaluation']['format_version'] = 2
+    variants = report.get('variants')
+    if not isinstance(variants, list):
+        raise ev.EvaluationError('native variants must be an array')
+    for variant in display['evaluation']['variants']:
+        if not isinstance(variant, dict) or not isinstance(variant.get('queries'), list):
+            raise ev.EvaluationError('native variant queries must be an array')
+        for query in variant['queries']:
+            if not isinstance(query, dict):
+                raise ev.EvaluationError('native query must be an object')
+            for name in STRATEGIES:
+                strategy = query.get(name)
+                if not isinstance(strategy, dict) or 'candidate_ranking' not in strategy:
+                    raise ev.EvaluationError('v3 requires candidate_ranking for every strategy')
+                del strategy['candidate_ranking']
+    result = _validate_display(display)
+    result['format_version'] = 2
+    result['source']['canonical_sha256'] = ev._digest(raw)
+    result['candidate_export'] = {
+        'native_report_version': 3, 'candidate_k': report['options']['candidate_k'],
+        'scope': 'Complete final retained strategy window; internal pre-fusion/pre-deduplication candidate unions are not exported.',
+        'mrr_independently_recomputed': True}
+    cases = report['dataset']['queries']
+    all_labels = {(a['path'], a['symbol']) for q in cases for a in q['relevant']}
+    for variant, diagnosed in zip(variants, result['variants']):
+        chunks = variant['snapshot'].get('chunks')
+        ev._integer(chunks, 'v3 snapshot chunks')
+        row_identities, labeled_rows = {}, {}
+        strategies = {}
+        for name in STRATEGIES:
+            queries = []
+            for case, query in zip(cases, variant['queries']):
+                strategy = query[name]
+                ranking = strategy['candidate_ranking']
+                where = f'{case["id"]}.{name}.candidate_ranking'
+                if not isinstance(ranking, list) or len(ranking) > report['options']['candidate_k']:
+                    raise ev.EvaluationError(f'{where} must be an array within candidate_k')
+                seen_rows, anchor_ranks = set(), {}
+                labels = [(a['path'], a['symbol']) for a in case['relevant']]
+                for index, hit in enumerate(ranking):
+                    _keys(hit, ('rank', 'row', 'path', 'symbol', 'score'), where)
+                    ev._integer(hit['rank'], f'{where}.rank')
+                    if hit['rank'] != index + 1:
+                        raise ev.EvaluationError(f'{where} ranks must be contiguous and one-based')
+                    ev._integer(hit['row'], f'{where}.row', minimum=0)
+                    if hit['row'] >= chunks or hit['row'] in seen_rows:
+                        raise ev.EvaluationError(f'{where} duplicate or out-of-snapshot row')
+                    seen_rows.add(hit['row'])
+                    ev._relpath(hit['path'], f'{where}.path')
+                    ev._string(hit['symbol'], f'{where}.symbol')
+                    _signed_number(hit['score'], f'{where}.score')
+                    identity = (hit['path'], hit['symbol'])
+                    if row_identities.setdefault(hit['row'], identity) != identity:
+                        raise ev.EvaluationError(f'{where} row identity changed within snapshot')
+                    if identity in all_labels and labeled_rows.setdefault(identity, hit['row']) != hit['row']:
+                        raise ev.EvaluationError(f'{where} ambiguous labeled symbol identity')
+                    if identity in labels:
+                        anchor_ranks[identity] = hit['rank']
+                hits = strategy['top_hits']
+                if len(hits) != min(10, len(ranking)):
+                    raise ev.EvaluationError(f'{where} displayed hit count does not match ranking prefix')
+                for hit, candidate in zip(hits, ranking):
+                    if any(hit[key] != candidate[key] for key in ('row', 'path', 'symbol', 'score')):
+                        raise ev.EvaluationError(f'{where} displayed hits do not match ranking prefix')
+                first = min(anchor_ranks.values(), default=None)
+                if strategy['metrics']['first_relevant_rank'] != first:
+                    raise ev.EvaluationError(f'{where} first relevant rank does not match full ranking')
+                rr = 1 / first if first is not None else 0.0
+                _close(strategy['metrics']['reciprocal_rank'], rr, f'{where}.reciprocal_rank')
+                missing = [dict(path=p, symbol=s) for p, s in labels if (p, s) not in anchor_ranks]
+                below = [dict(path=p, symbol=s) for p, s in labels if anchor_ranks.get((p, s), 0) > 10]
+                failure = ('missing_from_exported_window' if missing else 'present_below_top10' if below
+                           else 'all_locations_in_top10')
+                queries.append({'id': case['id'], 'category': case['category'],
+                    'exported_count': len(ranking),
+                    'anchor_ranks': [dict(path=p, symbol=s, rank=anchor_ranks.get((p, s))) for p, s in labels],
+                    'missing_from_exported_window': missing, 'present_below_top10': below,
+                    'recall_at_window': len(anchor_ranks) / len(labels),
+                    'all_required_at_window': len(anchor_ranks) == len(labels),
+                    'reciprocal_rank': rr, 'failure_class': failure})
+            strategies[name] = {'overall': _window_summary(queries),
+                'by_category': {category: _window_summary([q for q in queries if q['category'] == category])
+                                for category in result['dataset']['categories']}, 'queries': queries}
+        diagnosed['candidate_window'] = strategies
+    result['interpretation_limits'] = [line for line in result['interpretation_limits']
+        if not line.startswith(('Recall@10 is checked', 'MRR beyond the exported'))]
+    result['interpretation_limits'].extend([
+        'Recall@5/10, final-window recall and MRR are independently recomputed from the complete exported final ranking.',
+        'Missing exported anchors can have existed in an internal candidate pool before fusion, filtering or deduplication; absence is not a candidate-generation diagnosis.',
+        'A report declares its exported ranking complete; arithmetic validation cannot prove an unobserved engine candidate pool.'])
+    return result
+
+
 def _markdown(diagnostics):
     dataset_name = html.escape(diagnostics['dataset']['name'], quote=True).replace('`', '&#96;')
     dataset_name = dataset_name.replace('\n', ' ').replace('\r', ' ')
@@ -320,8 +430,22 @@ def _markdown(diagnostics):
         for name in STRATEGIES:
             row = variant['overall'][name]
             lines.append(f"| {variant['precision']} | {name} | {row['queries']} | {row['recall_at_5']:.6f} | {row['recall_at_10']:.6f} | {row['mrr']:.6f} |")
-    lines.extend(['', 'Paired outcomes compare semantic with lexical, symbol, or hybrid using per-query Recall@10. Full per-query deltas and first relevant ranks are in `diagnostics.json`.', '',
-                  'This is a saved original symbol-label development observation. Warm repeats are not independent quality samples. It establishes no causal diagnosis, equal-work speedup, or agent outcome. Display hits do not establish Top100 anchor recall; no source-span conversion is performed. MRR beyond the displayed top ten is retained from the validated report and cannot be independently recomputed here. Native latency is omitted.', ''])
+    if 'candidate_export' not in diagnostics:
+        lines.extend(['', 'Paired outcomes compare semantic with lexical, symbol, or hybrid using per-query Recall@10. Full per-query deltas and first relevant ranks are in `diagnostics.json`.', '',
+                      'This is a saved original symbol-label development observation. Warm repeats are not independent quality samples. It establishes no causal diagnosis, equal-work speedup, or agent outcome. Display hits do not establish Top100 anchor recall; no source-span conversion is performed. MRR beyond the displayed top ten is retained from the validated report and cannot be independently recomputed here. Native latency is omitted.', ''])
+        return '\n'.join(lines)
+    lines.extend(['', 'Paired outcomes compare semantic with lexical, symbol, or hybrid using per-query Recall@10. Full per-query deltas and first relevant ranks are in `diagnostics.json`.', ''])
+    if 'candidate_export' in diagnostics:
+        k = diagnostics['options']['candidate_k']
+        lines.extend([f'## Complete final window ({k} maximum)', '',
+            '| Precision | Strategy | Window recall | All required | Recomputed MRR |',
+            '| --- | --- | ---: | ---: | ---: |'])
+        for variant in diagnostics['variants']:
+            for name, detail in variant['candidate_window'].items():
+                row = detail['overall']
+                lines.append(f'| {variant["precision"]} | {name} | {row["recall_at_window"]:.6f} | {row["all_required_at_window"]:.6f} | {row["mrr_at_window"]:.6f} |')
+        lines.extend(['', 'Full exported ranks independently validate MRR beyond ten. The window is the final retained ranking; missing anchors do not establish failure of an internal candidate generator.', ''])
+    lines.extend(['This is a saved original symbol-label development observation. Warm repeats are not independent quality samples. It establishes no causal diagnosis, equal-work speedup, or agent outcome. No source-span conversion is performed. Native latency is omitted.', ''])
     return '\n'.join(lines)
 
 

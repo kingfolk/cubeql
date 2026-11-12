@@ -1,0 +1,999 @@
+{
+  "format_version": 1,
+  "native_report_version": 3,
+  "candidate_k": 100,
+  "source": {
+    "canonical_sha256": "29d7b32ad63641ef2e86ec88139ac4d6a46ae16745c1cd5e2e33c87e889e3bab",
+    "raw_bytes_sha256": "5b791b72bd8abd6e210d5d025e9d2b7a91298ebfefaa2aad544f0623df2ec39b"
+  },
+  "strategies": {
+    "experimental_rrf": {
+      "by_category": {
+        "behavioral": {
+          "all_required_at_window": 0.9375,
+          "failure_class_counts": {
+            "all_locations_in_top10": 10,
+            "missing_from_exported_window": 1,
+            "present_below_top10": 5
+          },
+          "mrr_at_window": 0.4969035578313829,
+          "query_count": 16,
+          "recall_at_window": 0.9375
+        },
+        "conceptual": {
+          "all_required_at_window": 0.5,
+          "failure_class_counts": {
+            "all_locations_in_top10": 6,
+            "missing_from_exported_window": 8,
+            "present_below_top10": 2
+          },
+          "mrr_at_window": 0.13793347551571236,
+          "query_count": 16,
+          "recall_at_window": 0.5
+        },
+        "cross_file": {
+          "all_required_at_window": 0.4375,
+          "failure_class_counts": {
+            "all_locations_in_top10": 2,
+            "missing_from_exported_window": 9,
+            "present_below_top10": 5
+          },
+          "mrr_at_window": 0.3665698450854701,
+          "query_count": 16,
+          "recall_at_window": 0.6145833333333334
+        },
+        "identifier": {
+          "all_required_at_window": 1.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 16,
+            "missing_from_exported_window": 0,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.8802083333333334,
+          "query_count": 16,
+          "recall_at_window": 1.0
+        }
+      },
+      "overall": {
+        "all_required_at_window": 0.71875,
+        "failure_class_counts": {
+          "all_locations_in_top10": 34,
+          "missing_from_exported_window": 18,
+          "present_below_top10": 12
+        },
+        "mrr_at_window": 0.47040380294147466,
+        "query_count": 64,
+        "recall_at_window": 0.7630208333333334
+      }
+    },
+    "hybrid": {
+      "by_category": {
+        "behavioral": {
+          "all_required_at_window": 0.9375,
+          "failure_class_counts": {
+            "all_locations_in_top10": 13,
+            "missing_from_exported_window": 1,
+            "present_below_top10": 2
+          },
+          "mrr_at_window": 0.43412698412698414,
+          "query_count": 16,
+          "recall_at_window": 0.9375
+        },
+        "conceptual": {
+          "all_required_at_window": 0.875,
+          "failure_class_counts": {
+            "all_locations_in_top10": 9,
+            "missing_from_exported_window": 2,
+            "present_below_top10": 5
+          },
+          "mrr_at_window": 0.31858864263755565,
+          "query_count": 16,
+          "recall_at_window": 0.875
+        },
+        "cross_file": {
+          "all_required_at_window": 0.5625,
+          "failure_class_counts": {
+            "all_locations_in_top10": 5,
+            "missing_from_exported_window": 7,
+            "present_below_top10": 4
+          },
+          "mrr_at_window": 0.4714973937503333,
+          "query_count": 16,
+          "recall_at_window": 0.703125
+        },
+        "identifier": {
+          "all_required_at_window": 1.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 16,
+            "missing_from_exported_window": 0,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.9583333333333334,
+          "query_count": 16,
+          "recall_at_window": 1.0
+        }
+      },
+      "overall": {
+        "all_required_at_window": 0.84375,
+        "failure_class_counts": {
+          "all_locations_in_top10": 43,
+          "missing_from_exported_window": 10,
+          "present_below_top10": 11
+        },
+        "mrr_at_window": 0.5456365884620517,
+        "query_count": 64,
+        "recall_at_window": 0.87890625
+      }
+    },
+    "lexical": {
+      "by_category": {
+        "behavioral": {
+          "all_required_at_window": 0.8125,
+          "failure_class_counts": {
+            "all_locations_in_top10": 8,
+            "missing_from_exported_window": 3,
+            "present_below_top10": 5
+          },
+          "mrr_at_window": 0.255381488671804,
+          "query_count": 16,
+          "recall_at_window": 0.84375
+        },
+        "conceptual": {
+          "all_required_at_window": 0.9375,
+          "failure_class_counts": {
+            "all_locations_in_top10": 9,
+            "missing_from_exported_window": 1,
+            "present_below_top10": 6
+          },
+          "mrr_at_window": 0.3278791089409927,
+          "query_count": 16,
+          "recall_at_window": 0.9375
+        },
+        "cross_file": {
+          "all_required_at_window": 0.5625,
+          "failure_class_counts": {
+            "all_locations_in_top10": 1,
+            "missing_from_exported_window": 7,
+            "present_below_top10": 8
+          },
+          "mrr_at_window": 0.48305173992673994,
+          "query_count": 16,
+          "recall_at_window": 0.7552083333333334
+        },
+        "identifier": {
+          "all_required_at_window": 1.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 13,
+            "missing_from_exported_window": 0,
+            "present_below_top10": 3
+          },
+          "mrr_at_window": 0.4677656615925059,
+          "query_count": 16,
+          "recall_at_window": 1.0
+        }
+      },
+      "overall": {
+        "all_required_at_window": 0.828125,
+        "failure_class_counts": {
+          "all_locations_in_top10": 31,
+          "missing_from_exported_window": 11,
+          "present_below_top10": 22
+        },
+        "mrr_at_window": 0.38351949978301064,
+        "query_count": 64,
+        "recall_at_window": 0.8841145833333334
+      }
+    },
+    "literal": {
+      "by_category": {
+        "behavioral": {
+          "all_required_at_window": 0.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 0,
+            "missing_from_exported_window": 16,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.0,
+          "query_count": 16,
+          "recall_at_window": 0.0
+        },
+        "conceptual": {
+          "all_required_at_window": 0.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 0,
+            "missing_from_exported_window": 16,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.0,
+          "query_count": 16,
+          "recall_at_window": 0.0
+        },
+        "cross_file": {
+          "all_required_at_window": 0.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 0,
+            "missing_from_exported_window": 16,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.0,
+          "query_count": 16,
+          "recall_at_window": 0.0
+        },
+        "identifier": {
+          "all_required_at_window": 1.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 16,
+            "missing_from_exported_window": 0,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 1.0,
+          "query_count": 16,
+          "recall_at_window": 1.0
+        }
+      },
+      "overall": {
+        "all_required_at_window": 0.25,
+        "failure_class_counts": {
+          "all_locations_in_top10": 16,
+          "missing_from_exported_window": 48,
+          "present_below_top10": 0
+        },
+        "mrr_at_window": 0.25,
+        "query_count": 64,
+        "recall_at_window": 0.25
+      }
+    },
+    "semantic": {
+      "by_category": {
+        "behavioral": {
+          "all_required_at_window": 0.9375,
+          "failure_class_counts": {
+            "all_locations_in_top10": 10,
+            "missing_from_exported_window": 1,
+            "present_below_top10": 5
+          },
+          "mrr_at_window": 0.4969035578313829,
+          "query_count": 16,
+          "recall_at_window": 0.9375
+        },
+        "conceptual": {
+          "all_required_at_window": 0.5,
+          "failure_class_counts": {
+            "all_locations_in_top10": 6,
+            "missing_from_exported_window": 8,
+            "present_below_top10": 2
+          },
+          "mrr_at_window": 0.13793347551571236,
+          "query_count": 16,
+          "recall_at_window": 0.5
+        },
+        "cross_file": {
+          "all_required_at_window": 0.4375,
+          "failure_class_counts": {
+            "all_locations_in_top10": 2,
+            "missing_from_exported_window": 9,
+            "present_below_top10": 5
+          },
+          "mrr_at_window": 0.3665698450854701,
+          "query_count": 16,
+          "recall_at_window": 0.6145833333333334
+        },
+        "identifier": {
+          "all_required_at_window": 1.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 14,
+            "missing_from_exported_window": 0,
+            "present_below_top10": 2
+          },
+          "mrr_at_window": 0.5406082887700535,
+          "query_count": 16,
+          "recall_at_window": 1.0
+        }
+      },
+      "overall": {
+        "all_required_at_window": 0.71875,
+        "failure_class_counts": {
+          "all_locations_in_top10": 32,
+          "missing_from_exported_window": 18,
+          "present_below_top10": 14
+        },
+        "mrr_at_window": 0.3855037918006547,
+        "query_count": 64,
+        "recall_at_window": 0.7630208333333334
+      }
+    },
+    "symbol": {
+      "by_category": {
+        "behavioral": {
+          "all_required_at_window": 0.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 0,
+            "missing_from_exported_window": 16,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.0,
+          "query_count": 16,
+          "recall_at_window": 0.0
+        },
+        "conceptual": {
+          "all_required_at_window": 0.0625,
+          "failure_class_counts": {
+            "all_locations_in_top10": 0,
+            "missing_from_exported_window": 15,
+            "present_below_top10": 1
+          },
+          "mrr_at_window": 0.0008680555555555555,
+          "query_count": 16,
+          "recall_at_window": 0.0625
+        },
+        "cross_file": {
+          "all_required_at_window": 0.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 0,
+            "missing_from_exported_window": 16,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 0.000992063492063492,
+          "query_count": 16,
+          "recall_at_window": 0.03125
+        },
+        "identifier": {
+          "all_required_at_window": 1.0,
+          "failure_class_counts": {
+            "all_locations_in_top10": 16,
+            "missing_from_exported_window": 0,
+            "present_below_top10": 0
+          },
+          "mrr_at_window": 1.0,
+          "query_count": 16,
+          "recall_at_window": 1.0
+        }
+      },
+      "overall": {
+        "all_required_at_window": 0.265625,
+        "failure_class_counts": {
+          "all_locations_in_top10": 16,
+          "missing_from_exported_window": 47,
+          "present_below_top10": 1
+        },
+        "mrr_at_window": 0.25046502976190477,
+        "query_count": 64,
+        "recall_at_window": 0.2734375
+      }
+    }
+  },
+  "hybrid_incomplete_top10": [
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": 20,
+          "symbol": "unroll_default"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "concept-elementwise-pieces",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "unroll_default"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.05
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": 90,
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "concept-packed-conversion",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.011111111111111112
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": 23,
+          "symbol": "<DeclareVariableOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "concept-zero-initializer",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<DeclareVariableOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.043478260869565216
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-wgpu/src/compiler/base.rs",
+          "rank": null,
+          "symbol": "<AutoCompiler as WgpuCompiler>::init"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "concept-shader-language-selection",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-wgpu/src/compiler/base.rs",
+          "symbol": "<AutoCompiler as WgpuCompiler>::init"
+        }
+      ],
+      "present_below_top10": [],
+      "recall_at_window": 0.0,
+      "reciprocal_rank": 0.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-opt/src/passes/alloc_shared_memory.rs",
+          "rank": null,
+          "symbol": "<AllocateSharedMemoryBlockPass as Pass>::run"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "concept-shared-single-block",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-opt/src/passes/alloc_shared_memory.rs",
+          "symbol": "<AllocateSharedMemoryBlockPass as Pass>::run"
+        }
+      ],
+      "present_below_top10": [],
+      "recall_at_window": 0.0,
+      "reciprocal_rank": 0.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": null,
+          "symbol": "<CompositeExtractOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "category": "behavioral",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "behavior-extraction-after-split",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CompositeExtractOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "present_below_top10": [],
+      "recall_at_window": 0.0,
+      "reciprocal_rank": 0.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-core/src/frontend/element/cast.rs",
+          "rank": null,
+          "symbol": "cast_value"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": null,
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "cross-cast-expansion-and-unroll",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-core/src/frontend/element/cast.rs",
+          "symbol": "cast_value"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ],
+      "present_below_top10": [],
+      "recall_at_window": 0.0,
+      "reciprocal_rank": 0.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-ir/src/interfaces/mod.rs",
+          "rank": null,
+          "symbol": "TriviallyUnrollable"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": 76,
+          "symbol": "<UnrollPass as Pass>::run"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "rank": null,
+          "symbol": "unroll_default"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "cross-unroll-interface-dispatch",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-ir/src/interfaces/mod.rs",
+          "symbol": "TriviallyUnrollable"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "unroll_default"
+        }
+      ],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<UnrollPass as Pass>::run"
+        }
+      ],
+      "recall_at_window": 0.3333333333333333,
+      "reciprocal_rank": 0.013157894736842105
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-cuda/src/compute/artifact.rs",
+          "rank": 38,
+          "symbol": "<CudaArtifactCompiler as ArtifactCompiler>::finalize"
+        },
+        {
+          "path": "crates/cubecl-cuda/src/compute/modules.rs",
+          "rank": 1,
+          "symbol": "<CudaModules as CompilationTarget>::load"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "cross-cuda-artifact-and-load",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-cuda/src/compute/artifact.rs",
+          "symbol": "<CudaArtifactCompiler as ArtifactCompiler>::finalize"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "rank": null,
+          "symbol": "validate_cube_dim"
+        },
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "rank": 47,
+          "symbol": "validate_units"
+        },
+        {
+          "path": "crates/cubecl-ir/src/settings.rs",
+          "rank": null,
+          "symbol": "Dim3::num_elems"
+        },
+        {
+          "path": "crates/cubecl-ir/src/settings.rs",
+          "rank": null,
+          "symbol": "Dim3::can_contain"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "cross-axis-and-total-launch-limits",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "symbol": "validate_cube_dim"
+        },
+        {
+          "path": "crates/cubecl-ir/src/settings.rs",
+          "symbol": "Dim3::num_elems"
+        },
+        {
+          "path": "crates/cubecl-ir/src/settings.rs",
+          "symbol": "Dim3::can_contain"
+        }
+      ],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "symbol": "validate_units"
+        }
+      ],
+      "recall_at_window": 0.25,
+      "reciprocal_rank": 0.02127659574468085
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "rank": 1,
+          "symbol": "PoisonWatch::wake_on_loss"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "rank": null,
+          "symbol": "PoisonWatch::poison"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/compute/stream.rs",
+          "rank": 5,
+          "symbol": "WgpuStream::sync"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "cross-loss-waiter-and-sync",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "symbol": "PoisonWatch::poison"
+        }
+      ],
+      "present_below_top10": [],
+      "recall_at_window": 0.6666666666666666,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/memory_management/policy.rs",
+          "rank": 2,
+          "symbol": "<MemoryConfiguration as Default>::default"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/compute/mem_manager.rs",
+          "rank": 25,
+          "symbol": "AuxiliaryMemory::new"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "cross-main-and-auxiliary-pools",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/mem_manager.rs",
+          "symbol": "AuxiliaryMemory::new"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.5
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "rank": 33,
+          "symbol": "TimeChange::of"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "v2-concept-timing-noise",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "TimeChange::of"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.030303030303030304
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+          "rank": 23,
+          "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+        }
+      ],
+      "category": "conceptual",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "v2-concept-layout-selection",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+          "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.043478260869565216
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "rank": 42,
+          "symbol": "PatienceTracker::exhausted"
+        }
+      ],
+      "category": "behavioral",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "v2-behavior-zero-patience",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "symbol": "PatienceTracker::exhausted"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.023809523809523808
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "rank": 25,
+          "symbol": "SampleSet::reliable"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "rank": 2,
+          "symbol": "DISCARD_THRESHOLD"
+        }
+      ],
+      "category": "behavioral",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "v2-behavior-biased-first-timing",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "SampleSet::reliable"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.5
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "rank": null,
+          "symbol": "PatienceTracker::record"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "rank": null,
+          "symbol": "TimeChange::of"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "v2-cross-patience-and-noise",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "symbol": "PatienceTracker::record"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "TimeChange::of"
+        }
+      ],
+      "present_below_top10": [],
+      "recall_at_window": 0.0,
+      "reciprocal_rank": 0.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+          "rank": 30,
+          "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+        },
+        {
+          "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+          "rank": null,
+          "symbol": "is_contiguous"
+        },
+        {
+          "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+          "rank": null,
+          "symbol": "is_contiguous_pitched"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "v2-cross-layout-and-contiguity",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+          "symbol": "is_contiguous"
+        },
+        {
+          "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+          "symbol": "is_contiguous_pitched"
+        }
+      ],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+          "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+        }
+      ],
+      "recall_at_window": 0.3333333333333333,
+      "reciprocal_rank": 0.03333333333333333
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/throughput/roofline.rs",
+          "rank": 13,
+          "symbol": "ResourceBound::time_at_peak"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/bounds_generator.rs",
+          "rank": 7,
+          "symbol": "<AutotuneBound as TimeBound>::time_limit"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "v2-cross-peak-time-and-threshold",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-runtime/src/throughput/roofline.rs",
+          "symbol": "ResourceBound::time_at_peak"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 0.14285714285714285
+    },
+    {
+      "all_required_at_window": true,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-std/src/quant/round.rs",
+          "rank": 1,
+          "symbol": "round_up_on_grid"
+        },
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "rank": 82,
+          "symbol": "F32Grid::truncate_mask"
+        },
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "rank": 2,
+          "symbol": "F32Grid::round_up_bias"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "present_below_top10",
+      "id": "v2-cross-rounding-bit-grid",
+      "missing_from_exported_window": [],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "symbol": "F32Grid::truncate_mask"
+        }
+      ],
+      "recall_at_window": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "all_required_at_window": false,
+      "anchor_ranks": [
+        {
+          "path": "crates/cubecl-runtime/src/config/autotune.rs",
+          "rank": 1,
+          "symbol": "AutotuneLevel"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "rank": null,
+          "symbol": "anchor"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "rank": 22,
+          "symbol": "load_autotune_level"
+        }
+      ],
+      "category": "cross_file",
+      "exported_count": 100,
+      "failure_class": "missing_from_exported_window",
+      "id": "v2-cross-tune-level-anchoring",
+      "missing_from_exported_window": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "symbol": "anchor"
+        }
+      ],
+      "present_below_top10": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "symbol": "load_autotune_level"
+        }
+      ],
+      "recall_at_window": 0.6666666666666666,
+      "reciprocal_rank": 1.0
+    }
+  ],
+  "limits": [
+    "This is an original symbol-label development-set observation, not independently reviewed validation quality.",
+    "Warm retrieval repeats are repeated timings and are not independent quality observations.",
+    "The report does not establish a causal diagnosis, equal-work speedup, or agent outcome.",
+    "Native path/symbol labels remain native labels and are not converted to source spans.",
+    "Native latency is intentionally omitted from this quality diagnostic.",
+    "Recall@5/10, final-window recall and MRR are independently recomputed from the complete exported final ranking.",
+    "Missing exported anchors can have existed in an internal candidate pool before fusion, filtering or deduplication; absence is not a candidate-generation diagnosis.",
+    "A report declares its exported ranking complete; arithmetic validation cannot prove an unobserved engine candidate pool."
+  ]
+}
