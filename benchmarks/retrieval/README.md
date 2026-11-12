@@ -5,6 +5,7 @@ developer diagnostics, not coding-agent success rates or comparisons with other 
 
 | Run date | CubeQL revision recorded for the run | Corpus | Report |
 |---|---|---|---|
+| 2026-11-11 | `ca31444` base; executable SHA recorded separately | Four-file synthetic Rust development fixture | [Real CodeRank MCP / Semble pilot](native-pilot-2026-11-11-ca31444/README.md) |
 | 2026-10-29 | `77b2d6af8514` | CubeCL `5037c0639ce3` | [64-query MiniLM / CPU evaluation](cubecl-2026-10-29-77b2d6af8514/REPORT.md) |
 
 ## Recording another version

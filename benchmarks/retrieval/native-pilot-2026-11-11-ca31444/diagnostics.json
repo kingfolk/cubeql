@@ -1,0 +1,1586 @@
+{
+  "format_version": 1,
+  "plan_fingerprint": "0e14aba111325bc0a50bd23b52db97d1442855307a5c2e2e1f46a69782d3db9b",
+  "dataset": "native-eight-query-development-pilot-v1",
+  "split": "development",
+  "runs": [
+    {
+      "name": "cubeql-coderank-lexical",
+      "candidate_k": 10,
+      "configuration": {
+        "strategy": "lexical",
+        "embedding": "process",
+        "candidate_k": 100,
+        "top_k": 10,
+        "persistent_session_per_repository": true,
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads"
+      },
+      "tool": {
+        "name": "cubeql-mcp",
+        "revision": "4dc664b787300c9313d200617f940b8af1bd0a8eb1e4754d948a43692915022b"
+      },
+      "overall": {
+        "query_count": 8,
+        "status_counts": {
+          "ok": 8,
+          "failed": 0,
+          "unsupported": 0,
+          "timeout": 0
+        },
+        "coverage": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_50": null,
+        "recall_at_100": null,
+        "all_required_at_10": 1.0,
+        "mrr": 1.0
+      },
+      "by_repository": {
+        "retrieval-fixture": {
+          "query_count": 8,
+          "window_recall": 1.0,
+          "failure_classes": {
+            "all_locations_in_top10": 8
+          }
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "conceptual": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "cross_file": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "identifier": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "window_recall_query_macro": 1.0,
+      "window_recall_repository_macro": 1.0,
+      "latency": {
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+        "successful_query_count": 8,
+        "sample_count": 8,
+        "complete_query_coverage": true,
+        "median_ms": 0.7879994809627533,
+        "min_ms": 0.4048328846693039,
+        "max_ms": 1.400875160470605,
+        "population": "successful queries with elapsed_ms; failures excluded from latency only"
+      },
+      "queries": {
+        "identifier-config": {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "identifier-cosine": {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-config": {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-product": {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-zero": {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-order": {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-prepare": {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1,
+            "location-1": 3
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-rank": {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 2,
+            "location-1": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        }
+      }
+    },
+    {
+      "name": "cubeql-coderank-symbol",
+      "candidate_k": 10,
+      "configuration": {
+        "strategy": "symbol",
+        "embedding": "process",
+        "candidate_k": 100,
+        "top_k": 10,
+        "persistent_session_per_repository": true,
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads"
+      },
+      "tool": {
+        "name": "cubeql-mcp",
+        "revision": "4dc664b787300c9313d200617f940b8af1bd0a8eb1e4754d948a43692915022b"
+      },
+      "overall": {
+        "query_count": 8,
+        "status_counts": {
+          "ok": 8,
+          "failed": 0,
+          "unsupported": 0,
+          "timeout": 0
+        },
+        "coverage": 1.0,
+        "recall_at_10": 0.25,
+        "recall_at_50": null,
+        "recall_at_100": null,
+        "all_required_at_10": 0.25,
+        "mrr": 0.25
+      },
+      "by_repository": {
+        "retrieval-fixture": {
+          "query_count": 8,
+          "window_recall": 0.25,
+          "failure_classes": {
+            "all_locations_in_top10": 2,
+            "missing_from_exported_window": 6
+          }
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 0.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 0.0,
+          "mrr": 0.0
+        },
+        "conceptual": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 0.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 0.0,
+          "mrr": 0.0
+        },
+        "cross_file": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 0.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 0.0,
+          "mrr": 0.0
+        },
+        "identifier": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "window_recall_query_macro": 0.25,
+      "window_recall_repository_macro": 0.25,
+      "latency": {
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+        "successful_query_count": 8,
+        "sample_count": 8,
+        "complete_query_coverage": true,
+        "median_ms": 0.2828334691002965,
+        "min_ms": 0.2522082068026066,
+        "max_ms": 0.4055839963257313,
+        "population": "successful queries with elapsed_ms; failures excluded from latency only"
+      },
+      "queries": {
+        "identifier-config": {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "identifier-cosine": {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-config": {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": null
+          },
+          "missing_anchor_ids": [
+            "location-0"
+          ],
+          "below_top10_anchor_ids": [],
+          "window_recall": 0.0,
+          "recall_at_10": 0.0,
+          "all_required_at_10": false,
+          "failure_class": "missing_from_exported_window"
+        },
+        "concept-product": {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": null
+          },
+          "missing_anchor_ids": [
+            "location-0"
+          ],
+          "below_top10_anchor_ids": [],
+          "window_recall": 0.0,
+          "recall_at_10": 0.0,
+          "all_required_at_10": false,
+          "failure_class": "missing_from_exported_window"
+        },
+        "behavior-zero": {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": null
+          },
+          "missing_anchor_ids": [
+            "location-0"
+          ],
+          "below_top10_anchor_ids": [],
+          "window_recall": 0.0,
+          "recall_at_10": 0.0,
+          "all_required_at_10": false,
+          "failure_class": "missing_from_exported_window"
+        },
+        "behavior-order": {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": null
+          },
+          "missing_anchor_ids": [
+            "location-0"
+          ],
+          "below_top10_anchor_ids": [],
+          "window_recall": 0.0,
+          "recall_at_10": 0.0,
+          "all_required_at_10": false,
+          "failure_class": "missing_from_exported_window"
+        },
+        "cross-prepare": {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": null,
+            "location-1": null
+          },
+          "missing_anchor_ids": [
+            "location-0",
+            "location-1"
+          ],
+          "below_top10_anchor_ids": [],
+          "window_recall": 0.0,
+          "recall_at_10": 0.0,
+          "all_required_at_10": false,
+          "failure_class": "missing_from_exported_window"
+        },
+        "cross-rank": {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": null,
+            "location-1": null
+          },
+          "missing_anchor_ids": [
+            "location-0",
+            "location-1"
+          ],
+          "below_top10_anchor_ids": [],
+          "window_recall": 0.0,
+          "recall_at_10": 0.0,
+          "all_required_at_10": false,
+          "failure_class": "missing_from_exported_window"
+        }
+      }
+    },
+    {
+      "name": "cubeql-coderank-semantic",
+      "candidate_k": 10,
+      "configuration": {
+        "strategy": "semantic",
+        "embedding": "process",
+        "candidate_k": 100,
+        "top_k": 10,
+        "persistent_session_per_repository": true,
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads"
+      },
+      "tool": {
+        "name": "cubeql-mcp",
+        "revision": "4dc664b787300c9313d200617f940b8af1bd0a8eb1e4754d948a43692915022b"
+      },
+      "overall": {
+        "query_count": 8,
+        "status_counts": {
+          "ok": 8,
+          "failed": 0,
+          "unsupported": 0,
+          "timeout": 0
+        },
+        "coverage": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_50": null,
+        "recall_at_100": null,
+        "all_required_at_10": 1.0,
+        "mrr": 1.0
+      },
+      "by_repository": {
+        "retrieval-fixture": {
+          "query_count": 8,
+          "window_recall": 1.0,
+          "failure_classes": {
+            "all_locations_in_top10": 8
+          }
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "conceptual": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "cross_file": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "identifier": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "window_recall_query_macro": 1.0,
+      "window_recall_repository_macro": 1.0,
+      "latency": {
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+        "successful_query_count": 8,
+        "sample_count": 8,
+        "complete_query_coverage": true,
+        "median_ms": 50.870562554337084,
+        "min_ms": 43.23216690681875,
+        "max_ms": 161.7894999217242,
+        "population": "successful queries with elapsed_ms; failures excluded from latency only"
+      },
+      "queries": {
+        "identifier-config": {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "identifier-cosine": {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-config": {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-product": {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-zero": {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-order": {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-prepare": {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 3,
+            "location-1": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-rank": {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 2,
+            "location-1": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        }
+      }
+    },
+    {
+      "name": "cubeql-coderank-hybrid",
+      "candidate_k": 10,
+      "configuration": {
+        "strategy": "hybrid",
+        "embedding": "process",
+        "candidate_k": 100,
+        "top_k": 10,
+        "persistent_session_per_repository": true,
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads"
+      },
+      "tool": {
+        "name": "cubeql-mcp",
+        "revision": "4dc664b787300c9313d200617f940b8af1bd0a8eb1e4754d948a43692915022b"
+      },
+      "overall": {
+        "query_count": 8,
+        "status_counts": {
+          "ok": 8,
+          "failed": 0,
+          "unsupported": 0,
+          "timeout": 0
+        },
+        "coverage": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_50": null,
+        "recall_at_100": null,
+        "all_required_at_10": 1.0,
+        "mrr": 1.0
+      },
+      "by_repository": {
+        "retrieval-fixture": {
+          "query_count": 8,
+          "window_recall": 1.0,
+          "failure_classes": {
+            "all_locations_in_top10": 8
+          }
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "conceptual": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "cross_file": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "identifier": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "window_recall_query_macro": 1.0,
+      "window_recall_repository_macro": 1.0,
+      "latency": {
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+        "successful_query_count": 8,
+        "sample_count": 8,
+        "complete_query_coverage": true,
+        "median_ms": 50.190708367154,
+        "min_ms": 44.16195792146027,
+        "max_ms": 56.75245891325176,
+        "population": "successful queries with elapsed_ms; failures excluded from latency only"
+      },
+      "queries": {
+        "identifier-config": {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "identifier-cosine": {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-config": {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-product": {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-zero": {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-order": {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-prepare": {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1,
+            "location-1": 2
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-rank": {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 2,
+            "location-1": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        }
+      }
+    },
+    {
+      "name": "semble-potion-native",
+      "candidate_k": 10,
+      "configuration": {
+        "engine": "native-default",
+        "top_k": 10,
+        "internal_candidate_budget": "5*top_k per branch",
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+        "source_return_mode": "native full chunks in search response",
+        "source_revision_is_declared_not_attested": true,
+        "model_path": "/Users/devilhill/Documents/ChatGPT/cubeql/rq2-live-stack/models/potion-code-16M-v2"
+      },
+      "tool": {
+        "name": "semble",
+        "revision": "4633ee75a1d8c9ce3998b610a14fc80e7fb7c802"
+      },
+      "overall": {
+        "query_count": 8,
+        "status_counts": {
+          "ok": 8,
+          "failed": 0,
+          "unsupported": 0,
+          "timeout": 0
+        },
+        "coverage": 1.0,
+        "recall_at_10": 1.0,
+        "recall_at_50": null,
+        "recall_at_100": null,
+        "all_required_at_10": 1.0,
+        "mrr": 0.9375
+      },
+      "by_repository": {
+        "retrieval-fixture": {
+          "query_count": 8,
+          "window_recall": 1.0,
+          "failure_classes": {
+            "all_locations_in_top10": 8
+          }
+        }
+      },
+      "by_category": {
+        "behavioral": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "conceptual": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 0.75
+        },
+        "cross_file": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        },
+        "identifier": {
+          "query_count": 2,
+          "status_counts": {
+            "ok": 2,
+            "failed": 0,
+            "unsupported": 0,
+            "timeout": 0
+          },
+          "coverage": 1.0,
+          "recall_at_10": 1.0,
+          "recall_at_50": null,
+          "recall_at_100": null,
+          "all_required_at_10": 1.0,
+          "mrr": 1.0
+        }
+      },
+      "window_recall_query_macro": 1.0,
+      "window_recall_repository_macro": 1.0,
+      "latency": {
+        "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+        "successful_query_count": 8,
+        "sample_count": 8,
+        "complete_query_coverage": true,
+        "median_ms": 0.8843966061249375,
+        "min_ms": 0.5332089494913816,
+        "max_ms": 6.710250163450837,
+        "population": "successful queries with elapsed_ms; failures excluded from latency only"
+      },
+      "queries": {
+        "identifier-config": {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "identifier-cosine": {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-config": {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "concept-product": {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 2
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-zero": {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "behavior-order": {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-prepare": {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 2,
+            "location-1": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        },
+        "cross-rank": {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "status": "ok",
+          "anchor_ranks": {
+            "location-0": 2,
+            "location-1": 1
+          },
+          "missing_anchor_ids": [],
+          "below_top10_anchor_ids": [],
+          "window_recall": 1.0,
+          "recall_at_10": 1.0,
+          "all_required_at_10": true,
+          "failure_class": "all_locations_in_top10"
+        }
+      }
+    }
+  ],
+  "paired_comparisons": [
+    {
+      "baseline": "cubeql-coderank-lexical",
+      "candidate": "cubeql-coderank-symbol",
+      "queries": [
+        {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "lost",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 0.0,
+          "candidate_failure_class": "missing_from_exported_window"
+        },
+        {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "lost",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 0.0,
+          "candidate_failure_class": "missing_from_exported_window"
+        },
+        {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "lost",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 0.0,
+          "candidate_failure_class": "missing_from_exported_window"
+        },
+        {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "lost",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 0.0,
+          "candidate_failure_class": "missing_from_exported_window"
+        },
+        {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "lost",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 0.0,
+          "candidate_failure_class": "missing_from_exported_window"
+        },
+        {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "lost",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 0.0,
+          "candidate_failure_class": "missing_from_exported_window"
+        }
+      ],
+      "outcome_counts": {
+        "lost": 6,
+        "tied": 2
+      },
+      "macro_delta": {
+        "recall_at_10": -0.75,
+        "all_required_at_10": -0.75,
+        "mrr": -0.75
+      },
+      "same_declared_timing_boundary": true,
+      "latency_complete_both_conditions": true,
+      "equal_exported_window": true,
+      "equal_internal_work_attested": false
+    },
+    {
+      "baseline": "cubeql-coderank-lexical",
+      "candidate": "cubeql-coderank-semantic",
+      "queries": [
+        {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        }
+      ],
+      "outcome_counts": {
+        "tied": 8
+      },
+      "macro_delta": {
+        "recall_at_10": 0.0,
+        "all_required_at_10": 0.0,
+        "mrr": 0.0
+      },
+      "same_declared_timing_boundary": true,
+      "latency_complete_both_conditions": true,
+      "equal_exported_window": true,
+      "equal_internal_work_attested": false
+    },
+    {
+      "baseline": "cubeql-coderank-lexical",
+      "candidate": "cubeql-coderank-hybrid",
+      "queries": [
+        {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        }
+      ],
+      "outcome_counts": {
+        "tied": 8
+      },
+      "macro_delta": {
+        "recall_at_10": 0.0,
+        "all_required_at_10": 0.0,
+        "mrr": 0.0
+      },
+      "same_declared_timing_boundary": true,
+      "latency_complete_both_conditions": true,
+      "equal_exported_window": true,
+      "equal_internal_work_attested": false
+    },
+    {
+      "baseline": "cubeql-coderank-lexical",
+      "candidate": "semble-potion-native",
+      "queries": [
+        {
+          "query_id": "identifier-config",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "identifier-cosine",
+          "repository": "retrieval-fixture",
+          "category": "identifier",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-config",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "concept-product",
+          "repository": "retrieval-fixture",
+          "category": "conceptual",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "behavior-zero",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "behavior-order",
+          "repository": "retrieval-fixture",
+          "category": "behavioral",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "cross-prepare",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        },
+        {
+          "query_id": "cross-rank",
+          "repository": "retrieval-fixture",
+          "category": "cross_file",
+          "outcome": "tied",
+          "baseline_recall_at_10": 1.0,
+          "candidate_recall_at_10": 1.0,
+          "candidate_failure_class": "all_locations_in_top10"
+        }
+      ],
+      "outcome_counts": {
+        "tied": 8
+      },
+      "macro_delta": {
+        "recall_at_10": 0.0,
+        "all_required_at_10": 0.0,
+        "mrr": -0.0625
+      },
+      "same_declared_timing_boundary": true,
+      "latency_complete_both_conditions": true,
+      "equal_exported_window": true,
+      "equal_internal_work_attested": false
+    }
+  ],
+  "limits": [
+    "Recall and all-required metrics measure labeled source locations, not proof that every source byte was returned or used.",
+    "An anchor missing from an exported top-k window may exist in an internal candidate pool; this is not a candidate-generation diagnosis.",
+    "Unjudged results are not automatically false positives. Development queries and incomplete judgments do not establish held-out generalization.",
+    "Different native chunking, models, reranking and candidate budgets remain product-condition differences, not isolated ranking or engine effects.",
+    "Native response payloads and source-read work can differ even when the resident request timing boundary has the same name; no equal-context latency is attested.",
+    "Latency summaries exclude failed queries and missing timing observations; coverage is explicit. Matched timing boundaries do not establish equal internal work.",
+    "These descriptive paired counts are not significance tests, model forecasts, or coding-agent task outcomes."
+  ]
+}

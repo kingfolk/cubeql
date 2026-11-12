@@ -241,3 +241,9 @@ The [native baseline workflow](repository-baseline-workflow.md) freezes and exec
 embedding profiles against the original symbol-label JSON, including language filters.
 It retains each condition's native six-strategy reports and explicit failures without
 rewriting the preserved CubeCL development labels.
+
+For saved native source-span runs, [paired diagnostics](repository-diagnostics.md) distinguishes
+anchors absent from the exported window from anchors present below Top-10. The
+[real native development pilot](../benchmarks/retrieval/native-pilot-2026-11-11-ca31444/README.md)
+retains CodeRank MCP and Semble evidence on the eight-query synthetic fixture, with explicit
+model/chunk/budget differences and no held-out or agent-success claim.

@@ -1,0 +1,456 @@
+{
+  "format_version": 1,
+  "plan_fingerprint": "0e14aba111325bc0a50bd23b52db97d1442855307a5c2e2e1f46a69782d3db9b",
+  "name": "cubeql-coderank-hybrid",
+  "tool": {
+    "name": "cubeql-mcp",
+    "revision": "4dc664b787300c9313d200617f940b8af1bd0a8eb1e4754d948a43692915022b"
+  },
+  "configuration": {
+    "strategy": "hybrid",
+    "embedding": "process",
+    "candidate_k": 100,
+    "top_k": 10,
+    "persistent_session_per_repository": true,
+    "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads"
+  },
+  "candidate_k": 10,
+  "results": [
+    {
+      "query_id": "identifier-config",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 4
+        },
+        {
+          "path": "config.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "config.rs",
+          "start_line": 16,
+          "end_line": 19
+        },
+        {
+          "path": "config.rs",
+          "start_line": 21,
+          "end_line": 24
+        },
+        {
+          "path": "config.rs",
+          "start_line": 11,
+          "end_line": 14
+        },
+        {
+          "path": "config.rs",
+          "start_line": 26,
+          "end_line": 29
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 33,
+          "end_line": 36
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 7,
+          "end_line": 8
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        }
+      ],
+      "elapsed_ms": 55.440915981307626
+    },
+    {
+      "query_id": "identifier-cosine",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 4
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 13,
+          "end_line": 14
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 16,
+          "end_line": 19
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 33,
+          "end_line": 36
+        },
+        {
+          "path": "config.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "search.rs",
+          "start_line": 22,
+          "end_line": 25
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 28,
+          "end_line": 31
+        },
+        {
+          "path": "search.rs",
+          "start_line": 16,
+          "end_line": 20
+        }
+      ],
+      "elapsed_ms": 50.82345916889608
+    },
+    {
+      "query_id": "concept-config",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 4
+        },
+        {
+          "path": "config.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "config.rs",
+          "start_line": 26,
+          "end_line": 29
+        },
+        {
+          "path": "config.rs",
+          "start_line": 21,
+          "end_line": 24
+        },
+        {
+          "path": "config.rs",
+          "start_line": 16,
+          "end_line": 19
+        },
+        {
+          "path": "search.rs",
+          "start_line": 27,
+          "end_line": 30
+        },
+        {
+          "path": "config.rs",
+          "start_line": 11,
+          "end_line": 14
+        },
+        {
+          "path": "search.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 28,
+          "end_line": 31
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        }
+      ],
+      "elapsed_ms": 56.75245891325176
+    },
+    {
+      "query_id": "concept-product",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 2
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 33,
+          "end_line": 36
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 13,
+          "end_line": 14
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 23,
+          "end_line": 26
+        },
+        {
+          "path": "search.rs",
+          "start_line": 27,
+          "end_line": 30
+        },
+        {
+          "path": "search.rs",
+          "start_line": 22,
+          "end_line": 25
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 16,
+          "end_line": 19
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 10,
+          "end_line": 11
+        }
+      ],
+      "elapsed_ms": 50.23370892740786
+    },
+    {
+      "query_id": "behavior-zero",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 7
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 23,
+          "end_line": 26
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 28,
+          "end_line": 31
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 33,
+          "end_line": 36
+        }
+      ],
+      "elapsed_ms": 50.147707806900144
+    },
+    {
+      "query_id": "behavior-order",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 4
+        },
+        {
+          "path": "search.rs",
+          "start_line": 16,
+          "end_line": 20
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "search.rs",
+          "start_line": 11,
+          "end_line": 14
+        },
+        {
+          "path": "config.rs",
+          "start_line": 11,
+          "end_line": 14
+        },
+        {
+          "path": "search.rs",
+          "start_line": 22,
+          "end_line": 25
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 28,
+          "end_line": 31
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 7
+        },
+        {
+          "path": "search.rs",
+          "start_line": 27,
+          "end_line": 30
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 13,
+          "end_line": 14
+        }
+      ],
+      "elapsed_ms": 44.764041900634766
+    },
+    {
+      "query_id": "cross-prepare",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 4
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 7
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 33,
+          "end_line": 36
+        },
+        {
+          "path": "config.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 23,
+          "end_line": 26
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 28,
+          "end_line": 31
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        },
+        {
+          "path": "search.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "config.rs",
+          "start_line": 16,
+          "end_line": 19
+        }
+      ],
+      "elapsed_ms": 44.16195792146027
+    },
+    {
+      "query_id": "cross-rank",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 4
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 9,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 21
+        },
+        {
+          "path": "search.rs",
+          "start_line": 22,
+          "end_line": 25
+        },
+        {
+          "path": "search.rs",
+          "start_line": 6,
+          "end_line": 9
+        },
+        {
+          "path": "search.rs",
+          "start_line": 16,
+          "end_line": 20
+        },
+        {
+          "path": "search.rs",
+          "start_line": 11,
+          "end_line": 14
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 2
+        },
+        {
+          "path": "search.rs",
+          "start_line": 27,
+          "end_line": 30
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 7
+        }
+      ],
+      "elapsed_ms": 44.59937498904765
+    }
+  ]
+}

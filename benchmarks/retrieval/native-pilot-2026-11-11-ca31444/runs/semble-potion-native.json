@@ -1,0 +1,367 @@
+{
+  "format_version": 1,
+  "plan_fingerprint": "0e14aba111325bc0a50bd23b52db97d1442855307a5c2e2e1f46a69782d3db9b",
+  "name": "semble-potion-native",
+  "tool": {
+    "name": "semble",
+    "revision": "4633ee75a1d8c9ce3998b610a14fc80e7fb7c802"
+  },
+  "configuration": {
+    "engine": "native-default",
+    "top_k": 10,
+    "internal_candidate_budget": "5*top_k per branch",
+    "timing_boundary": "resident request wall ms; excludes indexing/startup and source reads",
+    "source_return_mode": "native full chunks in search response",
+    "source_revision_is_declared_not_attested": true,
+    "model_path": "/Users/devilhill/Documents/ChatGPT/cubeql/rq2-live-stack/models/potion-code-16M-v2"
+  },
+  "candidate_k": 10,
+  "results": [
+    {
+      "query_id": "identifier-config",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        }
+      ],
+      "elapsed_ms": 2.3547920864075422
+    },
+    {
+      "query_id": "identifier-cosine",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        },
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        }
+      ],
+      "elapsed_ms": 1.4901671092957258
+    },
+    {
+      "query_id": "concept-config",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        }
+      ],
+      "elapsed_ms": 0.9765841532498598
+    },
+    {
+      "query_id": "concept-product",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        },
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        }
+      ],
+      "elapsed_ms": 0.7922090590000153
+    },
+    {
+      "query_id": "behavior-zero",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        }
+      ],
+      "elapsed_ms": 6.710250163450837
+    },
+    {
+      "query_id": "behavior-order",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        }
+      ],
+      "elapsed_ms": 0.6483329925686121
+    },
+    {
+      "query_id": "cross-prepare",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        }
+      ],
+      "elapsed_ms": 0.5332089494913816
+    },
+    {
+      "query_id": "cross-rank",
+      "status": "ok",
+      "hits": [
+        {
+          "path": "search.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 1,
+          "end_line": 16
+        },
+        {
+          "path": "config.rs",
+          "start_line": 22,
+          "end_line": 29
+        },
+        {
+          "path": "search.rs",
+          "start_line": 17,
+          "end_line": 30
+        },
+        {
+          "path": "vectors.rs",
+          "start_line": 18,
+          "end_line": 36
+        },
+        {
+          "path": "utilities.rs",
+          "start_line": 17,
+          "end_line": 19
+        },
+        {
+          "path": "config.rs",
+          "start_line": 1,
+          "end_line": 21
+        }
+      ],
+      "elapsed_ms": 0.5439999513328075
+    }
+  ]
+}
