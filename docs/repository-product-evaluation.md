@@ -209,3 +209,9 @@ The [offline Semble adapter](repository-peer-import.md) validates native result 
 the same frozen plan and retains original payloads, query/filter declarations and provenance.
 It can produce paired reports with collected CubeQL runs. Importer fixtures are format checks;
 actual native peer execution and source/model/budget attestation remain separate work.
+
+## Collect through a resident MCP session
+
+[Persistent MCP collection](repository-mcp-collection.md) builds fresh snapshots and reuses
+one server/provider session per repository. It retains protocol discovery, search and bounded
+source-read evidence, with startup and resident-request timing recorded separately.
