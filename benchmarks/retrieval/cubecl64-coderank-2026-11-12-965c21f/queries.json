@@ -1,0 +1,1002 @@
+{
+  "version": 1,
+  "name": "cubecl-combined-development-v2",
+  "queries": [
+    {
+      "id": "identifier-trivial-unroll",
+      "category": "identifier",
+      "text": "TriviallyUnrollable",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-ir/src/interfaces/mod.rs",
+          "symbol": "TriviallyUnrollable"
+        }
+      ]
+    },
+    {
+      "id": "identifier-custom-unroll",
+      "category": "identifier",
+      "text": "CustomUnrollOp",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "CustomUnrollOp"
+        }
+      ]
+    },
+    {
+      "id": "identifier-nvrtc",
+      "category": "identifier",
+      "text": "CudaArtifactCompiler::compile_to_ptx",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-cuda/src/compute/artifact.rs",
+          "symbol": "CudaArtifactCompiler::compile_to_ptx"
+        }
+      ]
+    },
+    {
+      "id": "identifier-cache-namespace",
+      "category": "identifier",
+      "text": "cache_namespace",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-cuda/src/compute/modules.rs",
+          "symbol": "cache_namespace"
+        }
+      ]
+    },
+    {
+      "id": "identifier-launch-dimensions",
+      "category": "identifier",
+      "text": "validate_cube_dim",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "symbol": "validate_cube_dim"
+        }
+      ]
+    },
+    {
+      "id": "identifier-driver-ptx",
+      "category": "identifier",
+      "text": "PtxVersion::for_driver",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-llvm/src/nvptx/ptx_version.rs",
+          "symbol": "PtxVersion::for_driver"
+        }
+      ]
+    },
+    {
+      "id": "identifier-device-waiters",
+      "category": "identifier",
+      "text": "PoisonWatch::wake_on_loss",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "symbol": "PoisonWatch::wake_on_loss"
+        }
+      ]
+    },
+    {
+      "id": "identifier-mem2reg",
+      "category": "identifier",
+      "text": "Mem2RegPass",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/passes/mem2reg.rs",
+          "symbol": "Mem2RegPass"
+        }
+      ]
+    },
+    {
+      "id": "identifier-shared-allocation",
+      "category": "identifier",
+      "text": "AllocateSharedMemoryBlockPass",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/passes/alloc_shared_memory.rs",
+          "symbol": "AllocateSharedMemoryBlockPass"
+        }
+      ]
+    },
+    {
+      "id": "identifier-memory-policy",
+      "category": "identifier",
+      "text": "MemoryConfiguration",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/memory_management/policy.rs",
+          "symbol": "MemoryConfiguration"
+        }
+      ]
+    },
+    {
+      "id": "concept-elementwise-pieces",
+      "category": "conceptual",
+      "text": "Where are ordinary elementwise operations rebuilt into smaller vector pieces, reusing scalar operands and preserving operation attributes?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "unroll_default"
+        }
+      ]
+    },
+    {
+      "id": "concept-packed-conversion",
+      "category": "conceptual",
+      "text": "Where is conversion between packed low-precision values and unpacked floating-point values split when the physical lane counts differ but the logical element count stays the same?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ]
+    },
+    {
+      "id": "concept-zero-initializer",
+      "category": "conceptual",
+      "text": "Find the rewrite that updates a local variable's zero initializer type when its wide-vector declaration changes shape, rather than leaving an initializer with the old array type.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<DeclareVariableOp as CustomUnrollOp>::unroll"
+        }
+      ]
+    },
+    {
+      "id": "concept-shader-language-selection",
+      "category": "conceptual",
+      "text": "Where does shader compilation choose a native representation for Vulkan or Metal only when supported, and otherwise use the portable shading language?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-wgpu/src/compiler/base.rs",
+          "symbol": "<AutoCompiler as WgpuCompiler>::init"
+        }
+      ]
+    },
+    {
+      "id": "concept-promote-memory",
+      "category": "conceptual",
+      "text": "Find the optimizer pass entry point that collects promotable allocations from regions and uses dominance information to replace memory-based variables with SSA values.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/passes/mem2reg.rs",
+          "symbol": "<Mem2RegPass as Pass>::run"
+        }
+      ]
+    },
+    {
+      "id": "concept-shared-single-block",
+      "category": "conceptual",
+      "text": "Where are multiple workgroup-memory declarations replaced by slices of one allocation whose byte size and alignment come from an analysis?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/passes/alloc_shared_memory.rs",
+          "symbol": "<AllocateSharedMemoryBlockPass as Pass>::run"
+        }
+      ]
+    },
+    {
+      "id": "concept-loaded-kernel-fast-path",
+      "category": "conceptual",
+      "text": "Find the fast path that returns an already loaded kernel with a lookup and clone, while still ensuring a nonempty pending compilation queue is processed.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-server/src/compiler/loader.rs",
+          "symbol": "KernelLoader < T >::load"
+        }
+      ]
+    },
+    {
+      "id": "concept-device-loss-callbacks",
+      "category": "conceptual",
+      "text": "Where are device-loss callbacks installed so that later errors on an already failed graphics device are logged instead of triggering the healthy-device validation panic?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "symbol": "PoisonWatch::watch"
+        }
+      ]
+    },
+    {
+      "id": "concept-inplace-write-attribution",
+      "category": "conceptual",
+      "text": "Where does an in-place output mark its original input buffer as writable even though the alias adds no resource binding of its own?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/compute/launcher.rs",
+          "symbol": "KernelLauncher::alias_io"
+        }
+      ]
+    },
+    {
+      "id": "concept-cast-logical-elements",
+      "category": "conceptual",
+      "text": "Where does frontend expansion check vector length times the packing factor before emitting a numeric conversion, allowing scalar broadcast but rejecting mismatched nonscalar element counts?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/frontend/element/cast.rs",
+          "symbol": "cast_value"
+        }
+      ]
+    },
+    {
+      "id": "behavior-reinterpret-unsplittable",
+      "category": "behavioral",
+      "text": "Find where splitting a bit reinterpretation is rejected when the narrow side has too few physical lanes to give at least one lane to every piece of the wide side.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<ReinterpretCastOp as CustomUnrollOp>::unroll"
+        }
+      ]
+    },
+    {
+      "id": "behavior-extraction-after-split",
+      "category": "behavioral",
+      "text": "After a vector is split, where is a constant element index translated into the piece number using division and the within-piece index using remainder?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CompositeExtractOp as CustomUnrollOp>::unroll"
+        }
+      ]
+    },
+    {
+      "id": "behavior-scalar-cast-broadcast",
+      "category": "behavioral",
+      "text": "When a numeric cast broadcasts one logical scalar to an over-wide result, where is the cast repeated independently for each legal-width output piece?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ]
+    },
+    {
+      "id": "behavior-shared-limit-unknown",
+      "category": "behavioral",
+      "text": "Where is an excessive shared-memory request rejected, while an absent request size is accepted for kernels without an inspectable compiled representation?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "symbol": "validate_shared_memory"
+        }
+      ]
+    },
+    {
+      "id": "behavior-old-driver-version",
+      "category": "behavioral",
+      "text": "Find the driver-to-assembly-version selection that returns no override for CUDA drivers older than 10.0 and caps newer drivers at the newest supported table entry.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-llvm/src/nvptx/ptx_version.rs",
+          "symbol": "PtxVersion::for_driver"
+        },
+        {
+          "path": "crates/cubecl-llvm/src/nvptx/ptx_version.rs",
+          "symbol": "DRIVER_PTX"
+        }
+      ]
+    },
+    {
+      "id": "behavior-compile-error-source",
+      "category": "behavioral",
+      "text": "When the NVIDIA runtime compiler rejects generated code, where are its diagnostic log and the original generated source included in the returned compilation error?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-cuda/src/compute/artifact.rs",
+          "symbol": "CudaArtifactCompiler::compile_to_ptx"
+        }
+      ]
+    },
+    {
+      "id": "behavior-register-after-loss",
+      "category": "behavioral",
+      "text": "Where is a newly registered async waiter closed immediately if the device has already failed, instead of waiting for a loss callback that has already happened?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "symbol": "PoisonWatch::wake_on_loss"
+        }
+      ]
+    },
+    {
+      "id": "behavior-environment-cache-reset",
+      "category": "behavioral",
+      "text": "Find where switching the active execution environment invalidates loaded compilation-cache entries once and updates the remembered generation; an unchanged generation should keep the cache.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-server/src/compiler/loader.rs",
+          "symbol": "CompilationCache < K , V >::reset_if_switched"
+        }
+      ]
+    },
+    {
+      "id": "behavior-discarded-launch-state",
+      "category": "behavioral",
+      "text": "If arguments were registered for a dummy kernel that will never launch, where is thread-local scalar and metadata state drained so it cannot contaminate the next launch?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/compute/launcher.rs",
+          "symbol": "KernelLauncher::discard"
+        }
+      ]
+    },
+    {
+      "id": "behavior-default-ssa-value",
+      "category": "behavioral",
+      "text": "During allocation promotion, where is an existing default value reused, or a new allocator-provided default inserted at the beginning of the allocation's defining block and cached?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/passes/mem2reg.rs",
+          "symbol": "get_or_create_default_value"
+        }
+      ]
+    },
+    {
+      "id": "cross-cast-expansion-and-unroll",
+      "category": "cross_file",
+      "text": "Find both the frontend numeric-conversion element-count validation and the later target-width rewrite that handles packed-to-unpacked conversions. Explain which invariant connects the two stages.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-core/src/frontend/element/cast.rs",
+          "symbol": "cast_value"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<CastOp as CustomUnrollOp>::unroll"
+        }
+      ]
+    },
+    {
+      "id": "cross-unroll-interface-dispatch",
+      "category": "cross_file",
+      "text": "Find the marker interface for rematerializable elementwise vector operations and the pass implementation that prefers a custom rewrite before falling back to ordinary splitting.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-ir/src/interfaces/mod.rs",
+          "symbol": "TriviallyUnrollable"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "<UnrollPass as Pass>::run"
+        },
+        {
+          "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+          "symbol": "unroll_default"
+        }
+      ]
+    },
+    {
+      "id": "cross-cuda-artifact-and-load",
+      "category": "cross_file",
+      "text": "Find where CUDA compilation produces a loadable PTX artifact, either from generated C++ or directly from LLVM, and where that artifact is loaded through the driver and its entry-point function retrieved.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-cuda/src/compute/artifact.rs",
+          "symbol": "<CudaArtifactCompiler as ArtifactCompiler>::finalize"
+        },
+        {
+          "path": "crates/cubecl-cuda/src/compute/modules.rs",
+          "symbol": "<CudaModules as CompilationTarget>::load"
+        }
+      ]
+    },
+    {
+      "id": "cross-driver-and-cache-identity",
+      "category": "cross_file",
+      "text": "Locate both the driver-dependent PTX version selection and the CUDA cache namespace that separates compiler backends and versioned LLVM artifacts, preventing incompatible cached assembly from being reused.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-llvm/src/nvptx/ptx_version.rs",
+          "symbol": "PtxVersion::for_driver"
+        },
+        {
+          "path": "crates/cubecl-cuda/src/compute/modules.rs",
+          "symbol": "cache_namespace"
+        }
+      ]
+    },
+    {
+      "id": "cross-axis-and-total-launch-limits",
+      "category": "cross_file",
+      "text": "Find the per-axis launch-dimension containment check and the separate total-thread-count validation, including the helper that computes the total from three axes.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "symbol": "validate_cube_dim"
+        },
+        {
+          "path": "crates/cubecl-server/src/validation.rs",
+          "symbol": "validate_units"
+        },
+        {
+          "path": "crates/cubecl-ir/src/settings.rs",
+          "symbol": "Dim3::num_elems"
+        },
+        {
+          "path": "crates/cubecl-ir/src/settings.rs",
+          "symbol": "Dim3::can_contain"
+        }
+      ]
+    },
+    {
+      "id": "cross-loss-waiter-and-sync",
+      "category": "cross_file",
+      "text": "Find the mechanism that wakes pending async operations on device loss and the graphics-stream synchronization code that uses it before checking whether the device was poisoned.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "symbol": "PoisonWatch::wake_on_loss"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+          "symbol": "PoisonWatch::poison"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/compute/stream.rs",
+          "symbol": "WgpuStream::sync"
+        }
+      ]
+    },
+    {
+      "id": "cross-shared-offsets-and-rewrite",
+      "category": "cross_file",
+      "text": "Find the analysis that chooses aligned offsets for shared-memory slices and the pass that consumes those offsets to replace declarations with slices of one shared allocation.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/analyses/liveness.rs",
+          "symbol": "shared::SharedLiveness::allocate_slice"
+        },
+        {
+          "path": "crates/cubecl-opt/src/passes/alloc_shared_memory.rs",
+          "symbol": "<AllocateSharedMemoryBlockPass as Pass>::run"
+        }
+      ]
+    },
+    {
+      "id": "cross-ssa-merge-frontiers",
+      "category": "cross_file",
+      "text": "Find where allocation promotion requests merge points from dominance frontiers and where iterated frontier traversal computes those points without repeatedly visiting the same merge block.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-opt/src/passes/mem2reg.rs",
+          "symbol": "AllocPromotionAnalyzer < '_ >::compute_merge_points"
+        },
+        {
+          "path": "crates/cubecl-opt/src/analyses/dominance.rs",
+          "symbol": "DomFrontierCalculator < G , GraphContext >::compute"
+        }
+      ]
+    },
+    {
+      "id": "cross-pooling-and-shader-visibility",
+      "category": "cross_file",
+      "text": "Find the build-time policy flag for exclusive allocation pages and the portable shader binding logic that conservatively makes storage buffers read-write when allocations can share pages.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/memory_management/policy.rs",
+          "symbol": "EXCLUSIVE_MEMORY_ONLY"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/backend/wgsl.rs",
+          "symbol": "bindings"
+        }
+      ]
+    },
+    {
+      "id": "cross-main-and-auxiliary-pools",
+      "category": "cross_file",
+      "text": "Find the default choice between adaptive suballocation and exclusive pages, and the graphics backend's auxiliary staging/uniform pools that explicitly request exclusive pages regardless of that default.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/memory_management/policy.rs",
+          "symbol": "<MemoryConfiguration as Default>::default"
+        },
+        {
+          "path": "crates/cubecl-wgpu/src/compute/mem_manager.rs",
+          "symbol": "AuxiliaryMemory::new"
+        }
+      ]
+    },
+    {
+      "id": "v2-identifier-anchor",
+      "category": "identifier",
+      "text": "anchor",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "symbol": "anchor"
+        }
+      ]
+    },
+    {
+      "id": "v2-identifier-patience",
+      "category": "identifier",
+      "text": "PatienceTracker::exhausted",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "symbol": "PatienceTracker::exhausted"
+        }
+      ]
+    },
+    {
+      "id": "v2-identifier-samples",
+      "category": "identifier",
+      "text": "SampleSet::reliable",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "SampleSet::reliable"
+        }
+      ]
+    },
+    {
+      "id": "v2-identifier-swizzle",
+      "category": "identifier",
+      "text": "Swizzle::apply",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/swizzle.rs",
+          "symbol": "Swizzle::apply"
+        }
+      ]
+    },
+    {
+      "id": "v2-identifier-reinterpret-size",
+      "category": "identifier",
+      "text": "optimize_vector_size",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/reinterpret_slice.rs",
+          "symbol": "optimize_vector_size"
+        }
+      ]
+    },
+    {
+      "id": "v2-identifier-scale-rounding",
+      "category": "identifier",
+      "text": "round_up_to_dtype",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/quant/round.rs",
+          "symbol": "round_up_to_dtype"
+        }
+      ]
+    },
+    {
+      "id": "v2-concept-timing-noise",
+      "category": "conceptual",
+      "text": "Where does autotuning distinguish a meaningful timing improvement from a small change that should be treated as measurement noise?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "TimeChange::of"
+        }
+      ]
+    },
+    {
+      "id": "v2-concept-layout-selection",
+      "category": "conceptual",
+      "text": "Where is a linear tensor view specialized into a plain, pitched-stride or fully permuted address mapping based on runtime shape and stride metadata?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+          "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+        }
+      ]
+    },
+    {
+      "id": "v2-concept-positive-scale",
+      "category": "conceptual",
+      "text": "Find the host implementation that rounds a nonnegative quantization scale upward onto a narrower floating-point grid while saturating at its largest representable value.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "symbol": "ScaleDtype::round_up"
+        }
+      ]
+    },
+    {
+      "id": "v2-concept-roofline-bound",
+      "category": "conceptual",
+      "text": "Where is a theoretical peak-throughput time divided by a target utilization fraction to obtain an autotuning time limit?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/bounds_generator.rs",
+          "symbol": "<AutotuneBound as TimeBound>::time_limit"
+        }
+      ]
+    },
+    {
+      "id": "v2-concept-traffic-directions",
+      "category": "conceptual",
+      "text": "Find the memory-probe helper that counts two buffers of traffic for copying but only one for read-only or write-only probes.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/throughput/base.rs",
+          "symbol": "MemoryAccess::buffers"
+        }
+      ]
+    },
+    {
+      "id": "v2-concept-partial-quant-blocks",
+      "category": "conceptual",
+      "text": "Where is the shape of the per-block scale grid computed so that a partially filled quantization block still needs its own scale?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "symbol": "BlockSize::num_blocks"
+        }
+      ]
+    },
+    {
+      "id": "v2-behavior-zero-patience",
+      "category": "behavioral",
+      "text": "If both autotuning patience limits are zero, where does the stopping rule still require at least one candidate measurement?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "symbol": "PatienceTracker::exhausted"
+        }
+      ]
+    },
+    {
+      "id": "v2-behavior-shared-candidate",
+      "category": "behavioral",
+      "text": "When several tuning groups propose the same candidate, where is it skipped only if every proposing group has exhausted patience, while ungrouped candidates are never skipped by that rule?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "symbol": "PatienceTable::skips"
+        }
+      ]
+    },
+    {
+      "id": "v2-behavior-biased-first-timing",
+      "category": "behavioral",
+      "text": "Where is a potentially biased first timing sample discarded only after at least three samples have been collected, rather than discarding it immediately?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "SampleSet::reliable"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "DISCARD_THRESHOLD"
+        }
+      ]
+    },
+    {
+      "id": "v2-behavior-incompatible-byte-width",
+      "category": "behavioral",
+      "text": "Find the slice-reinterpretation sizing helper that rejects byte widths which are not integer multiples, instead of silently truncating a ratio.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/reinterpret_slice.rs",
+          "symbol": "optimize_vector_size"
+        }
+      ]
+    },
+    {
+      "id": "v2-behavior-swizzle-disabled",
+      "category": "behavioral",
+      "text": "When address swizzling is disabled by a zero mask, where does applying it return the original offset without converting it to bytes?",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/swizzle.rs",
+          "symbol": "Swizzle::apply"
+        }
+      ]
+    },
+    {
+      "id": "v2-behavior-zero-power-scale",
+      "category": "behavioral",
+      "text": "Find the device-side quantization scale rule that maps zero or very small values to a positive minimum because the power-of-two storage format has no zero, and also clamps the upper end.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/quant/round.rs",
+          "symbol": "step_up_to_power_of_two"
+        }
+      ]
+    },
+    {
+      "id": "v2-cross-patience-and-noise",
+      "category": "cross_file",
+      "text": "Find both the tuning-group logic that resets its miss counter on a real improvement and the timing-comparison rule that decides whether an apparent speedup exceeds the noise threshold.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/tune/patience.rs",
+          "symbol": "PatienceTracker::record"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+          "symbol": "TimeChange::of"
+        }
+      ]
+    },
+    {
+      "id": "v2-cross-host-device-scale",
+      "category": "cross_file",
+      "text": "Locate the host and device implementations of upward quantization-scale rounding whose results need to agree when tensors move between backends.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "symbol": "ScaleDtype::round_up"
+        },
+        {
+          "path": "crates/cubecl-std/src/quant/round.rs",
+          "symbol": "round_up_to_dtype"
+        }
+      ]
+    },
+    {
+      "id": "v2-cross-layout-and-contiguity",
+      "category": "cross_file",
+      "text": "Find the linear-layout selection code and both contiguity predicates it consults before choosing a plain, pitched or permuted tensor view.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+          "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+        },
+        {
+          "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+          "symbol": "is_contiguous"
+        },
+        {
+          "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+          "symbol": "is_contiguous_pitched"
+        }
+      ]
+    },
+    {
+      "id": "v2-cross-peak-time-and-threshold",
+      "category": "cross_file",
+      "text": "Find the resource-work helper that converts an operation count and peak throughput into a duration, and the autotune bound that scales that duration by a utilization threshold while rejecting invalid thresholds.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/throughput/roofline.rs",
+          "symbol": "ResourceBound::time_at_peak"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/bounds_generator.rs",
+          "symbol": "<AutotuneBound as TimeBound>::time_limit"
+        }
+      ]
+    },
+    {
+      "id": "v2-cross-rounding-bit-grid",
+      "category": "cross_file",
+      "text": "Find the kernel helper that rounds a normal scale upward by manipulating its f32 bits, and the shared grid helpers defining the truncation mask and rounding bias it uses.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-std/src/quant/round.rs",
+          "symbol": "round_up_on_grid"
+        },
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "symbol": "F32Grid::truncate_mask"
+        },
+        {
+          "path": "crates/cubecl-common/src/quant/scheme.rs",
+          "symbol": "F32Grid::round_up_bias"
+        }
+      ]
+    },
+    {
+      "id": "v2-cross-tune-level-anchoring",
+      "category": "cross_file",
+      "text": "Find the configuration levels controlling autotuning effort and the input-size anchoring implementation that bypasses bucketing entirely at the full-search level.",
+      "filter": {
+        "language": "rust"
+      },
+      "relevant": [
+        {
+          "path": "crates/cubecl-runtime/src/config/autotune.rs",
+          "symbol": "AutotuneLevel"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "symbol": "anchor"
+        },
+        {
+          "path": "crates/cubecl-runtime/src/tune/util.rs",
+          "symbol": "load_autotune_level"
+        }
+      ]
+    }
+  ]
+}
