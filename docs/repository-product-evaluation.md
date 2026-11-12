@@ -215,3 +215,9 @@ actual native peer execution and source/model/budget attestation remain separate
 [Persistent MCP collection](repository-mcp-collection.md) builds fresh snapshots and reuses
 one server/provider session per repository. It retains protocol discovery, search and bounded
 source-read evidence, with startup and resident-request timing recorded separately.
+
+## Execute the native local peer pipeline
+
+[Native Semble collection](repository-semble-collection.md) runs a local pinned source tree
+and local model in an isolated resident worker, with literal path-prefix selection before
+top-k. It retains native payloads, startup/search timing, model/source fingerprints and failures.
