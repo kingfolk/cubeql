@@ -97,6 +97,10 @@ failed condition. Failed conditions have no valid quality score; there is no ave
 conditions that could silently exclude them. Retry into a fresh output directory after
 examining the retained failure. Nothing is automatically restarted or overwritten.
 
+Saved reports can be independently checked and summarized with the
+[native symbol-label diagnostics](repository-native-diagnostics.md) workflow. It validates
+displayed-hit recall, all query/category denominators and paired changes without inference.
+
 ## Metrics and timing
 
 The six native strategies are semantic, literal, experimental RRF, lexical, symbol and hybrid.
