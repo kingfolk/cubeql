@@ -247,3 +247,25 @@ anchors absent from the exported window from anchors present below Top-10. The
 [real native development pilot](../benchmarks/retrieval/native-pilot-2026-11-11-ca31444/README.md)
 retains CodeRank MCP and Semble evidence on the eight-query synthetic fixture, with explicit
 model/chunk/budget differences and no held-out or agent-success claim.
+
+## Opt-in retained candidate export
+
+`cubeql-code evaluate` keeps its existing report shape by default. To include the complete final
+retained ranking for each of the six evaluated strategies, request JSON explicitly:
+
+```bash
+cubeql-code evaluate index.arrow queries.json --format json --export-candidates
+```
+
+The wrapper remains format version 1. The nested hybrid evaluation report becomes version 3;
+the standalone baseline evaluation API uses version 2 when its candidate-export entry point is
+called. Without the opt-in, the hybrid and baseline report versions and serialized fields remain
+unchanged (versions 2 and 1 respectively).
+
+Each `candidate_ranking` entry contains a one-based rank, immutable snapshot row, path, symbol and
+the score from the exact final hit list used for metrics. It contains no source text or retrieval
+provenance. The list is the retained `candidate_k` window after the strategy's existing retrieval,
+fusion and deduplication behavior; it does not expose intermediate source unions. `top_hits` stays
+limited to ten entries. Candidate serialization is not part of the retrieval or existing
+materialization timings. The export flag requires `--format json` so candidate data cannot be
+silently omitted by text output.
