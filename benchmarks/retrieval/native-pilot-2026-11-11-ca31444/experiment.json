@@ -1,0 +1,305 @@
+{
+  "scope": "real native engines/models on an eight-query comment-rich synthetic development fixture",
+  "formal_validation": false,
+  "independently_reviewed_labels": false,
+  "cubeql_binary": {
+    "path": "/Users/devilhill/Codes/cubeql/target/debug/cubeql-code",
+    "sha256": "e3e526bd6dee7d417bf8a0b2aba0e5095a7085bffe6e102c9b24c7c2d5f53c85"
+  },
+  "mcp_binary": {
+    "path": "/Users/devilhill/Codes/cubeql/target/debug/cubeql-mcp",
+    "sha256": "4dc664b787300c9313d200617f940b8af1bd0a8eb1e4754d948a43692915022b"
+  },
+  "binary_build_attestation": "existing executable hashes recorded; not rebuilt for these Python-only features",
+  "semble_source_verification": {
+    "revision": "4633ee75a1d8c9ce3998b610a14fc80e7fb7c802",
+    "files": {
+      "LICENSE": {
+        "git_blob_sha1": "7102f82d2e614d28541fc93a5e80458385c06268",
+        "sha256": "d1aa11c9413f6732a492cbe8b57f9fc5d9bc7a5f1575f420619d099b3358dc12"
+      },
+      "pyproject.toml": {
+        "git_blob_sha1": "5e84509877aadf0c660709cbb1df5d62adda3ec1",
+        "sha256": "03576d732742e26a2f1c046589abdb830a8e9d268e907748b63999f7afcc8c9d"
+      },
+      "README.md": {
+        "git_blob_sha1": "02ea488876732721ab7838c53cbe16b9a2835649",
+        "sha256": "5d45f9d6a0411e44ca0659f0d1e84e33f62789ac77349396c0f3666c387d7e2b"
+      },
+      "benchmarks/run_benchmark.py": {
+        "git_blob_sha1": "003e25cc71381dc12013e3f8bdffbf4e6d3d4835",
+        "sha256": "3c32de7311997b2930165b8b8f9c7e5e19ff9e553290091d5a62957f64203e8a"
+      },
+      "benchmarks/metrics.py": {
+        "git_blob_sha1": "6b519a1b44f08088edf9b672958a592b78dc287f",
+        "sha256": "bd6cdfc820b159f11317104db7f2c7592d7c379c0bde608b242642bdbf69666e"
+      },
+      "benchmarks/plot.py": {
+        "git_blob_sha1": "378f25237614540c3cad62cbd2bfe1486403dc0f",
+        "sha256": "28df92091941b40d9759fc37039ada392dc4b64f77c7035505457c2b999f8972"
+      },
+      "benchmarks/tools.py": {
+        "git_blob_sha1": "45e1f97a2f3e743b60faa60d96e51ac9db043c2f",
+        "sha256": "e2dfc3b6ce7d09b407f2d69552b97510b2c3bc04c502f50461b54f4d36cee2d0"
+      },
+      "benchmarks/__init__.py": {
+        "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "benchmarks/README.md": {
+        "git_blob_sha1": "ea230ffaebfc83e15021fc48e2d234c4bcfc0969",
+        "sha256": "c3cfcdad18dba2128ee8ab345b8283698aaeaf911301b4c67de03b53e70d4788"
+      },
+      "benchmarks/speed_benchmark.py": {
+        "git_blob_sha1": "eab434df89bb272d5c279694c72f58eeb3bc4e73",
+        "sha256": "8c3596c493ddba379ed91862838d36e53077bf4ad9236e62411ae8cc515eb910"
+      },
+      "benchmarks/token_efficiency.py": {
+        "git_blob_sha1": "0c24db038fe48603d16cff542667b04a211a8dc4",
+        "sha256": "94b193ebe7d023e3c4e3e9b2f62b8c0d09e50e3b57fd2c27e400ae1b6ca94edd"
+      },
+      "benchmarks/sync_repos.py": {
+        "git_blob_sha1": "9cf1ebd7a0599fbe7ee9d5629385665f82380144",
+        "sha256": "1ece46697139d0a74f229f41c86d0c52e38726b47898330cc9b9cf284478486c"
+      },
+      "benchmarks/data.py": {
+        "git_blob_sha1": "90198e7a54c9a56e47054bf680f6e86d1b007806",
+        "sha256": "4b6294e30b8dba1ae019b6be82daca9f44e4002c40a6552fe596994d42753d71"
+      },
+      "src/semble/version.py": {
+        "git_blob_sha1": "31717c4cfab94b9cf677eea73dda4fec1242efa7",
+        "sha256": "7c952f4d6d5c193bb8f63cf7521cb83351d8e1aba2a41c813f1f3e322c3a39db"
+      },
+      "src/semble/cache.py": {
+        "git_blob_sha1": "b1261d944c7fe908ba3dc64b4d2054597c56b01f",
+        "sha256": "497e72705bae99784cee47f8d4424675cff4a0b31e9587897f810f6006e2ab01"
+      },
+      "src/semble/__init__.py": {
+        "git_blob_sha1": "6e7cf418025ff20fb4755cbf50ac5014b75d69bc",
+        "sha256": "fd7f21d0460803c5d15019aa55c1d467ed982cf8ed3e0cfc7b6899eb7d0a7ec7"
+      },
+      "src/semble/tokens.py": {
+        "git_blob_sha1": "ab744e91a8ff9da9ef8d4e8f73172b92da9ccea9",
+        "sha256": "d9406b36c59468e7e8ad86e939c3bd8acafa50e640f4d5404d152be841d0009e"
+      },
+      "src/semble/types.py": {
+        "git_blob_sha1": "97c5551eec5c28e8157b1d9e038bbf3af2887c47",
+        "sha256": "a59339f3b09e76d8675073d3bf021a070ed2f50cb7503cbeaca1b4fd5cac1ad2"
+      },
+      "src/semble/cli.py": {
+        "git_blob_sha1": "b625a043a74b935b84901a8a55eedf2f637ec2d0",
+        "sha256": "19fa4c16afaad198487d3dd03e9342363adf8cee30a35f577b437e040de33ddc"
+      },
+      "src/semble/mcp.py": {
+        "git_blob_sha1": "63af97aff72b90f54b97121cf88b3e98b3381200",
+        "sha256": "358e92f03257b9786ad91190cb6cad7d753451a194816ee1eefa79010e2c93f6"
+      },
+      "src/semble/utils.py": {
+        "git_blob_sha1": "649353e42a5cd1fe36fdf61712525bcde4f1e264",
+        "sha256": "c7bdef8d2fc9d8cbbebc2c5a0acfec484359bc773d96c3051d86967c0b848fca"
+      },
+      "src/semble/stats.py": {
+        "git_blob_sha1": "49b27bab5bc2867d2fd39ad9a8aadb61d47ec7c4",
+        "sha256": "b8826a802d5ddd493a3679be4db8c66870c6d3f25ab498ae1f1258b30bb7ca48"
+      },
+      "src/semble/search.py": {
+        "git_blob_sha1": "d1c18b7881970bd701adfeb439bb5e553f099d52",
+        "sha256": "2070c330fbb1d5d95c9704d4d5cfe8989463b207a817763ac2d104c19e35f07e"
+      },
+      "src/semble/ranking/penalties.py": {
+        "git_blob_sha1": "c26c63fe2f75cc5be7bf030633fa2cb6db86a7d6",
+        "sha256": "acc55064898b2f1d693810fb9c0c11564ccff32ba6303a1b926906941523cbd1"
+      },
+      "src/semble/ranking/boosting.py": {
+        "git_blob_sha1": "dd88f402314cb156281181274c72d8edff4969b9",
+        "sha256": "2c182003fb998689adb35c64e94717612fb14e00e9419b7362c42258e296d64f"
+      },
+      "src/semble/ranking/__init__.py": {
+        "git_blob_sha1": "c77d51ed4f8d50c9fe8d73e77b9b5f5c7b985f77",
+        "sha256": "d502b57e128ef5b3d53f263985e53d45b2883032ef4f0dbf0b0f4b9f61b26729"
+      },
+      "src/semble/agents/qwen.md": {
+        "git_blob_sha1": "d7ab62580b1a234234df512481c59257df55669e",
+        "sha256": "57077f706d2d258f23b83926f1637f27e4c953f75957d4cb69069e8a5f0b0424"
+      },
+      "src/semble/agents/kiro.md": {
+        "git_blob_sha1": "4c78ad76a7d9c74ac9e38d9f05000ee0030f77ae",
+        "sha256": "8d786760c1899b17ec2206bcca2292b65653de2d965772545bec83c5b4337f60"
+      },
+      "src/semble/agents/reasonix.md": {
+        "git_blob_sha1": "2b51a1826afbfacec6cc8d4b39435a66c436d843",
+        "sha256": "a627ea06248c0ada8bbf74b302419be7b14ded1dd6049343b557c5373ce59aff"
+      },
+      "src/semble/agents/cursor.md": {
+        "git_blob_sha1": "944e7c5979f6fca8a357af487b68dec179731ce1",
+        "sha256": "0afcce03c3f4aca66a0226f09262b0896e4666c38314e4ec07dff938c641ad9c"
+      },
+      "src/semble/agents/antigravity.md": {
+        "git_blob_sha1": "d7ab62580b1a234234df512481c59257df55669e",
+        "sha256": "57077f706d2d258f23b83926f1637f27e4c953f75957d4cb69069e8a5f0b0424"
+      },
+      "src/semble/agents/zcode.md": {
+        "git_blob_sha1": "de79bf1782bf2ca1154de18dd86726d973a2c067",
+        "sha256": "be2a43c6733d0f6b325610fc209dd03813f57ec7736c758ed0879e7fa0f5b47e"
+      },
+      "src/semble/agents/skill.md": {
+        "git_blob_sha1": "eb8e22bbcc4cfb46438351ec4ef68a8a496690e7",
+        "sha256": "c9d099ecce6aeb7779d6f2978d0547768b11387ac98932d74b0b57fa15f97370"
+      },
+      "src/semble/agents/gemini.md": {
+        "git_blob_sha1": "d7ab62580b1a234234df512481c59257df55669e",
+        "sha256": "57077f706d2d258f23b83926f1637f27e4c953f75957d4cb69069e8a5f0b0424"
+      },
+      "src/semble/agents/kilo.md": {
+        "git_blob_sha1": "2c5456d28811c6489b519133b1ddadd6b204763e",
+        "sha256": "58dba466339fd297f0e73b64d44b11e0e45ac2646d6170d65b953530a2c07e70"
+      },
+      "src/semble/agents/opencode.md": {
+        "git_blob_sha1": "2c5456d28811c6489b519133b1ddadd6b204763e",
+        "sha256": "58dba466339fd297f0e73b64d44b11e0e45ac2646d6170d65b953530a2c07e70"
+      },
+      "src/semble/agents/pi.md": {
+        "git_blob_sha1": "944e7c5979f6fca8a357af487b68dec179731ce1",
+        "sha256": "0afcce03c3f4aca66a0226f09262b0896e4666c38314e4ec07dff938c641ad9c"
+      },
+      "src/semble/agents/commandcode.md": {
+        "git_blob_sha1": "8691bca4fb4dacea1b76bda343192d90e878e269",
+        "sha256": "6c0b3eef7403015a69a0b6eedc022dc5de214c1fe1b86c9e5128df1a6425f38c"
+      },
+      "src/semble/agents/claude.md": {
+        "git_blob_sha1": "de79bf1782bf2ca1154de18dd86726d973a2c067",
+        "sha256": "be2a43c6733d0f6b325610fc209dd03813f57ec7736c758ed0879e7fa0f5b47e"
+      },
+      "src/semble/agents/copilot.md": {
+        "git_blob_sha1": "de79bf1782bf2ca1154de18dd86726d973a2c067",
+        "sha256": "be2a43c6733d0f6b325610fc209dd03813f57ec7736c758ed0879e7fa0f5b47e"
+      },
+      "src/semble/agents/grok.md": {
+        "git_blob_sha1": "2779dacb35f060a2ce317b6cf9add949fba9bf5d",
+        "sha256": "e0463a6bf53a1c4675e7a05ed69ba31c39fa67a5e2e6d480e1f8f3e7ea8f98a1"
+      },
+      "src/semble/chunking/chunking.py": {
+        "git_blob_sha1": "af1b706e991858c24d82be96d7cdac0ed43c9712",
+        "sha256": "53689e8a813223426e9bcf5661d3ef49bf15a3e75abc09dd883480a99a3626b6"
+      },
+      "src/semble/chunking/__init__.py": {
+        "git_blob_sha1": "e165cacab85a6bad416b6d165b2a87b4ea7b7780",
+        "sha256": "393f22f758aa9b6c256e5709c0b26f1fc219b908c51514176843ecd175e9a464"
+      },
+      "src/semble/chunking/core.py": {
+        "git_blob_sha1": "5a904bfbda271296939d9de009e69677cd245ada",
+        "sha256": "ca00470e0c3eb310cd75baff3930f90fc1237d7f22e07cd1e85dc044ed1aadb1"
+      },
+      "src/semble/index/bm25.py": {
+        "git_blob_sha1": "2cde55b92abebc6180c0e1912f2977525c4770ce",
+        "sha256": "cd4bfd59ba0b37a9f2815bcc2a9e8408817ed5b316503f2ea2f52e9a0d2d1edf"
+      },
+      "src/semble/index/files.py": {
+        "git_blob_sha1": "1a7a78c50606385893d6445d518d906629b1ae68",
+        "sha256": "0b3834292e45ab93ba30a182274a1012240c46042d792bd33989ee8afd803515"
+      },
+      "src/semble/index/create.py": {
+        "git_blob_sha1": "129ec8e66424d48949976bc00423b862e01bb9c5",
+        "sha256": "3ce816351069a8e5733d9b60ffaaae2475316c46329dce1994675307433bea65"
+      },
+      "src/semble/index/index.py": {
+        "git_blob_sha1": "d0c39079a637b8581c68af166a9cb940980d90c6",
+        "sha256": "bf67bf3c5faf4cb473271e6dcbfb9d9198b6dc6b7c216bcd2082b46dc18e5082"
+      },
+      "src/semble/index/dense.py": {
+        "git_blob_sha1": "7e83deb19352a75a3a3ba07b2ef58e6b2be6ac51",
+        "sha256": "2ca1e3bcbf9d482bd5c7342acc453566071288ad76e5f426115204dc4db8c009"
+      },
+      "src/semble/index/__init__.py": {
+        "git_blob_sha1": "f0e7dcf0b0c79e46a116b61e157c8462a7eda17a",
+        "sha256": "523edc65ccac878323c1f63418d2fb04311b0a622ce60ab542d70264b4b377b6"
+      },
+      "src/semble/index/types.py": {
+        "git_blob_sha1": "a08b7b6d39e5c2880253b02de1c480e11b144bc6",
+        "sha256": "aff9ad5729ffc40a9f1300c74cac0b7d043a0ec4f96cfda79d4c39f3e5e9c340"
+      },
+      "src/semble/index/file_walker.py": {
+        "git_blob_sha1": "cd257a4731100e60f27e26d611d46ed012d66e34",
+        "sha256": "8bafa590ef2b8f52d6c87ca9cddf2ad1ca68184e47a273844862d97c8a5401c6"
+      },
+      "src/semble/index/sparse.py": {
+        "git_blob_sha1": "46861f06ef61df824a89e0aac61e1c46fde4e6aa",
+        "sha256": "b1ba36afa0770c6dd871ee095de28d9662c99a19a38728992d1f61dac30bacb5"
+      },
+      "src/semble/installer/config.py": {
+        "git_blob_sha1": "eb3c7e06461bf863114ba2807f3adb0dbe8f1ee1",
+        "sha256": "bf7f3271c4f82f7e3af71823c725456e14f3e143d0a4f06dc3715ca808cd1c75"
+      },
+      "src/semble/installer/__init__.py": {
+        "git_blob_sha1": "77796424bddb7adabd07da53e9ebc8ebea57134f",
+        "sha256": "43c143584065539771f63b35e8136fa190d4068b8e6fcb424e1a7ddd4d51b972"
+      },
+      "src/semble/installer/agents.py": {
+        "git_blob_sha1": "b8420f5b0252601b6bf80ff032e2cc43396c61e6",
+        "sha256": "21d830070a16bb7e7ffab5aead1d75ecb0980f61b06aea5bc8c8ca04c315ca87"
+      },
+      "src/semble/installer/installer.py": {
+        "git_blob_sha1": "9f4089c95456dde504e31cb936a5f13d6967f016",
+        "sha256": "b02a6367d0f8a31eaddea849ef07e4e5862bd82e356b19ff0ae0fff85c3e08d2"
+      },
+      "benchmarks/baselines/codebase_memory.py": {
+        "git_blob_sha1": "1a7955b33ee02844643a3e397de9508944896860",
+        "sha256": "e69343ca6238787a4a4112dfeaa74cb54063fd3c59713180b098e30f019617cc"
+      },
+      "benchmarks/baselines/ablations.py": {
+        "git_blob_sha1": "63bd6ab43e261195173af1f87254708f35fb5a2b",
+        "sha256": "630a36b4814c18483fe79f6e26c74ed9b1009c419e64bf66f2b8922b2e4e6275"
+      },
+      "benchmarks/baselines/ripgrep.py": {
+        "git_blob_sha1": "94077f91a0f759edcfe04fbfeacf4b807e85ea80",
+        "sha256": "3035a557016489ab4f478ac69f711ba3dfb24aa56afe4450d64b0ed4e1bb64e6"
+      },
+      "benchmarks/baselines/__init__.py": {
+        "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "benchmarks/baselines/colgrep.py": {
+        "git_blob_sha1": "9adc1fc76c92670ae90401e119217aa70fe69cea",
+        "sha256": "bc0485d2b5c830c84f250128c415a8d6e8dff206df9878b782d89d93e4b54be0"
+      },
+      "benchmarks/baselines/zvecgrep.py": {
+        "git_blob_sha1": "8f531e746f2854d5a162ebd7aec2845eb8b4a299",
+        "sha256": "25917a29b8169671fef9da44b58b7b4df365a4b39c7604e043e12e3096d87b1c"
+      },
+      "benchmarks/baselines/coderankembed.py": {
+        "git_blob_sha1": "921aefee09935a0a51020a845b0005c730687c76",
+        "sha256": "b9c3218f9ac10d9420f89314bb3f551e5f4745b69248d9b4bb55bbfa5039dab2"
+      },
+      "benchmarks/baselines/cs.py": {
+        "git_blob_sha1": "51712f400c04cefaa0f6c18678c195327c0566f2",
+        "sha256": "ab721140bacd90a4354d4762adc019dd88ad33bb5a8e4feb66a2b84dec7b74be"
+      },
+      "benchmarks/baselines/ck.py": {
+        "git_blob_sha1": "2c8b68285b42c67839b79d4b4ff9e4fcc9d3ad36",
+        "sha256": "cf9131aa7289f5e8d1df6d32b9200f3a5ca8c307af18d97e588d2773f273dd44"
+      },
+      "benchmarks/baselines/probe.py": {
+        "git_blob_sha1": "6f7699f684cfd46f1b413f9c9dc616cd2c96553b",
+        "sha256": "9fb883aee31fb6b0525f490d931570283ea220adea0f2e3ca41453916f225312"
+      },
+      "benchmarks/baselines/grepai.py": {
+        "git_blob_sha1": "0eef5be55f7df44b7957fe4adad4a9bd5a784c27",
+        "sha256": "6505698c77e8c070d0463da242730b079f9543f25ae87d37da620c194e7c3bd5"
+      }
+    }
+  },
+  "potion_model": {
+    "repository": "minishlab/potion-code-16M-v2",
+    "revision": "e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+  },
+  "code_model_max_tokens": 256,
+  "code_model_device": "cpu",
+  "native_candidate_budgets": {
+    "CubeQL": "100 per source",
+    "Semble": "5*10 per branch"
+  },
+  "context_difference": "CubeQL source reads are outside search timing; Semble sends full native chunks in its search response",
+  "comparison": "native product conditions; chunking/model/ranking/budgets are not controlled independently",
+  "original64_run": false,
+  "paid_agent_calls": 0
+}

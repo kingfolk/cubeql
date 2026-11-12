@@ -1,0 +1,132 @@
+{
+  "git_revision": "5037c0639ce3b1205392bdbe43dcf25e2ea09e29",
+  "git_archive": true,
+  "materialized_licenses": [
+    {
+      "path": "crates/cubecl/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-common/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-common/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-core/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-core/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-cpu/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-cpu/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-cuda/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-cuda/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-hip/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-hip/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-llvm/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-llvm/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-runtime/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-runtime/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-server/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-server/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-wgpu/LICENSE-APACHE",
+      "original_target": "../../LICENSE-APACHE",
+      "content_sha256": "bdd26d197850a30393da963f01e97c78e91d69245089c543903f96a5dab95930",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    },
+    {
+      "path": "crates/cubecl-wgpu/LICENSE-MIT",
+      "original_target": "../../LICENSE-MIT",
+      "content_sha256": "b3b77503e5498c5fb0a1a0b102d748d7baed9cae9f502086a3cfedad62d503a4",
+      "reason": "materialized internal non-code license link for strict read-only inventory; source code untouched"
+    }
+  ],
+  "original_checkout_modified": false,
+  "recipe_fingerprint": "daa69ad6fbb9cb5434ac2d6efc6bec58f011f6b3c1c8a3bef963d1872dc2e508",
+  "query_count": 64,
+  "query_bytes_sha256": "8c2d3eb7da1560a98f4d9ee844cfa842f53c3f9a1109affa71fed9cfad49c091",
+  "source_inventory_sha256": "61f596765bb66e67416c0f104611b58bf3dea3dc1e67460bc1ad48087512e2ac",
+  "full_encoding_or_evaluation_executed": false
+}

@@ -1,0 +1,178 @@
+{
+  "format_version": 1,
+  "spec": {
+    "format_version": 1,
+    "name": "native-eight-query-development-pilot-v1",
+    "split": "development",
+    "repositories": [
+      {
+        "id": "retrieval-fixture",
+        "revision": "ca31444 checked-in synthetic Rust fixture"
+      }
+    ],
+    "queries": [
+      {
+        "id": "identifier-config",
+        "repository": "retrieval-fixture",
+        "category": "identifier",
+        "text": "load_config",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "config.rs",
+            "start_line": 2,
+            "end_line": 4
+          }
+        ]
+      },
+      {
+        "id": "identifier-cosine",
+        "repository": "retrieval-fixture",
+        "category": "identifier",
+        "text": "cosine_similarity",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "vectors.rs",
+            "start_line": 10,
+            "end_line": 16
+          }
+        ]
+      },
+      {
+        "id": "concept-config",
+        "repository": "retrieval-fixture",
+        "category": "conceptual",
+        "text": "Where do we read application settings from a file?",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "config.rs",
+            "start_line": 2,
+            "end_line": 4
+          }
+        ]
+      },
+      {
+        "id": "concept-product",
+        "repository": "retrieval-fixture",
+        "category": "conceptual",
+        "text": "Compute the product of two numbers",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "utilities.rs",
+            "start_line": 2,
+            "end_line": 2
+          }
+        ]
+      },
+      {
+        "id": "behavior-zero",
+        "repository": "retrieval-fixture",
+        "category": "behavioral",
+        "text": "Avoid division by zero when normalizing an embedding",
+        "filter": {
+          "path_prefix": "vectors"
+        },
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "vectors.rs",
+            "start_line": 2,
+            "end_line": 7
+          }
+        ]
+      },
+      {
+        "id": "behavior-order",
+        "repository": "retrieval-fixture",
+        "category": "behavioral",
+        "text": "Sort highest similarity first and break ties using smaller row identifiers",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "search.rs",
+            "start_line": 2,
+            "end_line": 4
+          }
+        ]
+      },
+      {
+        "id": "cross-prepare",
+        "repository": "retrieval-fixture",
+        "category": "cross_file",
+        "text": "Find the functions for reading configuration and normalizing vectors before searching",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "config.rs",
+            "start_line": 2,
+            "end_line": 4
+          },
+          {
+            "id": "location-1",
+            "path": "vectors.rs",
+            "start_line": 2,
+            "end_line": 7
+          }
+        ]
+      },
+      {
+        "id": "cross-rank",
+        "repository": "retrieval-fixture",
+        "category": "cross_file",
+        "text": "Compute directional similarity between embeddings and rank search results by that score",
+        "filter": {},
+        "anchors": [
+          {
+            "id": "location-0",
+            "path": "vectors.rs",
+            "start_line": 10,
+            "end_line": 16
+          },
+          {
+            "id": "location-1",
+            "path": "search.rs",
+            "start_line": 2,
+            "end_line": 4
+          }
+        ]
+      }
+    ]
+  },
+  "spec_sha256": "f74cd4628072d112e2b6632a1c9121ffc73e38293da7e94ffeef1b06cdd085ea",
+  "files": [
+    {
+      "repository": "retrieval-fixture",
+      "path": "config.rs",
+      "sha256": "b32f4a4f469cf3fe628a0ce098ac7d1670caf65131931da549e6defa3c949ac2",
+      "line_count": 29
+    },
+    {
+      "repository": "retrieval-fixture",
+      "path": "search.rs",
+      "sha256": "178e8416718c9f11e2e295bbca3a13a0ab1383ccdef6e077b45359f6107446ea",
+      "line_count": 30
+    },
+    {
+      "repository": "retrieval-fixture",
+      "path": "utilities.rs",
+      "sha256": "72918b39a65e19c3a1480cce476f4f6a977d600bf1a5a09340ed501f4b2ee37f",
+      "line_count": 19
+    },
+    {
+      "repository": "retrieval-fixture",
+      "path": "vectors.rs",
+      "sha256": "218cb7f706da5e3e2ba865de2db585e28dcb9e8d72b9c7eb1cc16b39761e6636",
+      "line_count": 36
+    }
+  ],
+  "fingerprint": "0e14aba111325bc0a50bd23b52db97d1442855307a5c2e2e1f46a69782d3db9b"
+}

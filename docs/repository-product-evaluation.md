@@ -221,3 +221,10 @@ source-read evidence, with startup and resident-request timing recorded separate
 [Native Semble collection](repository-semble-collection.md) runs a local pinned source tree
 and local model in an isolated resident worker, with literal path-prefix selection before
 top-k. It retains native payloads, startup/search timing, model/source fingerprints and failures.
+
+## Inspect paired native outcomes
+
+[Paired diagnostics](repository-diagnostics.md) reports missing exported locations separately
+from anchors ranked below Top-10, while retaining failures and timing boundaries. The
+[measured native development pilot](../benchmarks/retrieval/native-pilot-2026-11-11-ca31444/README.md)
+contains real CodeRank MCP and Semble runs, with raw evidence and explicit fixture limits.
