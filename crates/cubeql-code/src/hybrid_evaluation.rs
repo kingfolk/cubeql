@@ -20,8 +20,8 @@ use crate::{
     invalid,
     reporting::{SnapshotInfo, elapsed_ms},
     retrieval::{
-        RetrievalHit, RetrievalOptions, RetrievedCodeHit, SearchStrategy, SnapshotTextIndex,
-        materialize_hits,
+        HybridTrace, RetrievalHit, RetrievalOptions, RetrievedCodeHit, SearchStrategy,
+        SnapshotTextIndex, materialize_hits,
     },
 };
 
@@ -44,6 +44,8 @@ pub struct HybridQueryResult {
     pub lexical: RetrievalStrategyResult,
     pub symbol: RetrievalStrategyResult,
     pub hybrid: RetrievalStrategyResult,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hybrid_trace: Option<HybridTrace>,
 }
 
 #[derive(Serialize)]
@@ -112,7 +114,7 @@ pub fn evaluate(
     dataset: &QuerySet,
     options: EvaluationOptions,
 ) -> Result<HybridEvaluationReport, CodeError> {
-    evaluate_internal(code, device, provider, dataset, options, false)
+    evaluate_internal(code, device, provider, dataset, options, false, false)
 }
 
 /// Evaluate and include source-free records for each final retained candidate window.
@@ -123,7 +125,18 @@ pub fn evaluate_with_candidates(
     dataset: &QuerySet,
     options: EvaluationOptions,
 ) -> Result<HybridEvaluationReport, CodeError> {
-    evaluate_internal(code, device, provider, dataset, options, true)
+    evaluate_internal(code, device, provider, dataset, options, true, false)
+}
+
+/// Evaluate with full candidate export and a source-free trace of each hybrid query.
+pub fn evaluate_with_trace(
+    code: CodeIndex,
+    device: &Device,
+    provider: &mut dyn EmbeddingProvider,
+    dataset: &QuerySet,
+    options: EvaluationOptions,
+) -> Result<HybridEvaluationReport, CodeError> {
+    evaluate_internal(code, device, provider, dataset, options, true, true)
 }
 
 fn evaluate_internal(
@@ -133,6 +146,7 @@ fn evaluate_internal(
     dataset: &QuerySet,
     options: EvaluationOptions,
     export_candidates: bool,
+    trace_hybrid: bool,
 ) -> Result<HybridEvaluationReport, CodeError> {
     let config = code
         .embedding_config()
@@ -183,6 +197,7 @@ fn evaluate_internal(
             let prepared = text_index.prepare(&case.filter, Some(&resident))?;
             let hybrid_filter_ms = elapsed_ms(start);
             let mut strategies = Vec::new();
+            let mut hybrid_trace = None;
             for strategy in [
                 SearchStrategy::Lexical,
                 SearchStrategy::Symbol,
@@ -199,9 +214,18 @@ fn evaluate_internal(
                 prepared.query(&case.text, Some(query), opts)?;
                 let mut hits = Vec::new();
                 let mut samples = Vec::new();
-                for _ in 0..options.repeats {
+                for repeat in 0..options.repeats {
                     let start = Instant::now();
-                    hits = prepared.query(&case.text, Some(query), opts)?.hits;
+                    if trace_hybrid
+                        && strategy == SearchStrategy::Hybrid
+                        && repeat + 1 == options.repeats
+                    {
+                        let traced = prepared.query_with_trace(&case.text, Some(query), opts)?;
+                        hits = traced.result.hits;
+                        hybrid_trace = Some(traced.trace);
+                    } else {
+                        hits = prepared.query(&case.text, Some(query), opts)?.hits;
+                    }
                     samples.push(elapsed_ms(start));
                 }
                 strategies.push(strategy_result(
@@ -219,6 +243,7 @@ fn evaluate_internal(
                 lexical: strategies.next().unwrap(),
                 symbol: strategies.next().unwrap(),
                 hybrid: strategies.next().unwrap(),
+                hybrid_trace,
             });
         }
         let mut overall = old.overall;
@@ -250,7 +275,13 @@ fn evaluate_internal(
         });
     }
     Ok(HybridEvaluationReport {
-        format_version: if export_candidates { 3 } else { 2 },
+        format_version: if trace_hybrid {
+            4
+        } else if export_candidates {
+            3
+        } else {
+            2
+        },
         dataset: baseline.dataset,
         backend: baseline.backend,
         options,

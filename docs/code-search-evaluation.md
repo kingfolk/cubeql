@@ -174,6 +174,30 @@ Do not interpret this accounting as a deduplicated physical-memory measurement.
 
 ## Limits and verification
 
+### Hybrid trace export
+
+`evaluate --trace-hybrid --format json` records a versioned, source-free trace of each hybrid
+query. The flag implies `--export-candidates`, so the evaluation report uses format version 4
+and keeps the full retained candidate rankings for all strategies. The outer CLI wrapper remains
+version 1. Text output is rejected before the index is loaded. `--export-candidates` by itself
+continues to produce evaluation format version 3; default evaluation remains version 2.
+
+Each `hybrid_trace` records the filtered semantic, lexical and symbol candidate lists in that
+order, the complete RRF union (with the existing f64 accumulation and ordering, scores serialized
+as f32), the complete greedy overlap-deduplicated list before `top_k`, suppressed row-to-kept-row
+pairs, and the final result rows. Each list has one-based ranks local to that list. Trace rows
+refer to the evaluated immutable snapshot. The export contains paths, symbols, line ranges and
+scores, but no source body or provenance payload. A zero `top_k` emits the three empty source
+lists and empty result arrays.
+
+The trace is collected from the same arrays and decisions used by retrieval; it does not rerun the
+branches. Query embedding still happens once and no extra provider encoding is performed. The
+timing sample for the last repeated hybrid query includes trace capture overhead, while earlier
+repeats do not. The branch and fused-record mapping happens outside their reported stage timers;
+the `dedup_ms` stage can include copying the kept-list locations and suppression pairs. Treat the
+last sample as instrumented retrieval time, not as an apples-to-apples speed measurement against
+an untraced run.
+
 ### Local smoke observation
 
 An Apple M1 run using the pinned MiniLM, debug builds, `candidate_k=24` and 5 repeats produced
