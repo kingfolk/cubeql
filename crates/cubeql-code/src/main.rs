@@ -9,7 +9,7 @@ use cubeql_code::{
     benchmark::{self, Dataset, RunOptions},
     build_repository_with_provider,
     evaluation::{EvaluationOptions, QuerySet},
-    hybrid_evaluation::evaluate,
+    hybrid_evaluation::{evaluate, evaluate_with_candidates},
     prepare_repository,
     reporting::{CodeFilter, RetrievalResponse, SearchTimings, SnapshotInfo, elapsed_ms},
     retrieval::{RetrievalOptions, SearchStrategy, SnapshotTextIndex, materialize_hits},
@@ -207,6 +207,9 @@ enum Command {
         /// Derive FP16 storage from this original FP32 snapshot; encode queries only once.
         #[arg(long)]
         compare_fp16: bool,
+        /// Include complete retained candidate windows (JSON output only).
+        #[arg(long, requires = "format")]
+        export_candidates: bool,
         #[command(flatten)]
         display: Output,
     },
@@ -895,8 +898,12 @@ fn main() -> Result<()> {
             candidate_k,
             repeats,
             compare_fp16,
+            export_candidates,
             display,
         } => {
+            if export_candidates && !matches!(display.format, OutputFormat::Json) {
+                return Err("--export-candidates requires --format json".into());
+            }
             let start = Instant::now();
             let code = CodeIndex::load_ipc(&index)?;
             let read_ms = elapsed_ms(start);
@@ -910,17 +917,28 @@ fn main() -> Result<()> {
                 encoder_config.as_deref(),
             )?;
             let model_load_ms = elapsed_ms(start);
-            let report = evaluate(
-                code,
-                &cubecl::Device::default(),
-                provider.as_mut(),
-                &dataset,
-                EvaluationOptions {
-                    candidate_k,
-                    repeats,
-                    compare_fp16,
-                },
-            )?;
+            let options = EvaluationOptions {
+                candidate_k,
+                repeats,
+                compare_fp16,
+            };
+            let report = if export_candidates {
+                evaluate_with_candidates(
+                    code,
+                    &cubecl::Device::default(),
+                    provider.as_mut(),
+                    &dataset,
+                    options,
+                )?
+            } else {
+                evaluate(
+                    code,
+                    &cubecl::Device::default(),
+                    provider.as_mut(),
+                    &dataset,
+                    options,
+                )?
+            };
             match display.format {
                 OutputFormat::Json => println!(
                     "{}",

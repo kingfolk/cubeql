@@ -228,6 +228,18 @@ pub struct StrategyResult {
     pub materialization_ms: f64,
     /// At most 10 display hits; metrics/MRR use the full candidate window.
     pub top_hits: Vec<CodeHit>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub candidate_ranking: Option<Vec<RankedCandidate>>,
+}
+
+/// A compact, source-free record of one hit in the evaluator's retained candidate window.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RankedCandidate {
+    pub rank: usize,
+    pub row: usize,
+    pub path: String,
+    pub symbol: String,
+    pub score: f32,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -294,8 +306,14 @@ fn strategy(
     hits: &[SearchHit],
     relevant: &BTreeSet<usize>,
     samples: Vec<f64>,
+    export_candidates: bool,
 ) -> Result<StrategyResult, CodeError> {
     let metrics = ranking_metrics(&hits.iter().map(|h| h.row).collect::<Vec<_>>(), relevant)?;
+    let candidate_ranking = if export_candidates {
+        Some(candidate_ranking(code, hits)?)
+    } else {
+        None
+    };
     let start = Instant::now();
     let top_hits = materialize(code, &hits[..hits.len().min(10)], false)?;
     Ok(StrategyResult {
@@ -303,7 +321,30 @@ fn strategy(
         retrieval: latency(samples),
         materialization_ms: elapsed_ms(start),
         top_hits,
+        candidate_ranking,
     })
+}
+
+fn candidate_ranking(
+    code: &CodeIndex,
+    hits: &[SearchHit],
+) -> Result<Vec<RankedCandidate>, CodeError> {
+    hits.iter()
+        .enumerate()
+        .map(|(index, hit)| {
+            let chunk = code
+                .chunks()
+                .get(hit.row)
+                .ok_or_else(|| invalid("candidate row is outside the saved snapshot"))?;
+            Ok(RankedCandidate {
+                rank: index + 1,
+                row: hit.row,
+                path: chunk.path.clone(),
+                symbol: chunk.symbol.clone(),
+                score: hit.score,
+            })
+        })
+        .collect()
 }
 
 fn summarize(results: &[&QueryResult]) -> BTreeMap<String, QualitySummary> {
@@ -341,6 +382,28 @@ pub fn evaluate(
     provider: &mut dyn EmbeddingProvider,
     dataset: &QuerySet,
     options: EvaluationOptions,
+) -> Result<EvaluationReport, CodeError> {
+    evaluate_internal(code, device, provider, dataset, options, false)
+}
+
+/// Evaluate and include source-free records for each final retained candidate window.
+pub fn evaluate_with_candidates(
+    code: CodeIndex,
+    device: &Device,
+    provider: &mut dyn EmbeddingProvider,
+    dataset: &QuerySet,
+    options: EvaluationOptions,
+) -> Result<EvaluationReport, CodeError> {
+    evaluate_internal(code, device, provider, dataset, options, true)
+}
+
+fn evaluate_internal(
+    code: CodeIndex,
+    device: &Device,
+    provider: &mut dyn EmbeddingProvider,
+    dataset: &QuerySet,
+    options: EvaluationOptions,
+    export_candidates: bool,
 ) -> Result<EvaluationReport, CodeError> {
     if options.candidate_k < 10 || options.repeats == 0 {
         return Err(invalid(
@@ -435,9 +498,27 @@ pub fn evaluate(
                 embedding_ms: *embedding_ms,
                 filter_ms,
                 first_semantic_ms,
-                semantic: strategy(search.code(), &semantic, relevant, semantic_times)?,
-                literal: strategy(search.code(), &literal, relevant, literal_times)?,
-                experimental_rrf: strategy(search.code(), &hybrid, relevant, hybrid_times)?,
+                semantic: strategy(
+                    search.code(),
+                    &semantic,
+                    relevant,
+                    semantic_times,
+                    export_candidates,
+                )?,
+                literal: strategy(
+                    search.code(),
+                    &literal,
+                    relevant,
+                    literal_times,
+                    export_candidates,
+                )?,
+                experimental_rrf: strategy(
+                    search.code(),
+                    &hybrid,
+                    relevant,
+                    hybrid_times,
+                    export_candidates,
+                )?,
             });
         }
         let overall = summarize(&results.iter().collect::<Vec<_>>());
@@ -459,7 +540,7 @@ pub fn evaluate(
         });
     }
     Ok(EvaluationReport {
-        format_version: 1,
+        format_version: if export_candidates { 2 } else { 1 },
         dataset: dataset.clone(),
         backend: format!("{device:?}"),
         options,

@@ -15,7 +15,7 @@ use crate::{
     CodeError, CodeIndex, CodeSearchIndex,
     evaluation::{
         self, EvaluationOptions, Latency, QualitySummary, QueryCategory, QueryResult, QuerySet,
-        RankingMetrics, ranking_metrics,
+        RankedCandidate, RankingMetrics, ranking_metrics,
     },
     invalid,
     reporting::{SnapshotInfo, elapsed_ms},
@@ -31,6 +31,8 @@ pub struct RetrievalStrategyResult {
     pub retrieval: Latency,
     pub materialization_ms: f64,
     pub top_hits: Vec<RetrievedCodeHit>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub candidate_ranking: Option<Vec<RankedCandidate>>,
 }
 
 #[derive(Serialize)]
@@ -110,6 +112,28 @@ pub fn evaluate(
     dataset: &QuerySet,
     options: EvaluationOptions,
 ) -> Result<HybridEvaluationReport, CodeError> {
+    evaluate_internal(code, device, provider, dataset, options, false)
+}
+
+/// Evaluate and include source-free records for each final retained candidate window.
+pub fn evaluate_with_candidates(
+    code: CodeIndex,
+    device: &Device,
+    provider: &mut dyn EmbeddingProvider,
+    dataset: &QuerySet,
+    options: EvaluationOptions,
+) -> Result<HybridEvaluationReport, CodeError> {
+    evaluate_internal(code, device, provider, dataset, options, true)
+}
+
+fn evaluate_internal(
+    code: CodeIndex,
+    device: &Device,
+    provider: &mut dyn EmbeddingProvider,
+    dataset: &QuerySet,
+    options: EvaluationOptions,
+    export_candidates: bool,
+) -> Result<HybridEvaluationReport, CodeError> {
     let config = code
         .embedding_config()
         .cloned()
@@ -120,7 +144,11 @@ pub fn evaluate(
     };
     // The original evaluator still owns validation, inference, baseline metrics and precision
     // guards. It runs first and frees its resident indexes before the current variants run.
-    let baseline = evaluation::evaluate(code.clone(), device, &mut capture, dataset, options)?;
+    let baseline = if export_candidates {
+        evaluation::evaluate_with_candidates(code.clone(), device, &mut capture, dataset, options)?
+    } else {
+        evaluation::evaluate(code.clone(), device, &mut capture, dataset, options)?
+    };
     let queries = capture
         .vectors
         .into_iter()
@@ -176,7 +204,13 @@ pub fn evaluate(
                     hits = prepared.query(&case.text, Some(query), opts)?.hits;
                     samples.push(elapsed_ms(start));
                 }
-                strategies.push(strategy_result(resident.code(), &hits, relevant, samples)?);
+                strategies.push(strategy_result(
+                    resident.code(),
+                    &hits,
+                    relevant,
+                    samples,
+                    export_candidates,
+                )?);
             }
             let mut strategies = strategies.into_iter();
             results.push(HybridQueryResult {
@@ -216,7 +250,7 @@ pub fn evaluate(
         });
     }
     Ok(HybridEvaluationReport {
-        format_version: 2,
+        format_version: if export_candidates { 3 } else { 2 },
         dataset: baseline.dataset,
         backend: baseline.backend,
         options,
@@ -232,6 +266,7 @@ fn strategy_result(
     hits: &[RetrievalHit],
     relevant: &BTreeSet<usize>,
     mut samples: Vec<f64>,
+    export_candidates: bool,
 ) -> Result<RetrievalStrategyResult, CodeError> {
     let metrics = ranking_metrics(&hits.iter().map(|h| h.row).collect::<Vec<_>>(), relevant)?;
     samples.sort_by(f64::total_cmp);
@@ -247,6 +282,28 @@ fn strategy_result(
         max_ms: samples[n - 1],
         samples: n,
     };
+    let candidate_ranking = if export_candidates {
+        Some(
+            hits.iter()
+                .enumerate()
+                .map(|(index, hit)| {
+                    let chunk = code
+                        .chunks()
+                        .get(hit.row)
+                        .ok_or_else(|| invalid("candidate row is outside the saved snapshot"))?;
+                    Ok(RankedCandidate {
+                        rank: index + 1,
+                        row: hit.row,
+                        path: chunk.path.clone(),
+                        symbol: chunk.symbol.clone(),
+                        score: hit.score,
+                    })
+                })
+                .collect::<Result<Vec<_>, CodeError>>()?,
+        )
+    } else {
+        None
+    };
     let start = Instant::now();
     let top_hits = materialize_hits(code, &hits[..hits.len().min(10)], false)?;
     Ok(RetrievalStrategyResult {
@@ -254,6 +311,7 @@ fn strategy_result(
         retrieval,
         materialization_ms: elapsed_ms(start),
         top_hits,
+        candidate_ranking,
     })
 }
 

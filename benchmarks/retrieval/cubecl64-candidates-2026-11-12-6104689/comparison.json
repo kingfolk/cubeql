@@ -1,0 +1,7 @@
+{
+  "query_count": 64,
+  "strategy_count": 6,
+  "changed_metric_or_display_cases": [],
+  "all_original_metrics_and_display_hits_identical": true,
+  "limits": "New executable, same preserved document vectors and local live query encoder; not an engine speedup comparison."
+}
