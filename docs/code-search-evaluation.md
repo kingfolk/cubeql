@@ -198,6 +198,9 @@ the `dedup_ms` stage can include copying the kept-list locations and suppression
 last sample as instrumented retrieval time, not as an apples-to-apples speed measurement against
 an untraced run.
 
+Use [observed Hybrid-stage diagnostics](repository-hybrid-trace.md) to validate these stages
+and locate each labeled anchor relative to branch budgets, suppression and truncation.
+
 ### Local smoke observation
 
 An Apple M1 run using the pinned MiniLM, debug builds, `candidate_k=24` and 5 repeats produced

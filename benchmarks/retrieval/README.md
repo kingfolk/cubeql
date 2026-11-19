@@ -5,6 +5,7 @@ developer diagnostics, not coding-agent success rates or comparisons with other 
 
 | Run date | CubeQL revision recorded for the run | Corpus | Report |
 |---|---|---|---|
+| 2026-11-19 | `8993fef`; preserved document vectors | CubeCL `5037c0639ce3` | [Observed Hybrid-stage diagnostics](cubecl64-hybrid-trace-2026-11-19-8993fef/README.md) |
 | 2026-11-12 | `6104689`; preserved document vectors | CubeCL `5037c0639ce3` | [Complete retained-window diagnostics](cubecl64-candidates-2026-11-12-6104689/README.md) |
 | 2026-11-12 | `965c21f` at launch; executable SHA recorded separately | CubeCL `5037c0639ce3` | [Original64 CodeRank CPU development run](cubecl64-coderank-2026-11-12-965c21f/README.md) |
 | 2026-11-11 | `ca31444` base; executable SHA recorded separately | Four-file synthetic Rust development fixture | [Real CodeRank MCP / Semble pilot](native-pilot-2026-11-11-ca31444/README.md) |

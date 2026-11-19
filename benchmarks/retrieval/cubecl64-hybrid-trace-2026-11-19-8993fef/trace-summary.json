@@ -1,0 +1,1009 @@
+{
+  "dataset": {
+    "categories": {
+      "behavioral": 16,
+      "conceptual": 16,
+      "cross_file": 16,
+      "identifier": 16
+    },
+    "label_unit": "native (path, symbol)",
+    "name": "cubecl-combined-development-v2",
+    "query_count": 64,
+    "query_ids": [
+      "identifier-trivial-unroll",
+      "identifier-custom-unroll",
+      "identifier-nvrtc",
+      "identifier-cache-namespace",
+      "identifier-launch-dimensions",
+      "identifier-driver-ptx",
+      "identifier-device-waiters",
+      "identifier-mem2reg",
+      "identifier-shared-allocation",
+      "identifier-memory-policy",
+      "concept-elementwise-pieces",
+      "concept-packed-conversion",
+      "concept-zero-initializer",
+      "concept-shader-language-selection",
+      "concept-promote-memory",
+      "concept-shared-single-block",
+      "concept-loaded-kernel-fast-path",
+      "concept-device-loss-callbacks",
+      "concept-inplace-write-attribution",
+      "concept-cast-logical-elements",
+      "behavior-reinterpret-unsplittable",
+      "behavior-extraction-after-split",
+      "behavior-scalar-cast-broadcast",
+      "behavior-shared-limit-unknown",
+      "behavior-old-driver-version",
+      "behavior-compile-error-source",
+      "behavior-register-after-loss",
+      "behavior-environment-cache-reset",
+      "behavior-discarded-launch-state",
+      "behavior-default-ssa-value",
+      "cross-cast-expansion-and-unroll",
+      "cross-unroll-interface-dispatch",
+      "cross-cuda-artifact-and-load",
+      "cross-driver-and-cache-identity",
+      "cross-axis-and-total-launch-limits",
+      "cross-loss-waiter-and-sync",
+      "cross-shared-offsets-and-rewrite",
+      "cross-ssa-merge-frontiers",
+      "cross-pooling-and-shader-visibility",
+      "cross-main-and-auxiliary-pools",
+      "v2-identifier-anchor",
+      "v2-identifier-patience",
+      "v2-identifier-samples",
+      "v2-identifier-swizzle",
+      "v2-identifier-reinterpret-size",
+      "v2-identifier-scale-rounding",
+      "v2-concept-timing-noise",
+      "v2-concept-layout-selection",
+      "v2-concept-positive-scale",
+      "v2-concept-roofline-bound",
+      "v2-concept-traffic-directions",
+      "v2-concept-partial-quant-blocks",
+      "v2-behavior-zero-patience",
+      "v2-behavior-shared-candidate",
+      "v2-behavior-biased-first-timing",
+      "v2-behavior-incompatible-byte-width",
+      "v2-behavior-swizzle-disabled",
+      "v2-behavior-zero-power-scale",
+      "v2-cross-patience-and-noise",
+      "v2-cross-host-device-scale",
+      "v2-cross-layout-and-contiguity",
+      "v2-cross-peak-time-and-threshold",
+      "v2-cross-rounding-bit-grid",
+      "v2-cross-tune-level-anchoring"
+    ]
+  },
+  "format_version": 1,
+  "limits": [
+    "Stage attribution is conditional on the exported filtered, bounded branch windows and fixed pipeline.",
+    "An anchor absent from those branch windows is not proven absent from the repository or the unbounded branch ranking.",
+    "Suppression records are geometric policy decisions, not judgments that the suppressed code is irrelevant.",
+    "Counts of anchor judgments include repeated labels across queries. Queries-with-stage counts can overlap.",
+    "Trace instrumentation can affect the native deduplication and last hybrid warm-repeat timings. No latency improvement or ranking-policy benefit is claimed.",
+    "These positive-label development observations do not establish independently reviewed validation or coding-agent success."
+  ],
+  "native_projection_canonical_sha256": "c924939f12b62883d2913566a8367031004e33831f7d2b7707dbcfafd98eea39",
+  "native_report_version": 4,
+  "options": {
+    "candidate_k": 100,
+    "compare_fp16": false,
+    "repeats": 3
+  },
+  "source": {
+    "canonical_sha256": "c9ed020976df209e83b7540564d2b4816929c9f6ac731f4f9d5b15af325faf96",
+    "raw_bytes_sha256": "420f78f1336b062c5b8dfba2a5d3bfc013845af19a0c15efbe9a2dde5114a5a2"
+  },
+  "variants": [
+    {
+      "by_category": {
+        "behavioral": {
+          "anchor_judgment_count": 18,
+          "anchor_stage_counts": {
+            "not_in_filtered_branch_windows": 1,
+            "retained_below_top10": 2,
+            "retained_top10": 15,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 0
+          },
+          "queries_with_stage": {
+            "not_in_filtered_branch_windows": 1,
+            "retained_below_top10": 2,
+            "retained_top10": 14,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 0
+          },
+          "query_count": 16
+        },
+        "conceptual": {
+          "anchor_judgment_count": 16,
+          "anchor_stage_counts": {
+            "not_in_filtered_branch_windows": 1,
+            "retained_below_top10": 5,
+            "retained_top10": 9,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 1
+          },
+          "queries_with_stage": {
+            "not_in_filtered_branch_windows": 1,
+            "retained_below_top10": 5,
+            "retained_top10": 9,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 1
+          },
+          "query_count": 16
+        },
+        "cross_file": {
+          "anchor_judgment_count": 39,
+          "anchor_stage_counts": {
+            "not_in_filtered_branch_windows": 9,
+            "retained_below_top10": 8,
+            "retained_top10": 18,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 4
+          },
+          "queries_with_stage": {
+            "not_in_filtered_branch_windows": 5,
+            "retained_below_top10": 8,
+            "retained_top10": 11,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 3
+          },
+          "query_count": 16
+        },
+        "identifier": {
+          "anchor_judgment_count": 16,
+          "anchor_stage_counts": {
+            "not_in_filtered_branch_windows": 0,
+            "retained_below_top10": 0,
+            "retained_top10": 16,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 0
+          },
+          "queries_with_stage": {
+            "not_in_filtered_branch_windows": 0,
+            "retained_below_top10": 0,
+            "retained_top10": 16,
+            "suppressed_by_overlap": 0,
+            "truncated_after_deduplication": 0
+          },
+          "query_count": 16
+        }
+      },
+      "native_final_windows": {
+        "experimental_rrf": {
+          "by_category": {
+            "behavioral": {
+              "all_required_at_window": 0.9375,
+              "failure_class_counts": {
+                "all_locations_in_top10": 10,
+                "missing_from_exported_window": 1,
+                "present_below_top10": 5
+              },
+              "mrr_at_window": 0.4969035578313829,
+              "query_count": 16,
+              "recall_at_window": 0.9375
+            },
+            "conceptual": {
+              "all_required_at_window": 0.5,
+              "failure_class_counts": {
+                "all_locations_in_top10": 6,
+                "missing_from_exported_window": 8,
+                "present_below_top10": 2
+              },
+              "mrr_at_window": 0.13793347551571236,
+              "query_count": 16,
+              "recall_at_window": 0.5
+            },
+            "cross_file": {
+              "all_required_at_window": 0.4375,
+              "failure_class_counts": {
+                "all_locations_in_top10": 2,
+                "missing_from_exported_window": 9,
+                "present_below_top10": 5
+              },
+              "mrr_at_window": 0.3665698450854701,
+              "query_count": 16,
+              "recall_at_window": 0.6145833333333334
+            },
+            "identifier": {
+              "all_required_at_window": 1.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 16,
+                "missing_from_exported_window": 0,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.8802083333333334,
+              "query_count": 16,
+              "recall_at_window": 1.0
+            }
+          },
+          "overall": {
+            "all_required_at_window": 0.71875,
+            "failure_class_counts": {
+              "all_locations_in_top10": 34,
+              "missing_from_exported_window": 18,
+              "present_below_top10": 12
+            },
+            "mrr_at_window": 0.47040380294147466,
+            "query_count": 64,
+            "recall_at_window": 0.7630208333333334
+          }
+        },
+        "hybrid": {
+          "by_category": {
+            "behavioral": {
+              "all_required_at_window": 0.9375,
+              "failure_class_counts": {
+                "all_locations_in_top10": 13,
+                "missing_from_exported_window": 1,
+                "present_below_top10": 2
+              },
+              "mrr_at_window": 0.43412698412698414,
+              "query_count": 16,
+              "recall_at_window": 0.9375
+            },
+            "conceptual": {
+              "all_required_at_window": 0.875,
+              "failure_class_counts": {
+                "all_locations_in_top10": 9,
+                "missing_from_exported_window": 2,
+                "present_below_top10": 5
+              },
+              "mrr_at_window": 0.31858864263755565,
+              "query_count": 16,
+              "recall_at_window": 0.875
+            },
+            "cross_file": {
+              "all_required_at_window": 0.5625,
+              "failure_class_counts": {
+                "all_locations_in_top10": 5,
+                "missing_from_exported_window": 7,
+                "present_below_top10": 4
+              },
+              "mrr_at_window": 0.4714973937503333,
+              "query_count": 16,
+              "recall_at_window": 0.703125
+            },
+            "identifier": {
+              "all_required_at_window": 1.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 16,
+                "missing_from_exported_window": 0,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.9583333333333334,
+              "query_count": 16,
+              "recall_at_window": 1.0
+            }
+          },
+          "overall": {
+            "all_required_at_window": 0.84375,
+            "failure_class_counts": {
+              "all_locations_in_top10": 43,
+              "missing_from_exported_window": 10,
+              "present_below_top10": 11
+            },
+            "mrr_at_window": 0.5456365884620517,
+            "query_count": 64,
+            "recall_at_window": 0.87890625
+          }
+        },
+        "lexical": {
+          "by_category": {
+            "behavioral": {
+              "all_required_at_window": 0.8125,
+              "failure_class_counts": {
+                "all_locations_in_top10": 8,
+                "missing_from_exported_window": 3,
+                "present_below_top10": 5
+              },
+              "mrr_at_window": 0.255381488671804,
+              "query_count": 16,
+              "recall_at_window": 0.84375
+            },
+            "conceptual": {
+              "all_required_at_window": 0.9375,
+              "failure_class_counts": {
+                "all_locations_in_top10": 9,
+                "missing_from_exported_window": 1,
+                "present_below_top10": 6
+              },
+              "mrr_at_window": 0.3278791089409927,
+              "query_count": 16,
+              "recall_at_window": 0.9375
+            },
+            "cross_file": {
+              "all_required_at_window": 0.5625,
+              "failure_class_counts": {
+                "all_locations_in_top10": 1,
+                "missing_from_exported_window": 7,
+                "present_below_top10": 8
+              },
+              "mrr_at_window": 0.48305173992673994,
+              "query_count": 16,
+              "recall_at_window": 0.7552083333333334
+            },
+            "identifier": {
+              "all_required_at_window": 1.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 13,
+                "missing_from_exported_window": 0,
+                "present_below_top10": 3
+              },
+              "mrr_at_window": 0.4677656615925059,
+              "query_count": 16,
+              "recall_at_window": 1.0
+            }
+          },
+          "overall": {
+            "all_required_at_window": 0.828125,
+            "failure_class_counts": {
+              "all_locations_in_top10": 31,
+              "missing_from_exported_window": 11,
+              "present_below_top10": 22
+            },
+            "mrr_at_window": 0.38351949978301064,
+            "query_count": 64,
+            "recall_at_window": 0.8841145833333334
+          }
+        },
+        "literal": {
+          "by_category": {
+            "behavioral": {
+              "all_required_at_window": 0.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 0,
+                "missing_from_exported_window": 16,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.0,
+              "query_count": 16,
+              "recall_at_window": 0.0
+            },
+            "conceptual": {
+              "all_required_at_window": 0.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 0,
+                "missing_from_exported_window": 16,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.0,
+              "query_count": 16,
+              "recall_at_window": 0.0
+            },
+            "cross_file": {
+              "all_required_at_window": 0.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 0,
+                "missing_from_exported_window": 16,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.0,
+              "query_count": 16,
+              "recall_at_window": 0.0
+            },
+            "identifier": {
+              "all_required_at_window": 1.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 16,
+                "missing_from_exported_window": 0,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 1.0,
+              "query_count": 16,
+              "recall_at_window": 1.0
+            }
+          },
+          "overall": {
+            "all_required_at_window": 0.25,
+            "failure_class_counts": {
+              "all_locations_in_top10": 16,
+              "missing_from_exported_window": 48,
+              "present_below_top10": 0
+            },
+            "mrr_at_window": 0.25,
+            "query_count": 64,
+            "recall_at_window": 0.25
+          }
+        },
+        "semantic": {
+          "by_category": {
+            "behavioral": {
+              "all_required_at_window": 0.9375,
+              "failure_class_counts": {
+                "all_locations_in_top10": 10,
+                "missing_from_exported_window": 1,
+                "present_below_top10": 5
+              },
+              "mrr_at_window": 0.4969035578313829,
+              "query_count": 16,
+              "recall_at_window": 0.9375
+            },
+            "conceptual": {
+              "all_required_at_window": 0.5,
+              "failure_class_counts": {
+                "all_locations_in_top10": 6,
+                "missing_from_exported_window": 8,
+                "present_below_top10": 2
+              },
+              "mrr_at_window": 0.13793347551571236,
+              "query_count": 16,
+              "recall_at_window": 0.5
+            },
+            "cross_file": {
+              "all_required_at_window": 0.4375,
+              "failure_class_counts": {
+                "all_locations_in_top10": 2,
+                "missing_from_exported_window": 9,
+                "present_below_top10": 5
+              },
+              "mrr_at_window": 0.3665698450854701,
+              "query_count": 16,
+              "recall_at_window": 0.6145833333333334
+            },
+            "identifier": {
+              "all_required_at_window": 1.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 14,
+                "missing_from_exported_window": 0,
+                "present_below_top10": 2
+              },
+              "mrr_at_window": 0.5406082887700535,
+              "query_count": 16,
+              "recall_at_window": 1.0
+            }
+          },
+          "overall": {
+            "all_required_at_window": 0.71875,
+            "failure_class_counts": {
+              "all_locations_in_top10": 32,
+              "missing_from_exported_window": 18,
+              "present_below_top10": 14
+            },
+            "mrr_at_window": 0.3855037918006547,
+            "query_count": 64,
+            "recall_at_window": 0.7630208333333334
+          }
+        },
+        "symbol": {
+          "by_category": {
+            "behavioral": {
+              "all_required_at_window": 0.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 0,
+                "missing_from_exported_window": 16,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.0,
+              "query_count": 16,
+              "recall_at_window": 0.0
+            },
+            "conceptual": {
+              "all_required_at_window": 0.0625,
+              "failure_class_counts": {
+                "all_locations_in_top10": 0,
+                "missing_from_exported_window": 15,
+                "present_below_top10": 1
+              },
+              "mrr_at_window": 0.0008680555555555555,
+              "query_count": 16,
+              "recall_at_window": 0.0625
+            },
+            "cross_file": {
+              "all_required_at_window": 0.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 0,
+                "missing_from_exported_window": 16,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 0.000992063492063492,
+              "query_count": 16,
+              "recall_at_window": 0.03125
+            },
+            "identifier": {
+              "all_required_at_window": 1.0,
+              "failure_class_counts": {
+                "all_locations_in_top10": 16,
+                "missing_from_exported_window": 0,
+                "present_below_top10": 0
+              },
+              "mrr_at_window": 1.0,
+              "query_count": 16,
+              "recall_at_window": 1.0
+            }
+          },
+          "overall": {
+            "all_required_at_window": 0.265625,
+            "failure_class_counts": {
+              "all_locations_in_top10": 16,
+              "missing_from_exported_window": 47,
+              "present_below_top10": 1
+            },
+            "mrr_at_window": 0.25046502976190477,
+            "query_count": 64,
+            "recall_at_window": 0.2734375
+          }
+        }
+      },
+      "native_overall": {
+        "experimental_rrf": {
+          "mrr": 0.4704038029414746,
+          "queries": 64,
+          "recall_at_10": 0.5911458333333333,
+          "recall_at_5": 0.5208333333333333
+        },
+        "hybrid": {
+          "mrr": 0.5456365884620517,
+          "queries": 64,
+          "recall_at_10": 0.7291666666666667,
+          "recall_at_5": 0.6276041666666667
+        },
+        "lexical": {
+          "mrr": 0.3835194997830106,
+          "queries": 64,
+          "recall_at_10": 0.5494791666666666,
+          "recall_at_5": 0.4192708333333333
+        },
+        "literal": {
+          "mrr": 0.25,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25
+        },
+        "semantic": {
+          "mrr": 0.3855037918006547,
+          "queries": 64,
+          "recall_at_10": 0.5598958333333333,
+          "recall_at_5": 0.4739583333333333
+        },
+        "symbol": {
+          "mrr": 0.25046502976190477,
+          "queries": 64,
+          "recall_at_10": 0.25,
+          "recall_at_5": 0.25
+        }
+      },
+      "overall": {
+        "anchor_judgment_count": 89,
+        "anchor_stage_counts": {
+          "not_in_filtered_branch_windows": 11,
+          "retained_below_top10": 15,
+          "retained_top10": 58,
+          "suppressed_by_overlap": 0,
+          "truncated_after_deduplication": 5
+        },
+        "queries_with_stage": {
+          "not_in_filtered_branch_windows": 7,
+          "retained_below_top10": 15,
+          "retained_top10": 50,
+          "suppressed_by_overlap": 0,
+          "truncated_after_deduplication": 4
+        },
+        "query_count": 64
+      },
+      "precision": "fp32",
+      "missing_final_window_queries": [
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": 94,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": 183,
+              "final_rank": null,
+              "fused_rank": 183,
+              "path": "crates/cubecl-wgpu/src/compiler/base.rs",
+              "stage": "truncated_after_deduplication",
+              "suppressed_by": null,
+              "symbol": "<AutoCompiler as WgpuCompiler>::init"
+            }
+          ],
+          "category": "conceptual",
+          "id": "concept-shader-language-selection"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-opt/src/passes/alloc_shared_memory.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "<AllocateSharedMemoryBlockPass as Pass>::run"
+            }
+          ],
+          "category": "conceptual",
+          "id": "concept-shared-single-block"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "<CompositeExtractOp as CustomUnrollOp>::unroll"
+            }
+          ],
+          "category": "behavioral",
+          "id": "behavior-extraction-after-split"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-core/src/frontend/element/cast.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "cast_value"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "<CastOp as CustomUnrollOp>::unroll"
+            }
+          ],
+          "category": "cross_file",
+          "id": "cross-cast-expansion-and-unroll"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-ir/src/interfaces/mod.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "TriviallyUnrollable"
+            },
+            {
+              "branch_ranks": {
+                "lexical": 21,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": 76,
+              "final_rank": 76,
+              "fused_rank": 76,
+              "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+              "stage": "retained_below_top10",
+              "suppressed_by": null,
+              "symbol": "<UnrollPass as Pass>::run"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-core/src/post_processing/unroll.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "unroll_default"
+            }
+          ],
+          "category": "cross_file",
+          "id": "cross-unroll-interface-dispatch"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-server/src/validation.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "validate_cube_dim"
+            },
+            {
+              "branch_ranks": {
+                "lexical": 13,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": 47,
+              "final_rank": 47,
+              "fused_rank": 47,
+              "path": "crates/cubecl-server/src/validation.rs",
+              "stage": "retained_below_top10",
+              "suppressed_by": null,
+              "symbol": "validate_units"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-ir/src/settings.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "Dim3::num_elems"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-ir/src/settings.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "Dim3::can_contain"
+            }
+          ],
+          "category": "cross_file",
+          "id": "cross-axis-and-total-launch-limits"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": 1,
+                "semantic": 1,
+                "symbol": null
+              },
+              "deduplicated_rank": 1,
+              "final_rank": 1,
+              "fused_rank": 1,
+              "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+              "stage": "retained_top10",
+              "suppressed_by": null,
+              "symbol": "PoisonWatch::wake_on_loss"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-wgpu/src/compute/device_poison.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "PoisonWatch::poison"
+            },
+            {
+              "branch_ranks": {
+                "lexical": 22,
+                "semantic": 27,
+                "symbol": null
+              },
+              "deduplicated_rank": 5,
+              "final_rank": 5,
+              "fused_rank": 5,
+              "path": "crates/cubecl-wgpu/src/compute/stream.rs",
+              "stage": "retained_top10",
+              "suppressed_by": null,
+              "symbol": "WgpuStream::sync"
+            }
+          ],
+          "category": "cross_file",
+          "id": "cross-loss-waiter-and-sync"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": 96,
+                "symbol": null
+              },
+              "deduplicated_rank": 185,
+              "final_rank": null,
+              "fused_rank": 185,
+              "path": "crates/cubecl-runtime/src/tune/patience.rs",
+              "stage": "truncated_after_deduplication",
+              "suppressed_by": null,
+              "symbol": "PatienceTracker::record"
+            },
+            {
+              "branch_ranks": {
+                "lexical": 60,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": 122,
+              "final_rank": null,
+              "fused_rank": 122,
+              "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+              "stage": "truncated_after_deduplication",
+              "suppressed_by": null,
+              "symbol": "TimeChange::of"
+            }
+          ],
+          "category": "cross_file",
+          "id": "v2-cross-patience-and-noise"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": 2,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": 30,
+              "final_rank": 30,
+              "fused_rank": 30,
+              "path": "crates/cubecl-std/src/tensor/layout/linear.rs",
+              "stage": "retained_below_top10",
+              "suppressed_by": null,
+              "symbol": "<LinearViewLayout as ViewLayoutLaunchArg>::register"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": null,
+              "final_rank": null,
+              "fused_rank": null,
+              "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+              "stage": "not_in_filtered_branch_windows",
+              "suppressed_by": null,
+              "symbol": "is_contiguous"
+            },
+            {
+              "branch_ranks": {
+                "lexical": 79,
+                "semantic": null,
+                "symbol": null
+              },
+              "deduplicated_rank": 171,
+              "final_rank": null,
+              "fused_rank": 171,
+              "path": "crates/cubecl-std/src/tensor/contiguous/base.rs",
+              "stage": "truncated_after_deduplication",
+              "suppressed_by": null,
+              "symbol": "is_contiguous_pitched"
+            }
+          ],
+          "category": "cross_file",
+          "id": "v2-cross-layout-and-contiguity"
+        },
+        {
+          "anchors": [
+            {
+              "branch_ranks": {
+                "lexical": 1,
+                "semantic": 2,
+                "symbol": null
+              },
+              "deduplicated_rank": 1,
+              "final_rank": 1,
+              "fused_rank": 1,
+              "path": "crates/cubecl-runtime/src/config/autotune.rs",
+              "stage": "retained_top10",
+              "suppressed_by": null,
+              "symbol": "AutotuneLevel"
+            },
+            {
+              "branch_ranks": {
+                "lexical": null,
+                "semantic": 44,
+                "symbol": null
+              },
+              "deduplicated_rank": 126,
+              "final_rank": null,
+              "fused_rank": 126,
+              "path": "crates/cubecl-runtime/src/tune/util.rs",
+              "stage": "truncated_after_deduplication",
+              "suppressed_by": null,
+              "symbol": "anchor"
+            },
+            {
+              "branch_ranks": {
+                "lexical": 84,
+                "semantic": 59,
+                "symbol": null
+              },
+              "deduplicated_rank": 22,
+              "final_rank": 22,
+              "fused_rank": 22,
+              "path": "crates/cubecl-runtime/src/tune/util.rs",
+              "stage": "retained_below_top10",
+              "suppressed_by": null,
+              "symbol": "load_autotune_level"
+            }
+          ],
+          "category": "cross_file",
+          "id": "v2-cross-tune-level-anchoring"
+        }
+      ],
+      "retained_regression": {
+        "anchors": [
+          {
+            "branch_ranks": {
+              "lexical": null,
+              "semantic": 4,
+              "symbol": null
+            },
+            "deduplicated_rank": 25,
+            "final_rank": 25,
+            "fused_rank": 25,
+            "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+            "stage": "retained_below_top10",
+            "suppressed_by": null,
+            "symbol": "SampleSet::reliable"
+          },
+          {
+            "branch_ranks": {
+              "lexical": 13,
+              "semantic": 2,
+              "symbol": null
+            },
+            "deduplicated_rank": 2,
+            "final_rank": 2,
+            "fused_rank": 2,
+            "path": "crates/cubecl-runtime/src/tune/sampler.rs",
+            "stage": "retained_top10",
+            "suppressed_by": null,
+            "symbol": "DISCARD_THRESHOLD"
+          }
+        ],
+        "category": "behavioral",
+        "id": "v2-behavior-biased-first-timing"
+      }
+    }
+  ],
+  "full_diagnostics_archive_member": "diagnostics/diagnostics.json"
+}
