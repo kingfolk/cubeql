@@ -90,3 +90,9 @@ canonical report fingerprint.
 This audit is not wired into the existing `repository_eval score` command. That
 CLI remains exploratory and is not gated by review audit readiness. Existing
 plan, run, scoring, and ranking formats are unchanged.
+
+## Freeze an experiment after review
+
+The [frozen experiment workflow](repository-experiments.md) requires a ready audit,
+embeds its complete source inputs, and binds all declared arms to a paired report.
+It does not authenticate review or execution, or prove temporal preregistration.
