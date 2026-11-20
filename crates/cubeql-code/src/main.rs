@@ -9,7 +9,7 @@ use cubeql_code::{
     benchmark::{self, Dataset, RunOptions},
     build_repository_with_provider,
     evaluation::{EvaluationOptions, QuerySet},
-    hybrid_evaluation::{evaluate, evaluate_with_candidates},
+    hybrid_evaluation::{evaluate, evaluate_with_candidates, evaluate_with_trace},
     prepare_repository,
     reporting::{CodeFilter, RetrievalResponse, SearchTimings, SnapshotInfo, elapsed_ms},
     retrieval::{RetrievalOptions, SearchStrategy, SnapshotTextIndex, materialize_hits},
@@ -210,6 +210,9 @@ enum Command {
         /// Include complete retained candidate windows (JSON output only).
         #[arg(long, requires = "format")]
         export_candidates: bool,
+        /// Capture the actual hybrid branch, fusion, and overlap decisions (JSON only).
+        #[arg(long)]
+        trace_hybrid: bool,
         #[command(flatten)]
         display: Output,
     },
@@ -899,10 +902,12 @@ fn main() -> Result<()> {
             repeats,
             compare_fp16,
             export_candidates,
+            trace_hybrid,
             display,
         } => {
-            if export_candidates && !matches!(display.format, OutputFormat::Json) {
-                return Err("--export-candidates requires --format json".into());
+            if (export_candidates || trace_hybrid) && !matches!(display.format, OutputFormat::Json)
+            {
+                return Err("--export-candidates and --trace-hybrid require --format json".into());
             }
             let start = Instant::now();
             let code = CodeIndex::load_ipc(&index)?;
@@ -922,7 +927,15 @@ fn main() -> Result<()> {
                 repeats,
                 compare_fp16,
             };
-            let report = if export_candidates {
+            let report = if trace_hybrid {
+                evaluate_with_trace(
+                    code,
+                    &cubecl::Device::default(),
+                    provider.as_mut(),
+                    &dataset,
+                    options,
+                )?
+            } else if export_candidates {
                 evaluate_with_candidates(
                     code,
                     &cubecl::Device::default(),

@@ -149,6 +149,48 @@ pub struct RetrievalResult {
     pub timings: RetrievalTimings,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct TraceCandidate {
+    pub rank: usize,
+    pub row: usize,
+    pub path: String,
+    pub symbol: String,
+    pub start_line: u32,
+    pub end_line: u32,
+    pub score: f32,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct BranchTrace {
+    pub source: RetrievalSource,
+    pub candidates: Vec<TraceCandidate>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Suppression {
+    pub row: usize,
+    pub kept_row: usize,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct HybridTrace {
+    pub format_version: u32,
+    pub candidate_k: usize,
+    pub top_k: usize,
+    pub deduplicate: bool,
+    pub rrf_rank_constant: usize,
+    pub sources: Vec<BranchTrace>,
+    pub fused: Vec<TraceCandidate>,
+    pub deduplicated: Vec<TraceCandidate>,
+    pub suppressions: Vec<Suppression>,
+    pub final_rows: Vec<usize>,
+}
+
+pub struct TracedRetrievalResult {
+    pub result: RetrievalResult,
+    pub trace: HybridTrace,
+}
+
 /// A host inverted index and syntax-symbol lookup over one immutable Arrow code snapshot.
 /// Rebuild once after loading a new snapshot; reuse it for repeated queries. No model/device
 /// is required by the lexical or symbol adapters. This is not BM25 or a live ripgrep wrapper.
@@ -249,16 +291,67 @@ impl PreparedRetrieval<'_, '_> {
         query: Option<&EmbeddedQuery>,
         options: RetrievalOptions,
     ) -> Result<RetrievalResult, CodeError> {
+        self.query_internal(text, query, options, false)
+            .map(|(result, _)| result)
+    }
+
+    /// Query hybrid retrieval once while capturing its actual branch, fusion and dedup decisions.
+    pub fn query_with_trace(
+        &self,
+        text: &str,
+        query: Option<&EmbeddedQuery>,
+        options: RetrievalOptions,
+    ) -> Result<TracedRetrievalResult, CodeError> {
+        if options.strategy != SearchStrategy::Hybrid {
+            return Err(invalid("hybrid trace requires the hybrid strategy"));
+        }
+        let (result, trace) = self.query_internal(text, query, options, true)?;
+        Ok(TracedRetrievalResult {
+            result,
+            trace: trace.expect("trace requested"),
+        })
+    }
+
+    fn query_internal(
+        &self,
+        text: &str,
+        query: Option<&EmbeddedQuery>,
+        options: RetrievalOptions,
+        capture_trace: bool,
+    ) -> Result<(RetrievalResult, Option<HybridTrace>), CodeError> {
         options.validate()?;
         if text.trim().is_empty() {
             return Err(invalid("search text must not be empty"));
         }
         let mut timings = RetrievalTimings::default();
         if options.top_k == 0 {
-            return Ok(RetrievalResult {
+            let result = RetrievalResult {
                 hits: Vec::new(),
                 timings,
+            };
+            let trace = capture_trace.then(|| HybridTrace {
+                format_version: 1,
+                candidate_k: options.candidate_k,
+                top_k: options.top_k,
+                deduplicate: options.deduplicate,
+                rrf_rank_constant: 60,
+                sources: [
+                    RetrievalSource::Semantic,
+                    RetrievalSource::Lexical,
+                    RetrievalSource::Symbol,
+                ]
+                .into_iter()
+                .map(|source| BranchTrace {
+                    source,
+                    candidates: Vec::new(),
+                })
+                .collect(),
+                fused: Vec::new(),
+                deduplicated: Vec::new(),
+                suppressions: Vec::new(),
+                final_rows: Vec::new(),
             });
+            return Ok((result, trace));
         }
         let mut lists = Vec::<(RetrievalSource, Vec<SearchHit>)>::new();
         if options.strategy.needs_embedding() {
@@ -306,6 +399,15 @@ impl PreparedRetrieval<'_, '_> {
                 });
             }
         }
+        let sources = if capture_trace {
+            Some(trace_sources(
+                self.index.code.chunks(),
+                &lists,
+                options.candidate_k,
+            )?)
+        } else {
+            None
+        };
         let start = Instant::now();
         let raw = if options.strategy == SearchStrategy::Hybrid {
             reciprocal_rank_fusion(
@@ -315,7 +417,7 @@ impl PreparedRetrieval<'_, '_> {
         } else {
             lists.pop().unwrap().1
         };
-        let hits = raw
+        let hits: Vec<RetrievalHit> = raw
             .into_iter()
             .map(|h| RetrievalHit {
                 row: h.row,
@@ -325,16 +427,48 @@ impl PreparedRetrieval<'_, '_> {
             })
             .collect();
         timings.fusion_ms = elapsed_ms(start);
+        let fused = if capture_trace {
+            Some(trace_retrieval_hits(self.index.code.chunks(), &hits)?)
+        } else {
+            None
+        };
         let start = Instant::now();
         let mut hits = if options.deduplicate {
             deduplicate(self.index.code.chunks(), hits)
         } else {
             hits
         };
+        let (deduplicated, suppressions) = if capture_trace {
+            let candidates = trace_retrieval_hits(self.index.code.chunks(), &hits)?;
+            let mut suppressions = Vec::new();
+            for kept in &hits {
+                for suppressed in &kept.suppressed_overlaps {
+                    suppressions.push(Suppression {
+                        row: suppressed.row,
+                        kept_row: kept.row,
+                    });
+                }
+            }
+            (Some(candidates), suppressions)
+        } else {
+            (None, Vec::new())
+        };
         // Deduplicate before truncating, so overlapping candidates do not waste result slots.
         hits.truncate(options.top_k);
         timings.dedup_ms = elapsed_ms(start);
-        Ok(RetrievalResult { hits, timings })
+        let trace = capture_trace.then(|| HybridTrace {
+            format_version: 1,
+            candidate_k: options.candidate_k,
+            top_k: options.top_k,
+            deduplicate: options.deduplicate,
+            rrf_rank_constant: 60,
+            sources: sources.expect("trace requested"),
+            fused: fused.expect("trace requested"),
+            deduplicated: deduplicated.expect("trace requested"),
+            suppressions,
+            final_rows: hits.iter().map(|h| h.row).collect(),
+        });
+        Ok((RetrievalResult { hits, timings }, trace))
     }
 
     fn lexical(&self, text: &str, k: usize) -> Vec<SearchHit> {
@@ -425,6 +559,80 @@ fn sorted(mut hits: Vec<SearchHit>, k: usize) -> Vec<SearchHit> {
     hits.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.row.cmp(&b.row)));
     hits.truncate(k);
     hits
+}
+
+fn trace_sources(
+    chunks: &[CodeChunk],
+    lists: &[(RetrievalSource, Vec<SearchHit>)],
+    candidate_k: usize,
+) -> Result<Vec<BranchTrace>, CodeError> {
+    [
+        RetrievalSource::Semantic,
+        RetrievalSource::Lexical,
+        RetrievalSource::Symbol,
+    ]
+    .into_iter()
+    .map(|source| {
+        let candidates = lists
+            .iter()
+            .find(|(listed_source, _)| *listed_source == source)
+            .map(|(_, hits)| {
+                if hits.len() > candidate_k {
+                    return Err(invalid("trace branch exceeds candidate_k"));
+                }
+                trace_candidates(chunks, hits)
+            })
+            .transpose()?
+            .unwrap_or_default();
+        Ok(BranchTrace { source, candidates })
+    })
+    .collect()
+}
+
+fn trace_candidates(
+    chunks: &[CodeChunk],
+    hits: &[SearchHit],
+) -> Result<Vec<TraceCandidate>, CodeError> {
+    hits.iter()
+        .enumerate()
+        .map(|(rank, hit)| {
+            let chunk = chunks
+                .get(hit.row)
+                .ok_or_else(|| invalid("trace candidate row is outside the saved snapshot"))?;
+            Ok(TraceCandidate {
+                rank: rank + 1,
+                row: hit.row,
+                path: chunk.path.clone(),
+                symbol: chunk.symbol.clone(),
+                start_line: chunk.start_line,
+                end_line: chunk.end_line,
+                score: hit.score,
+            })
+        })
+        .collect()
+}
+
+fn trace_retrieval_hits(
+    chunks: &[CodeChunk],
+    hits: &[RetrievalHit],
+) -> Result<Vec<TraceCandidate>, CodeError> {
+    hits.iter()
+        .enumerate()
+        .map(|(rank, hit)| {
+            let chunk = chunks
+                .get(hit.row)
+                .ok_or_else(|| invalid("trace candidate row is outside the saved snapshot"))?;
+            Ok(TraceCandidate {
+                rank: rank + 1,
+                row: hit.row,
+                path: chunk.path.clone(),
+                symbol: chunk.symbol.clone(),
+                start_line: chunk.start_line,
+                end_line: chunk.end_line,
+                score: hit.score,
+            })
+        })
+        .collect()
 }
 
 /// Greedy, rank-preserving suppression for the same path with line-range IoU >= 0.8.
