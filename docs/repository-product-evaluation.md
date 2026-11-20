@@ -228,3 +228,10 @@ top-k. It retains native payloads, startup/search timing, model/source fingerpri
 from anchors ranked below Top-10, while retaining failures and timing boundaries. The
 [measured native development pilot](../benchmarks/retrieval/native-pilot-2026-11-11-ca31444/README.md)
 contains real CodeRank MCP and Semble runs, with raw evidence and explicit fixture limits.
+
+## Audit validation review
+
+[Validation review](repository-validation.md) binds declared authors and reviewers to a
+frozen validation plan and checks normalized query text and frozen anchor overlap against
+supplied development plans. The audit records pending work; it does not authenticate
+reviewers or turn development scores into held-out evidence.
