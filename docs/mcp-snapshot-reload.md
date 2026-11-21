@@ -6,7 +6,7 @@ selects a previously configured reload source by its tool name and supplies an
 the candidate before changing the active snapshot.
 
 Preflight opens one regular file, checks its reported size, reads at most the configured byte
-limit plus one byte, and rejects growth beyond that limit. The default limit is 512 MiB. It
+limit plus one byte, and rejects growth beyond that limit. MCP uses a fixed 512 MiB replacement limit; library preflight callers supply their own bound. It
 hashes the bounded byte buffer with BLAKE3 and parses that same buffer as CubeQL IPC, producing
 an identity of the form `blake3:<hex>`. This ties the identity to the exact bytes parsed. The
 input-byte limit does not bound decoded memory use or parsing time.
@@ -84,3 +84,15 @@ configured strategy restriction. Updating source files alone does not refresh th
 Library callers constructing `ServerOptions` now set `reload_index: None` for the existing
 behavior or `Some(path)` to opt in. No snapshot persistence or search/read response version is
 changed. This feature changes lifecycle behavior, not ranking policy or relevance judgments.
+
+## Run local incremental-update acceptance
+
+`tools/mcp_reload_smoke.py` runs a create-new two-file fixture through index, update,
+MCP discovery, failed reload retention, explicit changed reload, stale-handle rejection,
+source freshness, and a no-op reload. It accepts a trusted local encoder profile or uses
+hash fixtures. See the [measured CodeRank lifecycle report](../benchmarks/retrieval/mcp-reload-2026-11-20-700cdc4/README.md)
+for exact commands, independent encoder PID/load receipts, timing and memory limits.
+This is separate from retrieval-quality validation and the deferred human-review backlog.
+
+Reload does not restart an unhealthy encoder or change its configuration; recover a failed
+provider by restarting the server. The replacement byte limit does not change initial-load behavior.
