@@ -98,6 +98,29 @@ pub struct ReadRequest {
     pub max_bytes: usize,
 }
 
+/// Explicit compare-and-swap reload of the operator-configured snapshot path.
+#[derive(Debug, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReloadRequest {
+    /// Current snapshot_id from search_code. Reloads never accept a file path.
+    pub expected_snapshot_id: String,
+}
+impl ReloadRequest {
+    pub(crate) fn validate(&self) -> Result<(), ToolFailure> {
+        let hash = self.expected_snapshot_id.strip_prefix("blake3:");
+        if !hash.is_some_and(|h| {
+            h.len() == 64
+                && h.bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        }) {
+            return Err(ToolFailure::invalid(
+                "expected_snapshot_id must be blake3:<64 lowercase hex digits>",
+            ));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CheckRequest {
