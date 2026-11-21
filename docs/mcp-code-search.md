@@ -172,8 +172,10 @@ serialized on that thread. It owns the values directly, avoiding self-referentia
 objects and avoiding a new Send/Sync requirement on the existing provider trait. The async MCP
 handler sends work through a bounded queue and awaits a reply without blocking its runtime.
 
-- One immutable snapshot per process; no reload, watcher, update or write tool.
-- Restart after separately building an updated snapshot. Replacing/removing the IPC file or
+- One active immutable snapshot per process. Explicit reload is opt-in through `--reload-index`;
+  there is no watcher, index-building tool or file-write tool.
+- By default restart after separately building an updated snapshot; opt-in sessions may use
+  [explicit reload](mcp-snapshot-reload.md). Replacing/removing the IPC file or
   editing the repository does not change a running session.
 - Optional `check_code` uses an explicitly configured `--workspace-root` and the new snapshot
   file manifest to check current file contents. No live source text is returned, and neither

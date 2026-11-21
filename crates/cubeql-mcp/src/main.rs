@@ -6,10 +6,13 @@ use cubeql_mcp::{CodeServer, ServerOptions};
 use rmcp::{ServiceExt, transport::stdio};
 
 #[derive(Parser)]
-#[command(version, about = "Read-only CubeQL code retrieval over MCP stdio")]
+#[command(version, about = "Snapshot-local CubeQL code retrieval over MCP stdio")]
 struct Cli {
-    /// Immutable Arrow code snapshot. Restart to load a new snapshot.
+    /// Initial immutable Arrow code snapshot.
     index: PathBuf,
+    /// Enable explicit reload_snapshot from this fixed operator-selected path (512 MiB input limit).
+    #[arg(long)]
+    reload_index: Option<PathBuf>,
     /// Existing pinned MiniLM directory; no automatic downloads.
     #[arg(long, conflicts_with_all = ["encoder_config", "text_only"])]
     model_dir: Option<PathBuf>,
@@ -32,6 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
     let server = CodeServer::start(ServerOptions {
         index: args.index,
+        reload_index: args.reload_index,
         model_dir: args.model_dir,
         encoder_config: args.encoder_config,
         text_only: args.text_only,
