@@ -2,6 +2,7 @@
 //! existing libraries; this crate only manages a persistent session and a small tool contract.
 pub mod contract;
 mod freshness;
+pub mod snapshot;
 mod worker;
 
 use contract::{CheckRequest, ReadRequest, SearchRequest, ToolFailure};

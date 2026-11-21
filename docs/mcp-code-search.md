@@ -234,3 +234,9 @@ measured. Next, attach it to one real client and compare the same model/tasks/bu
 ordinary search tools, (B) ordinary tools plus CubeQL lexical, and (C) ordinary tools plus hybrid.
 Use reviewed real-repository tasks, repeat trials, and measure success, tool calls, tokens and
 total latency. The old whole-query literal baseline is not a substitute for that experiment.
+
+## Replacement snapshot preflight
+
+The [snapshot reload contract](mcp-snapshot-reload.md) defines bounded, same-byte
+identity and embedding compatibility checks for operator-selected replacement snapshots.
+The reusable preflight does not create a provider, upload vectors, or change session state.
