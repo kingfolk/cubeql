@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "model": "local CodeRankEmbed-256 FP32 CPU",
+  "mcp_pid": 57733,
+  "encoder_pid": 57734,
+  "mcp_encoder_ready_events": 1,
+  "mcp_query_encoding_events": 6,
+  "total_encoder_ready_events_including_separate_index_update": 3,
+  "encoder_peak_rss_bytes_first_query": 1618919424,
+  "encoder_peak_rss_bytes_last_query": 1618919424,
+  "query_encoding_ms": [
+    69.48054092936218,
+    46.08216602355242,
+    46.71350005082786,
+    45.84924993105233,
+    42.84054203890264,
+    46.252625063061714
+  ],
+  "changed_reload": {
+    "changed": true,
+    "chunks": 2,
+    "format_version": 1,
+    "preflight_ms": 0.694959,
+    "prepare_ms": 0.0675,
+    "previous_snapshot_id": "blake3:82267664588666090996141b1b7f968b5ccefaa4f9ff3b318c20b2e87aacd0c9",
+    "provider_reused": true,
+    "reload_ms": 0.862292,
+    "snapshot_id": "blake3:a4e1b0e6c2d727f2efc587948c1e7cb41af417f485c36d4113c71c4747824b20",
+    "source": "snapshot_reload",
+    "text_index_ms": 0.07162500000000001
+  },
+  "parent_rss_samples": [
+    {
+      "phase": "before_update",
+      "mcp_pid": 57733,
+      "mcp_rss_bytes": 74383360
+    },
+    {
+      "phase": "after_reload",
+      "mcp_pid": 57733,
+      "mcp_rss_bytes": 57507840
+    }
+  ],
+  "limits": "One two-file lifecycle run, not relevance, a load test, controlled latency comparison or process-tree peak RSS. Parent RSS sampled only before update and after reload; encoder self-reported peak is cumulative high-water."
+}
