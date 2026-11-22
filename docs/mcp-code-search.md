@@ -172,8 +172,10 @@ serialized on that thread. It owns the values directly, avoiding self-referentia
 objects and avoiding a new Send/Sync requirement on the existing provider trait. The async MCP
 handler sends work through a bounded queue and awaits a reply without blocking its runtime.
 
-- One immutable snapshot per process; no reload, watcher, update or write tool.
-- Restart after separately building an updated snapshot. Replacing/removing the IPC file or
+- One active immutable snapshot per process. Explicit reload is opt-in through `--reload-index`;
+  there is no watcher, index-building tool or file-write tool.
+- By default restart after separately building an updated snapshot; opt-in sessions may use
+  [explicit reload](mcp-snapshot-reload.md). Replacing/removing the IPC file or
   editing the repository does not change a running session.
 - Optional `check_code` uses an explicitly configured `--workspace-root` and the new snapshot
   file manifest to check current file contents. No live source text is returned, and neither
@@ -234,3 +236,9 @@ measured. Next, attach it to one real client and compare the same model/tasks/bu
 ordinary search tools, (B) ordinary tools plus CubeQL lexical, and (C) ordinary tools plus hybrid.
 Use reviewed real-repository tasks, repeat trials, and measure success, tool calls, tokens and
 total latency. The old whole-query literal baseline is not a substitute for that experiment.
+
+## Replacement snapshot preflight
+
+The [snapshot reload contract](mcp-snapshot-reload.md) defines bounded, same-byte
+identity and embedding compatibility checks for operator-selected replacement snapshots.
+The reusable preflight does not create a provider, upload vectors, or change session state.

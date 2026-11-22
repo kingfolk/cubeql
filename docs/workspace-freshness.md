@@ -70,7 +70,8 @@ Restoring exactly the original file bytes returns `unchanged` even if timestamps
 
 `read_code` always returns the original saved source, including after a check reports modified
 or missing. Checks do not refresh vectors, rewrite source or update handles. Restart the MCP
-server after separately building an updated snapshot if fresh retrieval is required.
+server after separately building an updated snapshot, or use an operator-enabled
+[explicit snapshot reload](mcp-snapshot-reload.md), if fresh retrieval is required.
 
 ## File manifest and compatibility
 

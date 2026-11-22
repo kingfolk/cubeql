@@ -20,12 +20,14 @@ use tokio::sync::oneshot;
 
 use crate::contract::{
     CheckRequest, CheckResponse, Location, MAX_RESPONSE_BYTES, ReadRequest, ReadResponse,
-    SearchHit, SearchRequest, SearchResponse, Strategy, ToolFailure, prefix_end,
+    ReloadRequest, SearchHit, SearchRequest, SearchResponse, Strategy, ToolFailure, prefix_end,
 };
 
 #[derive(Clone, Debug)]
 pub struct ServerOptions {
     pub index: PathBuf,
+    /// Optional fixed input path for explicit snapshot reload; never supplied by a tool caller.
+    pub reload_index: Option<PathBuf>,
     pub model_dir: Option<PathBuf>,
     /// Explicit resident encoder launch profile; incompatible snapshots fail before search.
     pub encoder_config: Option<PathBuf>,
@@ -41,6 +43,7 @@ pub(crate) enum Request {
     Search(SearchRequest),
     Read(ReadRequest),
     Check(CheckRequest),
+    Reload(ReloadRequest),
 }
 impl Request {
     fn method(&self) -> &'static str {
@@ -48,6 +51,7 @@ impl Request {
             Self::Search(_) => "search_code",
             Self::Read(_) => "read_code",
             Self::Check(_) => "check_code",
+            Self::Reload(_) => "reload_snapshot",
         }
     }
 }
@@ -65,115 +69,7 @@ impl Worker {
     pub async fn start(options: ServerOptions) -> Result<Self, ToolFailure> {
         let (sender, receiver) = mpsc::sync_channel::<Job>(8);
         let (ready, startup) = oneshot::channel();
-        let task = move || {
-            let startup_start = Instant::now();
-            if options.text_only
-                && options.search_strategy.is_some_and(|s| {
-                    cubeql_code::retrieval::SearchStrategy::from(s).needs_embedding()
-                })
-            {
-                let _ = ready.send(Err(ToolFailure::invalid(
-                    "text-only mode cannot restrict search to an embedding strategy",
-                )));
-                return;
-            }
-            let workspace = match options
-                .workspace_root
-                .as_ref()
-                .map(|path| cap_std::fs::Dir::open_ambient_dir(path, cap_std::ambient_authority()))
-                .transpose()
-            {
-                Ok(workspace) => workspace,
-                Err(error) => {
-                    let _ = ready.send(Err(failed(error)));
-                    return;
-                }
-            };
-            // Construct every non-Send model/device value inside its owning thread.
-            let initialized = initialize(&options);
-            let (id, code, mut provider, provider_startup_ms) = match initialized {
-                Ok(value) => value,
-                Err(error) => {
-                    let _ = ready.send(Err(error));
-                    return;
-                }
-            };
-            let (resident, host, backend) = if provider.is_some() {
-                let device = cubecl::Device::default();
-                match CodeSearchIndex::new(&device, code) {
-                    Ok(resident) => (Some(resident), None, format!("{device:?}")),
-                    Err(error) => {
-                        let _ = ready.send(Err(failed(error)));
-                        return;
-                    }
-                }
-            } else {
-                (None, Some(code), "Host".into())
-            };
-            let code = resident
-                .as_ref()
-                .map(CodeSearchIndex::code)
-                .or(host.as_ref())
-                .unwrap();
-            let text = SnapshotTextIndex::new(code);
-            text.warm_up(SearchStrategy::Hybrid);
-            eprintln!(
-                "{}",
-                json!({"format_version":1, "event":"ready", "snapshot_id":id, "chunks":code.chunks().len(),
-                "text_only":options.text_only, "backend":backend, "precision":code.precision(),
-                "workspace_checks":workspace.is_some(),
-                "search_strategy":options.search_strategy,
-                "embedding_model":code.embedding_config().map(|c| c.model.as_str()),
-                "embedding_execution":provider.as_ref().map(|p| p.execution_kind()),
-                "provider_startup_ms":provider_startup_ms,
-                "startup_ms":startup_start.elapsed().as_secs_f64()*1000.0})
-            );
-            if ready.send(Ok(())).is_err() {
-                return;
-            }
-            let mut sequence = 0u64;
-            for job in receiver {
-                // Cancelled queued calls never pay for inference; running kernels are not preempted.
-                if job.reply.is_closed() {
-                    continue;
-                }
-                sequence += 1;
-                let start = Instant::now();
-                let queue_ms = job.enqueued.elapsed().as_secs_f64() * 1000.0;
-                let method = job.request.method();
-                let result = match job.request {
-                    Request::Search(request) if options.search_strategy.is_some_and(|s| s != request.strategy) => Err(ToolFailure::new("strategy_restricted", "this server restricts search_code to its configured --search-strategy; supply that strategy explicitly")),
-                    Request::Search(request) => search(
-                        &id,
-                        code,
-                        &text,
-                        resident.as_ref(),
-                        &mut provider,
-                        &backend,
-                        request,
-                    ),
-                    Request::Read(request) => read(&id, code, request),
-                    Request::Check(request) => check(&id, code, workspace.as_ref(), request),
-                }
-                .and_then(bounded);
-                eprintln!(
-                    "{}",
-                    json!({"format_version":1, "event":"request_finished", "request_id":sequence,
-                    "method":method, "snapshot_id":id, "queue_ms":queue_ms,
-                    "elapsed_ms":start.elapsed().as_secs_f64()*1000.0,
-                    "strategy":result.as_ref().ok().and_then(|v| v.get("strategy")),
-                    "candidate_k":result.as_ref().ok().and_then(|v| v.get("candidate_k")),
-                    "read_chunk_id":(method == "read_code").then(|| result.as_ref().ok().and_then(|v| v.get("chunk_id"))).flatten(),
-                    "checked_chunk_id":(method == "check_code").then(|| result.as_ref().ok().and_then(|v| v.get("chunk_id"))).flatten(),
-                    "freshness":result.as_ref().ok().and_then(|v| v.get("status")),
-                    "returned_chunk_ids":result.as_ref().ok().and_then(|v| v.get("hits")).and_then(Value::as_array)
-                        .map(|hits| hits.iter().map(|h| h["chunk_id"].clone()).collect::<Vec<_>>()),
-                    "embedding_execution":provider.as_ref().map(|p| p.execution_kind()),
-                    "error":result.as_ref().err().map(|e| e.code)})
-                );
-                let _ = job.reply.send(result);
-            }
-        };
+        let task = move || run(options, receiver, ready);
         std::thread::Builder::new()
             .name("cubeql-retrieval".into())
             .spawn(task)
@@ -191,6 +87,7 @@ impl Worker {
             }
             Request::Read(request) => request.validate()?,
             Request::Check(request) => request.validate()?,
+            Request::Reload(request) => request.validate()?,
         }
         let (reply, response) = oneshot::channel();
         self.sender
@@ -210,6 +107,317 @@ impl Worker {
         response
             .await
             .map_err(|_| ToolFailure::new("unavailable", "retrieval worker stopped"))?
+    }
+}
+
+struct SnapshotState {
+    id: String,
+    resident: Option<CodeSearchIndex>,
+    host: Option<CodeIndex>,
+    backend: String,
+}
+impl SnapshotState {
+    fn prepare(id: String, code: CodeIndex, full: bool) -> Result<Self, ToolFailure> {
+        if full {
+            let device = cubecl::Device::default();
+            let resident = CodeSearchIndex::new(&device, code).map_err(failed)?;
+            Ok(Self {
+                id,
+                resident: Some(resident),
+                host: None,
+                backend: format!("{device:?}"),
+            })
+        } else {
+            Ok(Self {
+                id,
+                resident: None,
+                host: Some(code),
+                backend: "Host".into(),
+            })
+        }
+    }
+    fn code(&self) -> &CodeIndex {
+        self.resident
+            .as_ref()
+            .map(CodeSearchIndex::code)
+            .or(self.host.as_ref())
+            .unwrap()
+    }
+}
+
+struct Completion {
+    reply: oneshot::Sender<Result<Value, ToolFailure>>,
+    sequence: u64,
+    start: Instant,
+    queue_ms: f64,
+    method: &'static str,
+}
+impl Completion {
+    fn finish(
+        self,
+        id: &str,
+        provider: &Option<Box<dyn EmbeddingProvider>>,
+        result: Result<Value, ToolFailure>,
+    ) {
+        let result = result.and_then(bounded);
+        eprintln!(
+            "{}",
+            json!({"format_version":1, "event":"request_finished", "request_id":self.sequence,
+            "method":self.method, "snapshot_id":id, "queue_ms":self.queue_ms,
+            "elapsed_ms":self.start.elapsed().as_secs_f64()*1000.0,
+            "strategy":result.as_ref().ok().and_then(|v| v.get("strategy")),
+            "candidate_k":result.as_ref().ok().and_then(|v| v.get("candidate_k")),
+            "read_chunk_id":(self.method == "read_code").then(|| result.as_ref().ok().and_then(|v| v.get("chunk_id"))).flatten(),
+            "checked_chunk_id":(self.method == "check_code").then(|| result.as_ref().ok().and_then(|v| v.get("chunk_id"))).flatten(),
+            "freshness":result.as_ref().ok().and_then(|v| v.get("status")),
+            "returned_chunk_ids":result.as_ref().ok().and_then(|v| v.get("hits")).and_then(Value::as_array)
+                .map(|hits| hits.iter().map(|h| h["chunk_id"].clone()).collect::<Vec<_>>()),
+            "embedding_execution":provider.as_ref().map(|p| p.execution_kind()),
+            "previous_snapshot_id":result.as_ref().ok().and_then(|v| v.get("previous_snapshot_id")),
+            "changed":result.as_ref().ok().and_then(|v| v.get("changed")),
+            "error":result.as_ref().err().map(|e| e.code)})
+        );
+        let _ = self.reply.send(result);
+    }
+}
+
+struct PendingReload {
+    completion: Completion,
+    previous_id: String,
+    preflight_ms: f64,
+    prepare_ms: f64,
+}
+
+struct ReloadTimings {
+    preflight_ms: f64,
+    prepare_ms: f64,
+    text_index_ms: f64,
+    reload_ms: f64,
+}
+fn reload_result(
+    state: &SnapshotState,
+    previous_id: &str,
+    changed: bool,
+    provider_reused: bool,
+    timings: ReloadTimings,
+) -> Value {
+    json!({"format_version":1, "source":"snapshot_reload", "previous_snapshot_id":previous_id,
+        "snapshot_id":state.id, "changed":changed, "chunks":state.code().chunks().len(),
+        "provider_reused":provider_reused, "preflight_ms":timings.preflight_ms, "prepare_ms":timings.prepare_ms,
+        "text_index_ms":timings.text_index_ms, "reload_ms":timings.reload_ms})
+}
+
+fn run(
+    options: ServerOptions,
+    receiver: mpsc::Receiver<Job>,
+    ready: oneshot::Sender<Result<(), ToolFailure>>,
+) {
+    let startup_start = Instant::now();
+    if options.text_only
+        && options
+            .search_strategy
+            .is_some_and(|s| SearchStrategy::from(s).needs_embedding())
+    {
+        let _ = ready.send(Err(ToolFailure::invalid(
+            "text-only mode cannot restrict search to an embedding strategy",
+        )));
+        return;
+    }
+    let workspace = match options
+        .workspace_root
+        .as_ref()
+        .map(|path| cap_std::fs::Dir::open_ambient_dir(path, cap_std::ambient_authority()))
+        .transpose()
+    {
+        Ok(workspace) => workspace,
+        Err(error) => {
+            let _ = ready.send(Err(failed(error)));
+            return;
+        }
+    };
+    let (id, code, mut provider, provider_startup_ms) = match initialize(&options) {
+        Ok(value) => value,
+        Err(error) => {
+            let _ = ready.send(Err(error));
+            return;
+        }
+    };
+    let mut state = match SnapshotState::prepare(id, code, provider.is_some()) {
+        Ok(state) => state,
+        Err(error) => {
+            let _ = ready.send(Err(error));
+            return;
+        }
+    };
+    let mut ready = Some(ready);
+    let mut pending: Option<PendingReload> = None;
+    let mut sequence = 0u64;
+    loop {
+        // Borrow within one generation: no unsafe self-reference or leaked old snapshots.
+        let code = state.code();
+        let text = SnapshotTextIndex::new(code);
+        let text_start = Instant::now();
+        text.warm_up(SearchStrategy::Hybrid);
+        let text_index_ms = text_start.elapsed().as_secs_f64() * 1000.0;
+        if let Some(ready) = ready.take() {
+            eprintln!(
+                "{}",
+                json!({"format_version":1, "event":"ready", "snapshot_id":state.id,
+                "chunks":code.chunks().len(), "text_only":options.text_only, "backend":state.backend,
+                "precision":code.precision(), "workspace_checks":workspace.is_some(),
+                "search_strategy":options.search_strategy, "reload_enabled":options.reload_index.is_some(),
+                "embedding_model":code.embedding_config().map(|c| c.model.as_str()),
+                "embedding_execution":provider.as_ref().map(|p| p.execution_kind()),
+                "provider_startup_ms":provider_startup_ms,
+                "startup_ms":startup_start.elapsed().as_secs_f64()*1000.0})
+            );
+            if ready.send(Ok(())).is_err() {
+                return;
+            }
+        }
+        if let Some(reload) = pending.take() {
+            let result = reload_result(
+                &state,
+                &reload.previous_id,
+                true,
+                provider.is_some(),
+                ReloadTimings {
+                    preflight_ms: reload.preflight_ms,
+                    prepare_ms: reload.prepare_ms,
+                    text_index_ms,
+                    reload_ms: reload.completion.start.elapsed().as_secs_f64() * 1000.0,
+                },
+            );
+            reload.completion.finish(&state.id, &provider, Ok(result));
+        }
+        let transition = loop {
+            let job = match receiver.recv() {
+                Ok(job) => job,
+                Err(_) => return,
+            };
+            if job.reply.is_closed() {
+                continue;
+            }
+            sequence += 1;
+            let method = job.request.method();
+            let completion = Completion {
+                reply: job.reply,
+                sequence,
+                start: Instant::now(),
+                queue_ms: job.enqueued.elapsed().as_secs_f64() * 1000.0,
+                method,
+            };
+            let result = match job.request {
+                Request::Reload(request) => {
+                    // Compare before opening the input. A stale queued reload cannot replace a
+                    // newer active generation. Cancellation after admission does not undo commit.
+                    if request.expected_snapshot_id != state.id {
+                        completion.finish(
+                            &state.id,
+                            &provider,
+                            Err(ToolFailure::new(
+                                "snapshot_mismatch",
+                                "active snapshot changed; search again before reloading",
+                            )),
+                        );
+                        continue;
+                    }
+                    let Some(path) = options.reload_index.as_ref() else {
+                        completion.finish(
+                            &state.id,
+                            &provider,
+                            Err(ToolFailure::new(
+                                "reload_disabled",
+                                "operator did not configure --reload-index",
+                            )),
+                        );
+                        continue;
+                    };
+                    let start = Instant::now();
+                    let candidate = match crate::snapshot::load_candidate(
+                        path,
+                        provider.as_ref().map(|p| p.config()),
+                        crate::snapshot::MAX_RELOAD_BYTES,
+                    ) {
+                        Ok(candidate) => candidate,
+                        Err(error) => {
+                            completion.finish(&state.id, &provider, Err(error));
+                            continue;
+                        }
+                    };
+                    let preflight_ms = start.elapsed().as_secs_f64() * 1000.0;
+                    if candidate.snapshot_id == state.id {
+                        let result = reload_result(
+                            &state,
+                            &state.id,
+                            false,
+                            provider.is_some(),
+                            ReloadTimings {
+                                preflight_ms,
+                                prepare_ms: 0.0,
+                                text_index_ms: 0.0,
+                                reload_ms: completion.start.elapsed().as_secs_f64() * 1000.0,
+                            },
+                        );
+                        completion.finish(&state.id, &provider, Ok(result));
+                        continue;
+                    }
+                    let start = Instant::now();
+                    let next = match SnapshotState::prepare(
+                        candidate.snapshot_id,
+                        candidate.code,
+                        provider.is_some(),
+                    ) {
+                        Ok(next) => next,
+                        Err(error) => {
+                            completion.finish(
+                                &state.id,
+                                &provider,
+                                Err(ToolFailure::new("reload_failed", error.message)),
+                            );
+                            continue;
+                        }
+                    };
+                    break (
+                        next,
+                        PendingReload {
+                            completion,
+                            previous_id: state.id.clone(),
+                            preflight_ms,
+                            prepare_ms: start.elapsed().as_secs_f64() * 1000.0,
+                        },
+                    );
+                }
+                Request::Search(request)
+                    if options
+                        .search_strategy
+                        .is_some_and(|s| s != request.strategy) =>
+                {
+                    Err(ToolFailure::new(
+                        "strategy_restricted",
+                        "this server restricts search_code to its configured --search-strategy; supply that strategy explicitly",
+                    ))
+                }
+                Request::Search(request) => search(
+                    &state.id,
+                    code,
+                    &text,
+                    state.resident.as_ref(),
+                    &mut provider,
+                    &state.backend,
+                    request,
+                ),
+                Request::Read(request) => read(&state.id, code, request),
+                Request::Check(request) => check(&state.id, code, workspace.as_ref(), request),
+            };
+            completion.finish(&state.id, &provider, result);
+        };
+        // All fallible parse/compatibility/device preparation succeeded. Drop the borrowed
+        // adapters before replacing the owner; rebuild host tables before acknowledging.
+        // Allocation aborts/panics are process failures, not recoverable reload errors.
+        drop(text);
+        state = transition.0;
+        pending = Some(transition.1);
     }
 }
 
